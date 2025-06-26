@@ -85,7 +85,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       if (isEditing && client) {
         await updateClient.mutateAsync({ id: client.id, ...data });
       } else {
-        await createClient.mutateAsync(data);
+        // Cast the validated data to the expected type
+        await createClient.mutateAsync(data as Omit<Client, 'id' | 'createdAt'>);
       }
       onClose();
     } catch (error) {

@@ -88,7 +88,8 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       if (isEditing && employee) {
         await updateEmployee.mutateAsync({ id: employee.id, ...data });
       } else {
-        await createEmployee.mutateAsync(data);
+        // Cast the validated data to the expected type
+        await createEmployee.mutateAsync(data as Omit<Employee, 'id' | 'createdAt'>);
       }
       onClose();
     } catch (error) {
