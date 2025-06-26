@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, FileTemplate, Copy, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, FileText, Copy, Edit, Trash2 } from 'lucide-react';
 
 interface Template {
   id: string;
@@ -152,7 +151,7 @@ export const Templates: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <FileTemplate className="h-5 w-5 text-gray-600" />
+                        <FileText className="h-5 w-5 text-gray-600" />
                         <h3 className="text-lg font-semibold">{template.name}</h3>
                         <Badge className={getCategoryColor(template.category)}>
                           {template.category}

@@ -7,8 +7,8 @@ import {
   UserCog,
   FolderOpen,
   CheckSquare,
-  FileTemplate,
   FileText,
+  FileText as FileTemplate,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
