@@ -1,0 +1,148 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { useClients, Client } from '@/hooks/useClients';
+import { ClientModal } from '@/components/modals/ClientModal';
+
+export const Clients: React.FC = () => {
+  const { clients, isLoading, deleteClient } = useClients();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const filteredClients = clients.filter((client: Client) =>
+    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.company.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleEdit = (client: Client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+      await deleteClient.mutateAsync(id);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedClient(null);
+    setIsModalOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
+          <p className="text-gray-600">Gerencie os clientes da sua empresa</p>
+        </div>
+        <Button onClick={() => setIsModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Cliente
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Clientes</CardTitle>
+          <CardDescription>
+            Total de {clients.length} clientes cadastrados
+          </CardDescription>
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar clientes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClients.map((client: Client) => (
+                <TableRow key={client.id}>
+                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell>{client.email}</TableCell>
+                  <TableCell>{client.company}</TableCell>
+                  <TableCell>{client.phone}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      client.status === 'active' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(client)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(client.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <ClientModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        client={selectedClient}
+      />
+    </div>
+  );
+};

@@ -1,0 +1,32 @@
+
+import { useQuery } from '@tanstack/react-query';
+import api from '@/services/api';
+
+export interface DashboardKPIs {
+  totalClients: number;
+  activeProcesses: number;
+  completedTasks: number;
+  pendingTasks: number;
+  monthlyRevenue: number;
+  processCompletionRate: number;
+}
+
+export const useDashboard = () => {
+  const {
+    data: kpis,
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ['dashboard-kpis'],
+    queryFn: async () => {
+      const response = await api.get('/dashboard/kpis');
+      return response.data;
+    },
+  });
+
+  return {
+    kpis,
+    isLoading,
+    error,
+  };
+};
