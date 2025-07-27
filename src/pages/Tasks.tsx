@@ -4,59 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, CheckSquare, Clock, AlertCircle } from 'lucide-react';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  process: string;
-  assignee: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'in_progress' | 'completed';
-  dueDate: string;
-  createdAt: string;
-}
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Revisar contrato Cliente XYZ',
-    description: 'Análise completa dos termos e condições do novo contrato',
-    process: 'Processo de Onboarding - João Silva',
-    assignee: 'Maria Santos',
-    priority: 'high',
-    status: 'pending',
-    dueDate: '2024-01-20',
-    createdAt: '2024-01-15'
-  },
-  {
-    id: '2',
-    title: 'Aprovar proposta comercial',
-    description: 'Revisão e aprovação da proposta para novo cliente',
-    process: 'Análise Financeira - Empresa ABC',
-    assignee: 'Pedro Costa',
-    priority: 'medium',
-    status: 'in_progress',
-    dueDate: '2024-01-22',
-    createdAt: '2024-01-14'
-  },
-  {
-    id: '3',
-    title: 'Enviar relatório mensal',
-    description: 'Compilação e envio do relatório de atividades mensais',
-    process: 'Auditoria Interna - Q4 2024',
-    assignee: 'Ana Silva',
-    priority: 'high',
-    status: 'completed',
-    dueDate: '2024-01-18',
-    createdAt: '2024-01-10'
-  }
-];
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { TaskModal } from '@/components/modals/TaskModal';
 
 export const Tasks: React.FC = () => {
+  const { tasks, isLoading, deleteTask, updateTaskStatus } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
-  const [tasks] = useState<Task[]>(mockTasks);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredTasks = tasks.filter((task) =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,6 +89,43 @@ export const Tasks: React.FC = () => {
     return new Date(dueDate) < new Date() && tasks.find(t => t.dueDate === dueDate)?.status !== 'completed';
   };
 
+  const handleEdit = (task: Task) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+      await deleteTask.mutateAsync(id);
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: Task['status']) => {
+    await updateTaskStatus.mutateAsync({ id, status });
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTask(null);
+    setIsModalOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -140,7 +133,7 @@ export const Tasks: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Tarefas</h1>
           <p className="text-gray-600">Gerencie as tarefas dos processos</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Tarefa
         </Button>
@@ -233,17 +226,50 @@ export const Tasks: React.FC = () => {
                       <Badge className={getStatusColor(task.status)}>
                         {getStatusLabel(task.status)}
                       </Badge>
-                      <Badge className={getPriorityColor(task.priority)}>
-                        {getPriorityLabel(task.priority)}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+                       <Badge className={getPriorityColor(task.priority)}>
+                         {getPriorityLabel(task.priority)}
+                       </Badge>
+                     </div>
+                     <div className="flex space-x-2 mt-2">
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => handleEdit(task)}
+                       >
+                         <Edit className="h-4 w-4" />
+                       </Button>
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => handleDelete(task.id)}
+                         className="text-red-600 hover:text-red-700"
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                       {task.status !== 'completed' && (
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => handleStatusChange(task.id, 'completed')}
+                           className="text-green-600 hover:text-green-700"
+                         >
+                           <CheckSquare className="h-4 w-4" />
+                         </Button>
+                       )}
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             ))}
+           </div>
+         </CardContent>
+       </Card>
+
+       <TaskModal
+         isOpen={isModalOpen}
+         onClose={handleCloseModal}
+         task={selectedTask}
+       />
+     </div>
+   );
+ };

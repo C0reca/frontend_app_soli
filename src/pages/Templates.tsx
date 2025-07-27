@@ -4,54 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, FileText, Copy, Edit, Trash2 } from 'lucide-react';
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  steps: number;
-  estimatedDuration: string;
-  createdAt: string;
-  usageCount: number;
-}
-
-const mockTemplates: Template[] = [
-  {
-    id: '1',
-    name: 'Template de Onboarding de Cliente',
-    description: 'Processo padrão para integração de novos clientes',
-    category: 'Onboarding',
-    steps: 8,
-    estimatedDuration: '5-7 dias',
-    createdAt: '2024-01-10',
-    usageCount: 12
-  },
-  {
-    id: '2',
-    name: 'Processo de Auditoria Interna',
-    description: 'Template para condução de auditorias internas',
-    category: 'Auditoria',
-    steps: 15,
-    estimatedDuration: '2-3 semanas',
-    createdAt: '2024-01-08',
-    usageCount: 8
-  },
-  {
-    id: '3',
-    name: 'Aprovação de Documentos',
-    description: 'Fluxo de aprovação para documentos críticos',
-    category: 'Aprovação',
-    steps: 5,
-    estimatedDuration: '2-3 dias',
-    createdAt: '2024-01-05',
-    usageCount: 25
-  }
-];
+import { useTemplates, Template } from '@/hooks/useTemplates';
+import { TemplateModal } from '@/components/modals/TemplateModal';
 
 export const Templates: React.FC = () => {
+  const { templates, isLoading, deleteTemplate, useTemplate } = useTemplates();
   const [searchTerm, setSearchTerm] = useState('');
-  const [templates] = useState<Template[]>(mockTemplates);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredTemplates = templates.filter((template) =>
     template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,6 +32,43 @@ export const Templates: React.FC = () => {
     }
   };
 
+  const handleEdit = (template: Template) => {
+    setSelectedTemplate(template);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este template?')) {
+      await deleteTemplate.mutateAsync(id);
+    }
+  };
+
+  const handleUse = async (id: string) => {
+    await useTemplate.mutateAsync(id);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTemplate(null);
+    setIsModalOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -79,7 +76,7 @@ export const Templates: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Templates de Processos</h1>
           <p className="text-gray-600">Crie e gerencie templates reutilizáveis</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Template
         </Button>
@@ -173,25 +170,31 @@ export const Templates: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Copy className="h-4 w-4 mr-1" />
-                        Usar
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                     <div className="flex space-x-2">
+                       <Button variant="outline" size="sm" onClick={() => handleUse(template.id)}>
+                         <Copy className="h-4 w-4 mr-1" />
+                         Usar
+                       </Button>
+                       <Button variant="ghost" size="sm" onClick={() => handleEdit(template)}>
+                         <Edit className="h-4 w-4" />
+                       </Button>
+                       <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(template.id)}>
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+           </div>
+         </CardContent>
+       </Card>
+
+       <TemplateModal
+         isOpen={isModalOpen}
+         onClose={handleCloseModal}
+         template={selectedTemplate}
+       />
+     </div>
+   );
+ };

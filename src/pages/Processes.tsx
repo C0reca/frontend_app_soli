@@ -5,54 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
-
-interface Process {
-  id: string;
-  name: string;
-  client: string;
-  employee: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-  dueDate: string;
-}
-
-const mockProcesses: Process[] = [
-  {
-    id: '1',
-    name: 'Processo de Onboarding - João Silva',
-    client: 'João Silva',
-    employee: 'Maria Santos',
-    status: 'in_progress',
-    priority: 'high',
-    createdAt: '2024-01-15',
-    dueDate: '2024-01-30'
-  },
-  {
-    id: '2',
-    name: 'Análise Financeira - Empresa ABC',
-    client: 'Empresa ABC',
-    employee: 'Pedro Costa',
-    status: 'pending',
-    priority: 'medium',
-    createdAt: '2024-01-14',
-    dueDate: '2024-02-14'
-  },
-  {
-    id: '3',
-    name: 'Auditoria Interna - Q4 2024',
-    client: 'Empresa XYZ',
-    employee: 'Ana Silva',
-    status: 'completed',
-    priority: 'high',
-    createdAt: '2024-01-10',
-    dueDate: '2024-01-25'
-  }
-];
+import { useProcesses, Process } from '@/hooks/useProcesses';
+import { ProcessModal } from '@/components/modals/ProcessModal';
 
 export const Processes: React.FC = () => {
+  const { processes, isLoading, deleteProcess } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');
-  const [processes] = useState<Process[]>(mockProcesses);
+  const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredProcesses = processes.filter((process) =>
     process.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -116,6 +76,39 @@ export const Processes: React.FC = () => {
     }
   };
 
+  const handleEdit = (process: Process) => {
+    setSelectedProcess(process);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este processo?')) {
+      await deleteProcess.mutateAsync(id);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedProcess(null);
+    setIsModalOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card className="animate-pulse">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -123,7 +116,7 @@ export const Processes: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Processos</h1>
           <p className="text-gray-600">Gerencie os processos da sua empresa</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Processo
         </Button>
@@ -179,25 +172,31 @@ export const Processes: React.FC = () => {
                       <Badge className={getStatusColor(process.status)}>
                         {getStatusLabel(process.status)}
                       </Badge>
-                      <div className="flex space-x-1">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                       <div className="flex space-x-1">
+                         <Button variant="ghost" size="sm">
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="sm" onClick={() => handleEdit(process)}>
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(process.id)}>
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+           </div>
+         </CardContent>
+       </Card>
+
+       <ProcessModal
+         isOpen={isModalOpen}
+         onClose={handleCloseModal}
+         process={selectedProcess}
+       />
+     </div>
+   );
+ };

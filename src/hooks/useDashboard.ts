@@ -7,7 +7,7 @@ export interface DashboardKPIs {
   activeProcesses: number;
   completedTasks: number;
   pendingTasks: number;
-  monthlyRevenue: number;
+  activeTemplates: number;
   processCompletionRate: number;
 }
 

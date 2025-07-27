@@ -57,11 +57,11 @@ export const Dashboard: React.FC = () => {
       trend: '-5%'
     },
     {
-      title: 'Receita Mensal',
-      value: `€${kpis?.monthlyRevenue || 25000}`,
+      title: 'Templates Ativos',
+      value: kpis?.activeTemplates || 8,
       icon: DollarSign,
-      description: 'Receita do mês atual',
-      trend: '+22%'
+      description: 'Templates de processos disponíveis',
+      trend: '+2%'
     },
     {
       title: 'Taxa de Conclusão',
