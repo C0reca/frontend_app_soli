@@ -94,15 +94,36 @@ export const useTemplates = () => {
 
   const useTemplate = useMutation({
     mutationFn: async (templateId: string) => {
-      const response = await api.post(`/templates/${templateId}/use`);
-      return response.data;
+      // Mock implementation: create a process from template
+      const template = templates.find(t => t.id === templateId);
+      if (!template) throw new Error('Template não encontrado');
+      
+      const newProcess = {
+        name: `Processo baseado em ${template.name}`,
+        client: 'Cliente Padrão',
+        employee: 'Funcionário Padrão',
+        status: 'pending' as const,
+        priority: 'medium' as const,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        description: `Processo criado a partir do template: ${template.description}`
+      };
+      
+      // Simulate API call
+      return new Promise(resolve => setTimeout(() => resolve(newProcess), 500));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       queryClient.invalidateQueries({ queryKey: ['processes'] });
       toast({
         title: "Sucesso",
-        description: "Processo criado a partir do template.",
+        description: "Processo criado a partir do template com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao usar template.",
+        variant: "destructive",
       });
     },
   });
