@@ -4,13 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Upload, Download, Trash2, RotateCcw, FileText, Image, File } from 'lucide-react';
+import { Plus, Search, Upload, Download, Trash2, RotateCcw, FileText, Image, File, Eye } from 'lucide-react';
 import { useDocuments } from '@/hooks/useDocuments';
+import { DocumentDetailsModal } from '@/components/modals/DocumentDetailsModal';
 
 export const Documents: React.FC = () => {
   const { documents, isLoading, uploadDocument, deleteDocument, restoreDocument, downloadDocument } = useDocuments();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'deleted'>('all');
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,6 +50,11 @@ export const Documents: React.FC = () => {
     }
   };
 
+  const handleView = (document: any) => {
+    setSelectedDocument(document);
+    setIsDetailsModalOpen(true);
+  };
+
   const handleDownload = (id: string, filename: string) => {
     downloadDocument(id, filename);
   };
@@ -59,6 +67,11 @@ export const Documents: React.FC = () => {
 
   const handleRestore = async (id: string) => {
     await restoreDocument.mutateAsync(id);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedDocument(null);
+    setIsDetailsModalOpen(false);
   };
 
   if (isLoading) {
@@ -220,6 +233,9 @@ export const Documents: React.FC = () => {
                       </div>
                     </div>
                      <div className="flex space-x-2">
+                       <Button variant="ghost" size="sm" onClick={() => handleView(document)}>
+                         <Eye className="h-4 w-4" />
+                       </Button>
                        {document.status === 'active' ? (
                          <>
                            <Button variant="ghost" size="sm" onClick={() => handleDownload(document.id, document.name)}>
@@ -242,6 +258,13 @@ export const Documents: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      <DocumentDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        document={selectedDocument}
+        onDownload={handleDownload}
+      />
     </div>
   );
 };

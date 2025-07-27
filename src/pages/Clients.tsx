@@ -4,21 +4,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useClients, Client } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
+import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
 
 export const Clients: React.FC = () => {
   const { clients, isLoading, deleteClient } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredClients = clients.filter((client: Client) =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleView = (client: Client) => {
+    setSelectedClientDetails(client);
+    setIsDetailsModalOpen(true);
+  };
 
   const handleEdit = (client: Client) => {
     setSelectedClient(client);
@@ -34,6 +42,11 @@ export const Clients: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedClient(null);
     setIsModalOpen(false);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedClientDetails(null);
+    setIsDetailsModalOpen(false);
   };
 
   if (isLoading) {
@@ -117,6 +130,13 @@ export const Clients: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleView(client)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleEdit(client)}
                       >
                         <Edit className="h-4 w-4" />
@@ -142,6 +162,12 @@ export const Clients: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         client={selectedClient}
+      />
+
+      <ClientDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        client={selectedClientDetails}
       />
     </div>
   );

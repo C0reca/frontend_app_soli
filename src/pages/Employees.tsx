@@ -4,21 +4,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useEmployees, Employee } from '@/hooks/useEmployees';
 import { EmployeeModal } from '@/components/modals/EmployeeModal';
+import { EmployeeDetailsModal } from '@/components/modals/EmployeeDetailsModal';
 
 export const Employees: React.FC = () => {
   const { employees, isLoading, deleteEmployee } = useEmployees();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState<Employee | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredEmployees = employees.filter((employee: Employee) =>
     employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleView = (employee: Employee) => {
+    setSelectedEmployeeDetails(employee);
+    setIsDetailsModalOpen(true);
+  };
 
   const handleEdit = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -34,6 +42,11 @@ export const Employees: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedEmployee(null);
     setIsModalOpen(false);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedEmployeeDetails(null);
+    setIsDetailsModalOpen(false);
   };
 
   if (isLoading) {
@@ -117,6 +130,13 @@ export const Employees: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleView(employee)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleEdit(employee)}
                       >
                         <Edit className="h-4 w-4" />
@@ -142,6 +162,12 @@ export const Employees: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         employee={selectedEmployee}
+      />
+
+      <EmployeeDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        employee={selectedEmployeeDetails}
       />
     </div>
   );

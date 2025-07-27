@@ -4,15 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { TaskModal } from '@/components/modals/TaskModal';
+import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 
 export const Tasks: React.FC = () => {
   const { tasks, isLoading, deleteTask, updateTaskStatus } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredTasks = tasks.filter((task) =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,6 +92,11 @@ export const Tasks: React.FC = () => {
     return new Date(dueDate) < new Date() && tasks.find(t => t.dueDate === dueDate)?.status !== 'completed';
   };
 
+  const handleView = (task: Task) => {
+    setSelectedTaskDetails(task);
+    setIsDetailsModalOpen(true);
+  };
+
   const handleEdit = (task: Task) => {
     setSelectedTask(task);
     setIsModalOpen(true);
@@ -107,6 +115,11 @@ export const Tasks: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedTask(null);
     setIsModalOpen(false);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedTaskDetails(null);
+    setIsDetailsModalOpen(false);
   };
 
   if (isLoading) {
@@ -234,6 +247,13 @@ export const Tasks: React.FC = () => {
                        <Button
                          variant="ghost"
                          size="sm"
+                         onClick={() => handleView(task)}
+                       >
+                         <Eye className="h-4 w-4" />
+                       </Button>
+                       <Button
+                         variant="ghost"
+                         size="sm"
                          onClick={() => handleEdit(task)}
                        >
                          <Edit className="h-4 w-4" />
@@ -269,6 +289,12 @@ export const Tasks: React.FC = () => {
          isOpen={isModalOpen}
          onClose={handleCloseModal}
          task={selectedTask}
+       />
+
+       <TaskDetailsModal
+         isOpen={isDetailsModalOpen}
+         onClose={handleCloseDetailsModal}
+         task={selectedTaskDetails}
        />
      </div>
    );

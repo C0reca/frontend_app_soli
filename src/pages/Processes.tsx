@@ -7,12 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
+import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
 
 export const Processes: React.FC = () => {
   const { processes, isLoading, deleteProcess } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProcessDetails, setSelectedProcessDetails] = useState<Process | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredProcesses = processes.filter((process) =>
     process.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,6 +79,11 @@ export const Processes: React.FC = () => {
     }
   };
 
+  const handleView = (process: Process) => {
+    setSelectedProcessDetails(process);
+    setIsDetailsModalOpen(true);
+  };
+
   const handleEdit = (process: Process) => {
     setSelectedProcess(process);
     setIsModalOpen(true);
@@ -90,6 +98,11 @@ export const Processes: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedProcess(null);
     setIsModalOpen(false);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedProcessDetails(null);
+    setIsDetailsModalOpen(false);
   };
 
   if (isLoading) {
@@ -173,7 +186,7 @@ export const Processes: React.FC = () => {
                         {getStatusLabel(process.status)}
                       </Badge>
                        <div className="flex space-x-1">
-                         <Button variant="ghost" size="sm">
+                         <Button variant="ghost" size="sm" onClick={() => handleView(process)}>
                            <Eye className="h-4 w-4" />
                          </Button>
                          <Button variant="ghost" size="sm" onClick={() => handleEdit(process)}>
@@ -196,6 +209,12 @@ export const Processes: React.FC = () => {
          isOpen={isModalOpen}
          onClose={handleCloseModal}
          process={selectedProcess}
+       />
+
+       <ProcessDetailsModal
+         isOpen={isDetailsModalOpen}
+         onClose={handleCloseDetailsModal}
+         process={selectedProcessDetails}
        />
      </div>
    );
