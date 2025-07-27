@@ -19,8 +19,9 @@ export const useDashboard = () => {
   } = useQuery({
     queryKey: ['dashboard-kpis'],
     queryFn: async () => {
-      const response = await api.get('/dashboard/kpis');
-      return response.data;
+      // Mock data for development
+      const { mockDashboardKPIs } = await import('@/data/mockData');
+      return mockDashboardKPIs;
     },
   });
 

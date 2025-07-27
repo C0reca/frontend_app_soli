@@ -24,8 +24,9 @@ export const useTemplates = () => {
   } = useQuery({
     queryKey: ['templates'],
     queryFn: async () => {
-      const response = await api.get('/templates');
-      return response.data;
+      // Mock data for development
+      const { mockTemplates } = await import('@/data/mockData');
+      return mockTemplates;
     },
   });
 

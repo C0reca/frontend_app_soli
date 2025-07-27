@@ -26,8 +26,9 @@ export const useDocuments = () => {
   } = useQuery({
     queryKey: ['documents'],
     queryFn: async () => {
-      const response = await api.get('/documentos');
-      return response.data;
+      // Mock data for development
+      const { mockDocuments } = await import('@/data/mockData');
+      return mockDocuments;
     },
   });
 

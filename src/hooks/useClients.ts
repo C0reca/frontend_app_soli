@@ -23,8 +23,9 @@ export const useClients = () => {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const response = await api.get('/clientes');
-      return response.data;
+      // Mock data for development
+      const { mockClients } = await import('@/data/mockData');
+      return mockClients;
     },
   });
 
