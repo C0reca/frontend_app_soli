@@ -3,15 +3,111 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 
-export interface Client {
+// Base client interface
+export interface BaseClient {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
+  clientType: 'individual' | 'corporate';
+  internalNumber: string;
+  responsibleEmployee: string;
   status: 'active' | 'inactive';
   createdAt: string;
+  internalNotes: string;
+  tags: string[];
 }
+
+// Individual client (Pessoa Singular)
+export interface IndividualClient extends BaseClient {
+  clientType: 'individual';
+  
+  // Identificação
+  fullName: string;
+  nif: string;
+  citizenCardNumber: string;
+  citizenCardExpiry: string;
+  birthDate: string;
+  nationality: string;
+  maritalStatus: string;
+  profession: string;
+  socialSecurityNumber: string;
+  healthUserNumber: string;
+  civilIdentificationNumber: string;
+  
+  // Contacto
+  email: string;
+  mobile: string;
+  landline: string;
+  address: {
+    street: string;
+    postalCode: string;
+    locality: string;
+    district: string;
+    country: string;
+  };
+  
+  // Documentos
+  documents: {
+    citizenCardCopy?: string;
+    addressProof?: string;
+    bankProof?: string;
+    digitalSignature?: string;
+    otherDocuments?: string[];
+  };
+  
+  // Dados Jurídicos/Processuais
+  hasLegalRepresentative: boolean;
+  legalRepresentativeName?: string;
+  powerOfAttorney?: string;
+  legalObservations?: string;
+}
+
+// Corporate client (Pessoa Coletiva)
+export interface CorporateClient extends BaseClient {
+  clientType: 'corporate';
+  
+  // Identificação
+  companyName: string;
+  nif: string;
+  commercialRegistrationNumber: string;
+  legalForm: string;
+  constitutionDate: string;
+  mainCAE: string;
+  shareCapital: string;
+  
+  // Representante(s) Legal(is)
+  legalRepresentatives: Array<{
+    name: string;
+    nif: string;
+    email: string;
+    mobile: string;
+    position: string;
+    appointmentDocument?: string;
+  }>;
+  
+  // Contacto
+  email: string;
+  phone: string;
+  address: {
+    street: string;
+    postalCode: string;
+    locality: string;
+    country: string;
+  };
+  
+  // Documentos
+  documents: {
+    permanentCertificate?: string;
+    iban?: string;
+    constitutionDeed?: string;
+    bylaws?: string;
+    otherDocuments?: string[];
+  };
+  
+  // Internos
+  businessAreas: string[];
+  observations?: string;
+}
+
+export type Client = IndividualClient | CorporateClient;
 
 export const useClients = () => {
   const queryClient = useQueryClient();

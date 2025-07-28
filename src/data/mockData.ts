@@ -1,4 +1,4 @@
-import { Client } from '@/hooks/useClients';
+import { Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
 import { Employee } from '@/hooks/useEmployees';
 import { Process } from '@/hooks/useProcesses';
 import { Task } from '@/hooks/useTasks';
@@ -9,22 +9,97 @@ import { DashboardKPIs } from '@/hooks/useDashboard';
 export const mockClients: Client[] = [
   {
     id: '1',
-    name: 'João Silva',
-    email: 'joao@email.com',
-    phone: '(11) 99999-9999',
-    company: 'Empresa A',
+    clientType: 'individual',
+    internalNumber: 'CLI001',
+    responsibleEmployee: 'Ana Costa',
     status: 'active',
-    createdAt: '2024-01-15T10:00:00Z'
-  },
+    createdAt: '2024-01-15T10:00:00Z',
+    internalNotes: 'Cliente desde 2024',
+    tags: ['heranças', 'registos'],
+    
+    // Identificação
+    fullName: 'João Silva',
+    nif: '123456789',
+    citizenCardNumber: '12345678 9 ZZ4',
+    citizenCardExpiry: '2030-12-31',
+    birthDate: '1985-03-15',
+    nationality: 'Portuguesa',
+    maritalStatus: 'Solteiro',
+    profession: 'Engenheiro',
+    socialSecurityNumber: '11111111111',
+    healthUserNumber: '123456789',
+    civilIdentificationNumber: '123456789',
+    
+    // Contacto
+    email: 'joao@email.com',
+    mobile: '(11) 99999-9999',
+    landline: '',
+    address: {
+      street: 'Rua das Flores, 123',
+      postalCode: '1000-001',
+      locality: 'Lisboa',
+      district: 'Lisboa',
+      country: 'Portugal'
+    },
+    
+    // Documentos
+    documents: {
+      citizenCardCopy: 'cc_joao_silva.pdf',
+      addressProof: 'comprovativo_morada.pdf',
+      bankProof: 'iban_joao.pdf'
+    },
+    
+    // Dados Jurídicos/Processuais
+    hasLegalRepresentative: false
+  } as IndividualClient,
   {
     id: '2',
-    name: 'Maria Santos',
-    email: 'maria@email.com',
-    phone: '(11) 88888-8888',
-    company: 'Empresa B',
+    clientType: 'corporate',
+    internalNumber: 'CLI002',
+    responsibleEmployee: 'Carlos Oliveira',
     status: 'active',
-    createdAt: '2024-02-10T14:30:00Z'
-  }
+    createdAt: '2024-02-10T14:30:00Z',
+    internalNotes: 'Cliente estratégico',
+    tags: ['fiscal', 'laboral'],
+    
+    // Identificação
+    companyName: 'Empresa B',
+    nif: '501234567',
+    commercialRegistrationNumber: '501234567',
+    legalForm: 'Sociedade Anónima',
+    constitutionDate: '2020-05-15',
+    mainCAE: '62010',
+    shareCapital: '50000',
+    
+    // Representante(s) Legal(is)
+    legalRepresentatives: [{
+      name: 'Maria Santos',
+      nif: '234567890',
+      email: 'maria@email.com',
+      mobile: '(11) 88888-8888',
+      position: 'Administradora'
+    }],
+    
+    // Contacto
+    email: 'geral@empresab.pt',
+    phone: '(11) 88888-8888',
+    address: {
+      street: 'Av. da Liberdade, 456',
+      postalCode: '1250-001',
+      locality: 'Lisboa',
+      country: 'Portugal'
+    },
+    
+    // Documentos
+    documents: {
+      permanentCertificate: 'RNPC501234567',
+      iban: 'PT50 0123 4567 8901 2345 6789 0'
+    },
+    
+    // Internos
+    businessAreas: ['fiscal', 'laboral'],
+    observations: 'Cliente estratégico'
+  } as CorporateClient
 ];
 
 export const mockEmployees: Employee[] = [

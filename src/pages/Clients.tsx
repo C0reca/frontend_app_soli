@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, User, Building } from 'lucide-react';
 import { useClients, Client } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
@@ -20,11 +19,21 @@ export const Clients: React.FC = () => {
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  const filteredClients = clients.filter((client: Client) =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getClientName = (client: Client) => {
+    return client.clientType === 'individual' ? client.fullName : client.companyName;
+  };
+
+  const getClientPhone = (client: Client) => {
+    return client.clientType === 'individual' ? client.mobile : client.phone;
+  };
+
+  const filteredClients = clients.filter((client: Client) => {
+    const name = getClientName(client).toLowerCase();
+    const email = client.email.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    
+    return name.includes(searchLower) || email.includes(searchLower);
+  });
 
   const handleView = (client: Client) => {
     setSelectedClientDetails(client);
@@ -108,10 +117,11 @@ export const Clients: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Nome/Empresa</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Empresa</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>NIF</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -119,10 +129,25 @@ export const Clients: React.FC = () => {
             <TableBody>
               {filteredClients.map((client: Client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      {client.clientType === 'individual' ? (
+                        <>
+                          <User className="h-4 w-4 text-blue-600" />
+                          <span className="text-xs text-muted-foreground">Particular</span>
+                        </>
+                      ) : (
+                        <>
+                          <Building className="h-4 w-4 text-green-600" />
+                          <span className="text-xs text-muted-foreground">Empresa</span>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">{getClientName(client)}</TableCell>
                   <TableCell>{client.email}</TableCell>
-                  <TableCell>{client.company}</TableCell>
-                  <TableCell>{client.phone}</TableCell>
+                  <TableCell>{getClientPhone(client)}</TableCell>
+                  <TableCell>{client.nif}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       client.status === 'active' 
