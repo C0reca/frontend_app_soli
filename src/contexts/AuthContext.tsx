@@ -66,6 +66,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(mockUser);
         return true;
       }
+      
+      if (email === 'funcionario@empresa.com' && password === 'func123') {
+        const mockUser = {
+          id: '2',
+          email: 'funcionario@empresa.com',
+          name: 'João Silva',
+          role: 'employee'
+        };
+        const mockToken = 'mock-jwt-token-employee';
+        
+        localStorage.setItem('token', mockToken);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return true;
+      }
+      
       return false;
     } catch (error) {
       console.error('Login error:', error);

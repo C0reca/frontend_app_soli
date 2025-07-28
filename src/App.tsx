@@ -13,6 +13,7 @@ import { Employees } from "@/pages/Employees";
 import { Processes } from "@/pages/Processes";
 import { Tasks } from "@/pages/Tasks";
 import { Templates } from "@/pages/Templates";
+import { DocumentTemplates } from "@/pages/DocumentTemplates";
 import { Documents } from "@/pages/Documents";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  
+  if (user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -45,10 +56,11 @@ const AppRoutes = () => {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="clientes" element={<Clients />} />
-        <Route path="funcionarios" element={<Employees />} />
+        <Route path="funcionarios" element={<AdminRoute><Employees /></AdminRoute>} />
         <Route path="processos" element={<Processes />} />
         <Route path="tarefas" element={<Tasks />} />
-        <Route path="templates" element={<Templates />} />
+        <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />
+        <Route path="document-templates" element={<AdminRoute><DocumentTemplates /></AdminRoute>} />
         <Route path="documentos" element={<Documents />} />
       </Route>
       <Route path="*" element={<NotFound />} />

@@ -1,14 +1,11 @@
-
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
-  UserCog,
   FolderOpen,
   CheckSquare,
   FileText,
-  FileText as FileTemplate,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,15 +14,12 @@ import { Button } from '@/components/ui/button';
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Clientes', path: '/clientes' },
-  { icon: UserCog, label: 'Funcionários', path: '/funcionarios' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
-  { icon: FileTemplate, label: 'Templates', path: '/templates' },
-  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
   { icon: FileText, label: 'Documentos', path: '/documentos' },
 ];
 
-export const Sidebar: React.FC = () => {
+export const EmployeeSidebar: React.FC = () => {
   const location = useLocation();
   const { logout, user } = useAuth();
 
@@ -33,7 +27,7 @@ export const Sidebar: React.FC = () => {
     <div className="h-full w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-gray-900">ProcessFlow</h1>
-        <p className="text-sm text-gray-500">Painel Administrativo</p>
+        <p className="text-sm text-gray-500">Painel do Funcionário</p>
         <p className="text-xs text-gray-400 mt-1">{user?.name}</p>
       </div>
       

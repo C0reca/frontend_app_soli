@@ -147,6 +147,74 @@ export const mockDocuments: Document[] = [
   }
 ];
 
+export const mockDocumentTemplates = [
+  {
+    id: '1',
+    name: 'Contrato de Prestação de Serviços',
+    description: 'Template padrão para contratos de prestação de serviços com variáveis personalizáveis',
+    category: 'Contrato',
+    format: 'DOCX',
+    size: '45 KB',
+    filePath: '/templates/contrato-prestacao-servicos.docx',
+    variables: ['nomeCliente', 'nomeEmpresa', 'dataInicio', 'prazo', 'valor', 'descricaoServicos'],
+    createdAt: '2024-01-15T08:00:00Z',
+    updatedAt: '2024-01-20T10:30:00Z',
+    usageCount: 12
+  },
+  {
+    id: '2',
+    name: 'Relatório Mensal de Atividades',
+    description: 'Template para relatórios mensais de atividades e progresso de projetos',
+    category: 'Relatório',
+    format: 'DOCX',
+    size: '32 KB',
+    filePath: '/templates/relatorio-mensal.docx',
+    variables: ['mes', 'ano', 'nomeResponsavel', 'projetos', 'resultados', 'proximosPassos'],
+    createdAt: '2024-01-10T09:15:00Z',
+    updatedAt: '2024-01-25T14:20:00Z',
+    usageCount: 8
+  },
+  {
+    id: '3',
+    name: 'Proposta Comercial',
+    description: 'Template para propostas comerciais com detalhamento de serviços e valores',
+    category: 'Proposta',
+    format: 'PDF',
+    size: '28 KB',
+    filePath: '/templates/proposta-comercial.pdf',
+    variables: ['nomeCliente', 'empresa', 'dataValidade', 'servicos', 'investimento', 'condicoes'],
+    createdAt: '2024-01-05T11:30:00Z',
+    updatedAt: '2024-01-22T16:45:00Z',
+    usageCount: 15
+  },
+  {
+    id: '4',
+    name: 'Fatura de Serviços',
+    description: 'Template para emissão de faturas de serviços prestados',
+    category: 'Fatura',
+    format: 'PDF',
+    size: '22 KB',
+    filePath: '/templates/fatura-servicos.pdf',
+    variables: ['numeroFatura', 'nomeCliente', 'dataEmissao', 'dataVencimento', 'servicos', 'valor', 'impostos'],
+    createdAt: '2024-01-12T07:45:00Z',
+    updatedAt: '2024-01-28T13:10:00Z',
+    usageCount: 25
+  },
+  {
+    id: '5',
+    name: 'Termo de Confidencialidade',
+    description: 'Template para acordos de confidencialidade e não divulgação',
+    category: 'Contrato',
+    format: 'DOCX',
+    size: '18 KB',
+    filePath: '/templates/termo-confidencialidade.docx',
+    variables: ['nomePartes', 'dataAssinatura', 'prazoValidade', 'penalidades'],
+    createdAt: '2024-01-08T15:20:00Z',
+    updatedAt: '2024-01-18T09:35:00Z',
+    usageCount: 6
+  }
+];
+
 export const mockDashboardKPIs: DashboardKPIs = {
   totalClients: 25,
   activeProcesses: 8,

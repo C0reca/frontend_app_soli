@@ -8,9 +8,12 @@ import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useClients, Client } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Clients: React.FC = () => {
   const { clients, isLoading, deleteClient } = useClients();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +37,7 @@ export const Clients: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+    if (isAdmin && confirm('Tem certeza que deseja excluir este cliente?')) {
       await deleteClient.mutateAsync(id);
     }
   };
@@ -71,12 +74,16 @@ export const Clients: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-gray-600">Gerencie os clientes da sua empresa</p>
+          <p className="text-gray-600">
+            {isAdmin ? 'Gerencie os clientes da empresa' : 'Visualize e trabalhe com clientes'}
+          </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Cliente
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Cliente
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -134,21 +141,25 @@ export const Clients: React.FC = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(client)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(client.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(client)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(client.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
