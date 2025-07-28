@@ -19,7 +19,6 @@ export const Clients: React.FC = () => {
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-<<<<<<< Updated upstream
   const getClientName = (client: Client) => {
     return client.clientType === 'individual' ? client.fullName : client.companyName;
   };
@@ -35,13 +34,6 @@ export const Clients: React.FC = () => {
     
     return name.includes(searchLower) || email.includes(searchLower);
   });
-=======
-  const filteredClients = clients.filter((client: Client) =>
-    client.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
->>>>>>> Stashed changes
 
   const handleView = (client: Client) => {
     setSelectedClientDetails(client);
@@ -137,7 +129,6 @@ export const Clients: React.FC = () => {
             <TableBody>
               {filteredClients.map((client: Client) => (
                 <TableRow key={client.id}>
-<<<<<<< Updated upstream
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {client.clientType === 'individual' ? (
@@ -154,9 +145,6 @@ export const Clients: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{getClientName(client)}</TableCell>
-=======
-                  <TableCell className="font-medium">{client.nome}</TableCell>
->>>>>>> Stashed changes
                   <TableCell>{client.email}</TableCell>
                   <TableCell>{getClientPhone(client)}</TableCell>
                   <TableCell>{client.nif}</TableCell>

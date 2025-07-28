@@ -15,18 +15,10 @@ import { IndividualClientForm } from './IndividualClientForm';
 import { CorporateClientForm } from './CorporateClientForm';
 import { useToast } from '@/hooks/use-toast';
 
-<<<<<<< Updated upstream
 // Schema base para campos comuns
 const baseClientSchema = z.object({
   internalNumber: z.string().min(1, 'Número interno é obrigatório'),
   responsibleEmployee: z.string().min(1, 'Funcionário responsável é obrigatório'),
-=======
-const clientSchema = z.object({
-  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().min(8, 'Telefone deve ter pelo menos 8 caracteres'),
-  company: z.string().min(2, 'Empresa deve ter pelo menos 2 caracteres'),
->>>>>>> Stashed changes
   status: z.enum(['active', 'inactive']),
   internalNotes: z.string().optional(),
   tags: z.array(z.string()).optional(),
@@ -126,29 +118,9 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     client?.clientType || 'individual'
   );
 
-<<<<<<< Updated upstream
   const getSchema = () => {
     return clientType === 'individual' ? individualClientSchema : corporateClientSchema;
   };
-=======
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ClientFormData>({
-    resolver: zodResolver(clientSchema),
-    defaultValues: client || {
-      nome: '',
-      email: '',
-      phone: '',
-      company: '',
-      status: 'active',
-    },
-  });
->>>>>>> Stashed changes
 
   const getDefaultValues = () => {
     if (client) return client;
@@ -180,16 +152,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         hasLegalRepresentative: false,
       };
     } else {
-<<<<<<< Updated upstream
       return {
         ...baseDefaults,
         clientType: 'corporate' as const,
         companyName: '',
         nif: '',
-=======
-      reset({
-        nome: '',
->>>>>>> Stashed changes
         email: '',
         phone: '',
         legalRepresentatives: [],
@@ -254,21 +221,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               : 'Preencha os dados do novo cliente'}
           </DialogDescription>
         </DialogHeader>
-<<<<<<< Updated upstream
-=======
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input
-              id="name"
-              {...register('nome')}
-              placeholder="Nome do cliente"
-            />
-            {errors.nome && (
-              <p className="text-sm text-red-600">{errors.nome.message}</p>
-            )}
-          </div>
->>>>>>> Stashed changes
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {!isEditing && (
