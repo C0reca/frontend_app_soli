@@ -9,6 +9,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTasks, Task } from '@/hooks/useTasks';
+import { useProcesses } from '@/hooks/useProcesses';
+import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const taskSchema = z.object({
@@ -31,6 +33,8 @@ interface TaskModalProps {
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) => {
   const { createTask, updateTask } = useTasks();
+  const { processes } = useProcesses();
+  const { employees } = useEmployees();
   
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -130,9 +134,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Processo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Digite o processo relacionado" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um processo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {processes.map((process) => (
+                        <SelectItem key={process.id} value={process.id}>
+                          {process.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -144,9 +159,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Responsável</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Digite o nome do responsável" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um funcionário" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {employees.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          {employee.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

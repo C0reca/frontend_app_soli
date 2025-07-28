@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Process } from '@/hooks/useProcesses';
 import { useTasks } from '@/hooks/useTasks';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Download, Upload, Eye, FileIcon } from 'lucide-react';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
@@ -24,6 +25,52 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   // Filter tasks related to this process
   const relatedTasks = tasks.filter(task => task.process === process.id);
+
+  // Mock files for demonstration - in reality, this would come from an API
+  const processFiles = [
+    {
+      id: '1',
+      name: 'Contrato_Principal.pdf',
+      type: 'pdf',
+      size: '2.4 MB',
+      uploadDate: '2024-01-15',
+      uploadedBy: 'João Silva'
+    },
+    {
+      id: '2',
+      name: 'Documentos_Cliente.zip',
+      type: 'zip',
+      size: '5.1 MB',
+      uploadDate: '2024-01-10',
+      uploadedBy: 'Maria Santos'
+    },
+    {
+      id: '3',
+      name: 'Parecer_Juridico.docx',
+      type: 'docx',
+      size: '890 KB',
+      uploadDate: '2024-01-08',
+      uploadedBy: 'Pedro Oliveira'
+    }
+  ];
+
+  const getFileIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return '📄';
+      case 'docx':
+      case 'doc':
+        return '📝';
+      case 'zip':
+      case 'rar':
+        return '📦';
+      case 'xlsx':
+      case 'xls':
+        return '📊';
+      default:
+        return '📄';
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -224,6 +271,56 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               <div className="text-center text-muted-foreground py-6">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>Nenhuma tarefa relacionada encontrada</p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Ficheiros do Processo</h3>
+              <Button size="sm" className="flex items-center space-x-2">
+                <Upload className="h-4 w-4" />
+                <span>Carregar Ficheiro</span>
+              </Button>
+            </div>
+            
+            {processFiles.length > 0 ? (
+              <div className="space-y-3">
+                {processFiles.map((file) => (
+                  <Card key={file.id} className="border border-border">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">{getFileIcon(file.type)}</div>
+                          <div>
+                            <p className="font-medium text-sm">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {file.size} • Carregado por {file.uploadedBy} • {new Date(file.uploadDate).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" variant="outline" className="flex items-center space-x-1">
+                            <Eye className="h-3 w-3" />
+                            <span className="text-xs">Ver</span>
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex items-center space-x-1">
+                            <Download className="h-3 w-3" />
+                            <span className="text-xs">Baixar</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <FileIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhum ficheiro carregado</p>
+                <p className="text-sm">Carregue documentos relacionados com este processo</p>
               </div>
             )}
           </div>

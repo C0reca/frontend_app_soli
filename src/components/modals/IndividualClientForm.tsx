@@ -4,9 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CreditCard, Scan } from 'lucide-react';
 import { IndividualClient } from '@/hooks/useClients';
+import { useToast } from '@/hooks/use-toast';
 
 interface IndividualClientFormProps {
   form: UseFormReturn<any>;
@@ -20,6 +23,29 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
   setValue
 }) => {
   const { register, formState: { errors } } = form;
+  const { toast } = useToast();
+
+  const handleCitizenCardScan = async () => {
+    // Mock function - in reality this would integrate with a card reader API
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A leitura do Cartão de Cidadão será implementada em breve.",
+    });
+    
+    // Example of how it could work:
+    // const mockData = {
+    //   nome: "João Silva Santos",
+    //   nif: "123456789",
+    //   num_cc: "12345678 9 ZZ1",
+    //   validade_cc: "2025-12-31",
+    //   data_nascimento: "1985-03-15",
+    //   nacionalidade: "Portuguesa"
+    // };
+    // 
+    // Object.keys(mockData).forEach(key => {
+    //   setValue(key, mockData[key]);
+    // });
+  };
 
   return (
     <Tabs defaultValue="identification" className="w-full">
@@ -32,7 +58,20 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
       <TabsContent value="identification" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Identificação</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Identificação</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCitizenCardScan}
+                className="flex items-center space-x-2"
+              >
+                <CreditCard className="h-4 w-4" />
+                <Scan className="h-4 w-4" />
+                <span>Ler CC</span>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
