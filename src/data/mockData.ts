@@ -9,7 +9,7 @@ import { DashboardKPIs } from '@/hooks/useDashboard';
 export const mockClients: Client[] = [
   {
     id: '1',
-    clientType: 'individual',
+    tipo: 'individual',
     internalNumber: 'CLI001',
     responsibleEmployee: 'Ana Costa',
     status: 'active',
@@ -18,7 +18,7 @@ export const mockClients: Client[] = [
     tags: ['heranças', 'registos'],
     
     // Identificação
-    fullName: 'João Silva',
+    nome: 'João Silva',
     nif: '123456789',
     citizenCardNumber: '12345678 9 ZZ4',
     citizenCardExpiry: '2030-12-31',
@@ -54,7 +54,7 @@ export const mockClients: Client[] = [
   } as IndividualClient,
   {
     id: '2',
-    clientType: 'corporate',
+    tipo: 'corporate',
     internalNumber: 'CLI002',
     responsibleEmployee: 'Carlos Oliveira',
     status: 'active',

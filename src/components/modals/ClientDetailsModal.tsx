@@ -52,7 +52,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Nome Completo</label>
-              <p className="text-lg font-semibold">{client.fullName}</p>
+              <p className="text-lg font-semibold">{client.nome}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">NIF</label>
@@ -355,7 +355,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            {client.clientType === 'individual' ? (
+            {client.tipo === 'individual' ? (
               <>
                 <User className="h-6 w-6 text-blue-600" />
                 <span>Detalhes do Cliente - Pessoa Singular</span>
@@ -413,7 +413,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           )}
 
           {/* Client Type Specific Content */}
-          {client.clientType === 'individual' 
+          {client.tipo === 'individual' 
             ? renderIndividualClient(client as IndividualClient)
             : renderCorporateClient(client as CorporateClient)
           }
