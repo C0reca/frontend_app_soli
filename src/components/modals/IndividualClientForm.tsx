@@ -39,14 +39,14 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Nome completo</Label>
+                <Label htmlFor="nome">Nome completo</Label>
                 <Input
-                  id="fullName"
-                  {...register('fullName')}
+                  id="nome"
+                  {...register('nome')}
                   placeholder="Nome completo"
                 />
-                {errors.fullName && (
-                  <p className="text-sm text-red-600">{errors.fullName.message?.toString()}</p>
+                {errors.nome && (
+                  <p className="text-sm text-red-600">{errors.nome.message?.toString()}</p>
                 )}
               </div>
 
