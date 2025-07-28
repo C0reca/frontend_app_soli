@@ -20,19 +20,19 @@ export const Clients: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const getClientName = (client: Client) => {
-    return client.clientType === 'individual' ? client.fullName : client.companyName;
+    return client.tipo === 'individual' ? client.nome : client.companyName;
   };
 
   const getClientPhone = (client: Client) => {
-    return client.clientType === 'individual' ? client.mobile : client.phone;
+    return client.tipo === 'individual' ? client.mobile : client.phone;
   };
 
   const filteredClients = clients.filter((client: Client) => {
-    const name = getClientName(client).toLowerCase();
+    const nome = getClientName(client).toLowerCase();
     const email = client.email.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
     
-    return name.includes(searchLower) || email.includes(searchLower);
+    return nome.includes(searchLower) || email.includes(searchLower);
   });
 
   const handleView = (client: Client) => {
@@ -131,7 +131,7 @@ export const Clients: React.FC = () => {
                 <TableRow key={client.id}>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      {client.clientType === 'individual' ? (
+                      {client.tipo === 'individual' ? (
                         <>
                           <User className="h-4 w-4 text-blue-600" />
                           <span className="text-xs text-muted-foreground">Particular</span>

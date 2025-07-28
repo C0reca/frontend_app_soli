@@ -6,7 +6,7 @@ import api from '@/services/api';
 // Base client interface
 export interface BaseClient {
   id: string;
-  clientType: 'individual' | 'corporate';
+  tipo: 'individual' | 'corporate';
   internalNumber: string;
   responsibleEmployee: string;
   status: 'active' | 'inactive';
@@ -17,10 +17,10 @@ export interface BaseClient {
 
 // Individual client (Pessoa Singular)
 export interface IndividualClient extends BaseClient {
-  clientType: 'individual';
+  tipo: 'individual';
   
   // Identificação
-  fullName: string;
+  nome: string;
   nif: string;
   citizenCardNumber: string;
   citizenCardExpiry: string;
@@ -62,7 +62,7 @@ export interface IndividualClient extends BaseClient {
 
 // Corporate client (Pessoa Coletiva)
 export interface CorporateClient extends BaseClient {
-  clientType: 'corporate';
+  tipo: 'corporate';
   
   // Identificação
   companyName: string;
@@ -126,6 +126,7 @@ export const useClients = () => {
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
+      console.log(client);
       const response = await api.post('/clientes', client);
       return response.data;
     },

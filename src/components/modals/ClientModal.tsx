@@ -26,8 +26,8 @@ const baseClientSchema = z.object({
 
 // Schema para pessoa singular
 const individualClientSchema = baseClientSchema.extend({
-  clientType: z.literal('individual'),
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  tipo: z.literal('individual'),
+  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   nif: z.string().min(9, 'NIF deve ter 9 dígitos'),
   email: z.string().email('Email inválido'),
   mobile: z.string().min(9, 'Telemóvel deve ter pelo menos 9 dígitos'),
@@ -63,7 +63,7 @@ const individualClientSchema = baseClientSchema.extend({
 
 // Schema para pessoa coletiva
 const corporateClientSchema = baseClientSchema.extend({
-  clientType: z.literal('corporate'),
+  tipo: z.literal('corporate'),
   companyName: z.string().min(2, 'Nome da empresa deve ter pelo menos 2 caracteres'),
   nif: z.string().min(9, 'NIF deve ter 9 dígitos'),
   email: z.string().email('Email inválido'),
@@ -114,12 +114,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const { createClient, updateClient } = useClients();
   const { toast } = useToast();
   const isEditing = !!client;
-  const [clientType, setClientType] = useState<'individual' | 'corporate'>(
-    client?.clientType || 'individual'
+  const [tipo, settipo] = useState<'individual' | 'corporate'>(
+    client?.tipo || 'individual'
   );
 
   const getSchema = () => {
-    return clientType === 'individual' ? individualClientSchema : corporateClientSchema;
+    return tipo === 'individual' ? individualClientSchema : corporateClientSchema;
   };
 
   const getDefaultValues = () => {
@@ -133,11 +133,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       tags: [],
     };
 
-    if (clientType === 'individual') {
+    if (tipo === 'individual') {
       return {
         ...baseDefaults,
-        clientType: 'individual' as const,
-        fullName: '',
+        tipo: 'individual' as const,
+        nome: '',
         nif: '',
         email: '',
         mobile: '',
@@ -154,7 +154,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     } else {
       return {
         ...baseDefaults,
-        clientType: 'corporate' as const,
+        tipo: 'corporate' as const,
         companyName: '',
         nif: '',
         email: '',
@@ -180,7 +180,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   React.useEffect(() => {
     reset(getDefaultValues());
-  }, [clientType, client]);
+  }, [tipo, client]);
 
   const onSubmit = async (data: any) => {
     try {
@@ -230,8 +230,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               </CardHeader>
               <CardContent>
                 <Tabs
-                  value={clientType}
-                  onValueChange={(value) => setClientType(value as 'individual' | 'corporate')}
+                  value={tipo}
+                  onValueChange={(value) => settipo(value as 'individual' | 'corporate')}
                 >
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="individual" className="flex items-center gap-2">
@@ -305,7 +305,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </CardContent>
           </Card>
 
-          {clientType === 'individual' ? (
+          {tipo === 'individual' ? (
             <IndividualClientForm form={form} watch={watch} setValue={setValue} />
           ) : (
             <CorporateClientForm form={form} watch={watch} setValue={setValue} />
