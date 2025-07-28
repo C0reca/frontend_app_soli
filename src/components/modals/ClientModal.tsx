@@ -21,7 +21,6 @@ const baseClientSchema = z.object({
   responsibleEmployee: z.string().min(1, 'Funcionário responsável é obrigatório'),
   status: z.enum(['active', 'inactive']),
   internalNotes: z.string().optional(),
-  tags: z.array(z.string()).optional(),
 });
 
 // Schema para pessoa singular
@@ -130,7 +129,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       responsibleEmployee: '',
       status: 'active' as const,
       internalNotes: '',
-      tags: [],
     };
 
     if (tipo === 'individual') {
@@ -301,22 +299,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  placeholder="Digite tags separadas por vírgula (ex: fiscal, heranças)"
-                  value={watch('tags')?.join(', ') || ''}
-                  onChange={(e) => {
-                    const tagsArray = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-                    setValue('tags', tagsArray);
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Separe as tags por vírgulas
-                </p>
               </div>
 
               <div className="space-y-2">

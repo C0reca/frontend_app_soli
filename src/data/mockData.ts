@@ -15,7 +15,6 @@ export const mockClients: Client[] = [
     status: 'active',
     createdAt: '2024-01-15T10:00:00Z',
     internalNotes: 'Cliente desde 2024',
-    tags: ['heranças', 'registos'],
     
     // Identificação
     nome: 'João Silva',
@@ -60,7 +59,6 @@ export const mockClients: Client[] = [
     status: 'active',
     createdAt: '2024-02-10T14:30:00Z',
     internalNotes: 'Cliente estratégico',
-    tags: ['fiscal', 'laboral'],
     
     // Identificação
     companyName: 'Empresa B',

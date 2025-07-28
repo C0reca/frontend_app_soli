@@ -400,18 +400,6 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Tags */}
-          {client.tags.length > 0 && (
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {client.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary">{tag}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Client Type Specific Content */}
           {client.tipo === 'individual' 
             ? renderIndividualClient(client as IndividualClient)

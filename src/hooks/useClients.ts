@@ -12,7 +12,6 @@ export interface BaseClient {
   status: 'active' | 'inactive';
   createdAt: string;
   internalNotes: string;
-  tags: string[];
 }
 
 // Individual client (Pessoa Singular)
