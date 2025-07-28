@@ -8,6 +8,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useProcesses, Process } from '@/hooks/useProcesses';
+import { useClients } from '@/hooks/useClients';
+import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const processSchema = z.object({
@@ -30,6 +32,8 @@ interface ProcessModalProps {
 
 export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, process }) => {
   const { createProcess, updateProcess } = useProcesses();
+  const { clients } = useClients();
+  const { employees } = useEmployees();
   
   const form = useForm<ProcessFormData>({
     resolver: zodResolver(processSchema),
@@ -130,9 +134,20 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do cliente" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um cliente" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.tipo === 'singular' ? client.nome : client.nome_empresa}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -144,9 +159,20 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Funcionário Responsável</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do funcionário" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um funcionário" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

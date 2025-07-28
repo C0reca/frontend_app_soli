@@ -2,8 +2,10 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Process } from '@/hooks/useProcesses';
-import { FileText, User, Building, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { useTasks } from '@/hooks/useTasks';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause } from 'lucide-react';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
@@ -16,7 +18,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   onClose,
   process,
 }) => {
+  const { tasks } = useTasks();
+  
   if (!process) return null;
+
+  // Filter tasks related to this process
+  const relatedTasks = tasks.filter(task => task.process === process.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -168,6 +175,57 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Tarefas Relacionadas</h3>
+            {relatedTasks.length > 0 ? (
+              <div className="space-y-3">
+                {relatedTasks.map((task) => (
+                  <Card key={task.id} className="border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-medium">{task.title}</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          {task.status === 'completed' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : task.status === 'in_progress' ? (
+                            <Play className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <Pause className="h-4 w-4 text-yellow-600" />
+                          )}
+                          <Badge 
+                            variant={task.status === 'completed' ? 'default' : task.status === 'in_progress' ? 'secondary' : 'outline'}
+                            className="text-xs"
+                          >
+                            {task.status === 'completed' ? 'Concluída' : 
+                             task.status === 'in_progress' ? 'Em Andamento' : 'Pendente'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+                      )}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Prioridade: {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}</span>
+                        {task.dueDate && (
+                          <span>Prazo: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-6">
+                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma tarefa relacionada encontrada</p>
+              </div>
+            )}
           </div>
 
           <Separator />
