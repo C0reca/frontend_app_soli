@@ -113,12 +113,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const { createClient, updateClient } = useClients();
   const { toast } = useToast();
   const isEditing = !!client;
-  const [tipo, settipo] = useState<'individual' | 'corporate'>(
-    client?.tipo || 'individual'
+  const [tipo, setTipo] = useState<'singular' | 'coletivo'>(
+    client?.tipo || 'singular'
   );
 
   const getSchema = () => {
-    return tipo === 'individual' ? individualClientSchema : corporateClientSchema;
+    return tipo === 'singular' ? individualClientSchema : corporateClientSchema;
   };
 
   const getDefaultValues = () => {
@@ -131,41 +131,57 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       internalNotes: '',
     };
 
-    if (tipo === 'individual') {
+    if (tipo === 'singular') {
       return {
         ...baseDefaults,
-        tipo: 'individual' as const,
+        tipo: 'singular' as const,
         nome: '',
-        nif: '',
         email: '',
-        mobile: '',
-        address: {
-          street: '',
-          postalCode: '',
-          locality: '',
-          district: '',
-          country: 'Portugal',
-        },
-        documents: {},
-        hasLegalRepresentative: false,
+        telefone: '',
+        morada: '',
+        codigo_postal: '',
+        localidade: '',
+        distrito: '',
+        pais: 'Portugal',
+        nif: '',
+        data_nascimento: '',
+        estado_civil: '',
+        profissao: '',
+        num_cc: '',
+        validade_cc: '',
+        num_ss: '',
+        num_sns: '',
+        num_ident_civil: '',
+        nacionalidade: '',
+        iban: '',
+        observacoes: '',
       };
     } else {
       return {
         ...baseDefaults,
-        tipo: 'corporate' as const,
-        companyName: '',
-        nif: '',
+        tipo: 'coletivo' as const,
+        nome_empresa: '',
         email: '',
-        phone: '',
-        legalRepresentatives: [],
-        address: {
-          street: '',
-          postalCode: '',
-          locality: '',
-          country: 'Portugal',
-        },
-        documents: {},
-        businessAreas: [],
+        telefone: '',
+        morada: '',
+        codigo_postal: '',
+        localidade: '',
+        distrito: '',
+        pais: 'Portugal',
+        nif_empresa: '',
+        forma_juridica: '',
+        data_constituicao: '',
+        registo_comercial: '',
+        cae: '',
+        capital_social: '',
+        representante_nome: '',
+        representante_nif: '',
+        representante_email: '',
+        representante_telemovel: '',
+        representante_cargo: '',
+        iban: '',
+        certidao_permanente: '',
+        observacoes: '',
       };
     }
   };
@@ -229,14 +245,14 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <CardContent>
                 <Tabs
                   value={tipo}
-                  onValueChange={(value) => settipo(value as 'individual' | 'corporate')}
+                  onValueChange={(value) => setTipo(value as 'singular' | 'coletivo')}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="individual" className="flex items-center gap-2">
+                    <TabsTrigger value="singular" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       Pessoa Singular
                     </TabsTrigger>
-                    <TabsTrigger value="corporate" className="flex items-center gap-2">
+                    <TabsTrigger value="coletivo" className="flex items-center gap-2">
                       <Building className="h-4 w-4" />
                       Pessoa Coletiva
                     </TabsTrigger>
@@ -312,7 +328,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </CardContent>
           </Card>
 
-          {tipo === 'individual' ? (
+          {tipo === 'singular' ? (
             <IndividualClientForm form={form} watch={watch} setValue={setValue} />
           ) : (
             <CorporateClientForm form={form} watch={watch} setValue={setValue} />

@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IndividualClient } from '@/hooks/useClients';
@@ -24,11 +23,10 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
   return (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
         <TabsTrigger value="contact">Contacto</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
-        <TabsTrigger value="legal">Dados Jurídicos</TabsTrigger>
       </TabsList>
 
       <TabsContent value="identification" className="space-y-4">
@@ -65,39 +63,39 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="citizenCardNumber">Cartão de Cidadão</Label>
+                <Label htmlFor="num_cc">Cartão de Cidadão</Label>
                 <Input
-                  id="citizenCardNumber"
-                  {...register('citizenCardNumber')}
+                  id="num_cc"
+                  {...register('num_cc')}
                   placeholder="00000000 0ZZ0"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="citizenCardExpiry">Validade CC</Label>
+                <Label htmlFor="validade_cc">Validade CC</Label>
                 <Input
-                  id="citizenCardExpiry"
+                  id="validade_cc"
                   type="date"
-                  {...register('citizenCardExpiry')}
+                  {...register('validade_cc')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="birthDate">Data de nascimento</Label>
+                <Label htmlFor="data_nascimento">Data de nascimento</Label>
                 <Input
-                  id="birthDate"
+                  id="data_nascimento"
                   type="date"
-                  {...register('birthDate')}
+                  {...register('data_nascimento')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nationality">Nacionalidade</Label>
+                <Label htmlFor="nacionalidade">Nacionalidade</Label>
                 <Input
-                  id="nationality"
-                  {...register('nationality')}
+                  id="nacionalidade"
+                  {...register('nacionalidade')}
                   placeholder="Portuguesa"
                 />
               </div>
@@ -105,10 +103,10 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="maritalStatus">Estado civil</Label>
+                <Label htmlFor="estado_civil">Estado civil</Label>
                 <Select
-                  value={watch('maritalStatus')}
-                  onValueChange={(value) => setValue('maritalStatus', value)}
+                  value={watch('estado_civil')}
+                  onValueChange={(value) => setValue('estado_civil', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
@@ -124,10 +122,10 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profession">Profissão</Label>
+                <Label htmlFor="profissao">Profissão</Label>
                 <Input
-                  id="profession"
-                  {...register('profession')}
+                  id="profissao"
+                  {...register('profissao')}
                   placeholder="Profissão"
                 />
               </div>
@@ -135,28 +133,28 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="socialSecurityNumber">N.º Segurança Social</Label>
+                <Label htmlFor="num_ss">N.º Segurança Social</Label>
                 <Input
-                  id="socialSecurityNumber"
-                  {...register('socialSecurityNumber')}
+                  id="num_ss"
+                  {...register('num_ss')}
                   placeholder="12345678901"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="healthUserNumber">N.º Utente de Saúde</Label>
+                <Label htmlFor="num_sns">N.º Utente de Saúde</Label>
                 <Input
-                  id="healthUserNumber"
-                  {...register('healthUserNumber')}
+                  id="num_sns"
+                  {...register('num_sns')}
                   placeholder="123456789"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="civilIdentificationNumber">N.º Identificação Civil</Label>
+                <Label htmlFor="num_ident_civil">N.º Identificação Civil</Label>
                 <Input
-                  id="civilIdentificationNumber"
-                  {...register('civilIdentificationNumber')}
+                  id="num_ident_civil"
+                  {...register('num_ident_civil')}
                   placeholder="123456789"
                 />
               </div>
@@ -171,7 +169,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
             <CardTitle>Contacto</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -186,19 +184,10 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="mobile">Telemóvel</Label>
+                <Label htmlFor="telefone">Telefone</Label>
                 <Input
-                  id="mobile"
-                  {...register('mobile')}
-                  placeholder="+351 123 456 789"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="landline">Telefone fixo</Label>
-                <Input
-                  id="landline"
-                  {...register('landline')}
+                  id="telefone"
+                  {...register('telefone')}
                   placeholder="+351 123 456 789"
                 />
               </div>
@@ -207,29 +196,29 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
             <div className="space-y-4">
               <h4 className="font-semibold">Morada</h4>
               <div className="space-y-2">
-                <Label htmlFor="address.street">Rua</Label>
+                <Label htmlFor="morada">Rua</Label>
                 <Input
-                  id="address.street"
-                  {...register('address.street')}
+                  id="morada"
+                  {...register('morada')}
                   placeholder="Rua, nº, andar"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address.postalCode">Código postal</Label>
+                  <Label htmlFor="codigo_postal">Código postal</Label>
                   <Input
-                    id="address.postalCode"
-                    {...register('address.postalCode')}
+                    id="codigo_postal"
+                    {...register('codigo_postal')}
                     placeholder="1234-567"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address.locality">Localidade</Label>
+                  <Label htmlFor="localidade">Localidade</Label>
                   <Input
-                    id="address.locality"
-                    {...register('address.locality')}
+                    id="localidade"
+                    {...register('localidade')}
                     placeholder="Lisboa"
                   />
                 </div>
@@ -237,19 +226,19 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address.district">Distrito</Label>
+                  <Label htmlFor="distrito">Distrito</Label>
                   <Input
-                    id="address.district"
-                    {...register('address.district')}
+                    id="distrito"
+                    {...register('distrito')}
                     placeholder="Lisboa"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address.country">País</Label>
+                  <Label htmlFor="pais">País</Label>
                   <Input
-                    id="address.country"
-                    {...register('address.country')}
+                    id="pais"
+                    {...register('pais')}
                     placeholder="Portugal"
                     defaultValue="Portugal"
                   />
@@ -263,99 +252,23 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
       <TabsContent value="documents" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Documentos</CardTitle>
+            <CardTitle>Documentos e Outros</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="documents.citizenCardCopy">Cópia do Cartão de Cidadão</Label>
-                <Input
-                  id="documents.citizenCardCopy"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  {...register('documents.citizenCardCopy')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="documents.addressProof">Comprovativo de morada</Label>
-                <Input
-                  id="documents.addressProof"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  {...register('documents.addressProof')}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="documents.bankProof">Comprovativo bancário</Label>
-                <Input
-                  id="documents.bankProof"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  {...register('documents.bankProof')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="documents.digitalSignature">Assinatura digital</Label>
-                <Input
-                  id="documents.digitalSignature"
-                  type="file"
-                  accept=".pdf"
-                  {...register('documents.digitalSignature')}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="legal" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados Jurídicos / Processuais</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="hasLegalRepresentative"
-                checked={watch('hasLegalRepresentative')}
-                onCheckedChange={(checked) => setValue('hasLegalRepresentative', checked)}
+            <div className="space-y-2">
+              <Label htmlFor="iban">IBAN</Label>
+              <Input
+                id="iban"
+                {...register('iban')}
+                placeholder="PT50 0000 0000 0000 0000 0000 0"
               />
-              <Label htmlFor="hasLegalRepresentative">Tem representante legal?</Label>
             </div>
-
-            {watch('hasLegalRepresentative') && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="legalRepresentativeName">Nome do representante</Label>
-                  <Input
-                    id="legalRepresentativeName"
-                    {...register('legalRepresentativeName')}
-                    placeholder="Nome do representante legal"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="powerOfAttorney">Procuração</Label>
-                  <Input
-                    id="powerOfAttorney"
-                    type="file"
-                    accept=".pdf"
-                    {...register('powerOfAttorney')}
-                  />
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
-              <Label htmlFor="legalObservations">Observações legais/processuais</Label>
+              <Label htmlFor="observacoes">Observações</Label>
               <Textarea
-                id="legalObservations"
-                {...register('legalObservations')}
+                id="observacoes"
+                {...register('observacoes')}
                 placeholder="Observações..."
                 rows={4}
               />

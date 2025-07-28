@@ -9,94 +9,81 @@ import { DashboardKPIs } from '@/hooks/useDashboard';
 export const mockClients: Client[] = [
   {
     id: '1',
-    tipo: 'individual',
+    tipo: 'singular',
     internalNumber: 'CLI001',
     responsibleEmployee: 'Ana Costa',
     status: 'active',
     createdAt: '2024-01-15T10:00:00Z',
     internalNotes: 'Cliente desde 2024',
     
-    // Identificação
+    // Dados principais
     nome: 'João Silva',
-    nif: '123456789',
-    citizenCardNumber: '12345678 9 ZZ4',
-    citizenCardExpiry: '2030-12-31',
-    birthDate: '1985-03-15',
-    nationality: 'Portuguesa',
-    maritalStatus: 'Solteiro',
-    profession: 'Engenheiro',
-    socialSecurityNumber: '11111111111',
-    healthUserNumber: '123456789',
-    civilIdentificationNumber: '123456789',
-    
-    // Contacto
     email: 'joao@email.com',
-    mobile: '(11) 99999-9999',
-    landline: '',
-    address: {
-      street: 'Rua das Flores, 123',
-      postalCode: '1000-001',
-      locality: 'Lisboa',
-      district: 'Lisboa',
-      country: 'Portugal'
-    },
+    telefone: '(11) 99999-9999',
     
-    // Documentos
-    documents: {
-      citizenCardCopy: 'cc_joao_silva.pdf',
-      addressProof: 'comprovativo_morada.pdf',
-      bankProof: 'iban_joao.pdf'
-    },
+    // Morada
+    morada: 'Rua das Flores, 123',
+    codigo_postal: '1000-001',
+    localidade: 'Lisboa',
+    distrito: 'Lisboa',
+    pais: 'Portugal',
     
-    // Dados Jurídicos/Processuais
-    hasLegalRepresentative: false
+    // Pessoa Singular
+    nif: '123456789',
+    data_nascimento: '1985-03-15',
+    estado_civil: 'Solteiro',
+    profissao: 'Engenheiro',
+    num_cc: '12345678 9 ZZ4',
+    validade_cc: '2030-12-31',
+    num_ss: '11111111111',
+    num_sns: '123456789',
+    num_ident_civil: '123456789',
+    nacionalidade: 'Portuguesa',
+    
+    // Documentos e outros
+    iban: 'PT50 0123 4567 8901 2345 6789 0',
+    observacoes: 'Cliente desde 2024',
   } as IndividualClient,
   {
     id: '2',
-    tipo: 'corporate',
+    tipo: 'coletivo',
     internalNumber: 'CLI002',
     responsibleEmployee: 'Carlos Oliveira',
     status: 'active',
     createdAt: '2024-02-10T14:30:00Z',
     internalNotes: 'Cliente estratégico',
     
-    // Identificação
-    companyName: 'Empresa B',
-    nif: '501234567',
-    commercialRegistrationNumber: '501234567',
-    legalForm: 'Sociedade Anónima',
-    constitutionDate: '2020-05-15',
-    mainCAE: '62010',
-    shareCapital: '50000',
-    
-    // Representante(s) Legal(is)
-    legalRepresentatives: [{
-      name: 'Maria Santos',
-      nif: '234567890',
-      email: 'maria@email.com',
-      mobile: '(11) 88888-8888',
-      position: 'Administradora'
-    }],
-    
-    // Contacto
+    // Dados principais
+    nome_empresa: 'Empresa B',
     email: 'geral@empresab.pt',
-    phone: '(11) 88888-8888',
-    address: {
-      street: 'Av. da Liberdade, 456',
-      postalCode: '1250-001',
-      locality: 'Lisboa',
-      country: 'Portugal'
-    },
+    telefone: '(11) 88888-8888',
     
-    // Documentos
-    documents: {
-      permanentCertificate: 'RNPC501234567',
-      iban: 'PT50 0123 4567 8901 2345 6789 0'
-    },
+    // Morada
+    morada: 'Av. da Liberdade, 456',
+    codigo_postal: '1250-001',
+    localidade: 'Lisboa',
+    distrito: 'Lisboa',
+    pais: 'Portugal',
     
-    // Internos
-    businessAreas: ['fiscal', 'laboral'],
-    observations: 'Cliente estratégico'
+    // Pessoa Coletiva
+    nif_empresa: '501234567',
+    forma_juridica: 'Sociedade Anónima',
+    data_constituicao: '2020-05-15',
+    registo_comercial: '501234567',
+    cae: '62010',
+    capital_social: '50000',
+    
+    // Representante Legal
+    representante_nome: 'Maria Santos',
+    representante_nif: '234567890',
+    representante_email: 'maria@email.com',
+    representante_telemovel: '(11) 88888-8888',
+    representante_cargo: 'Administradora',
+    
+    // Documentos e outros
+    iban: 'PT50 0123 4567 8901 2345 6789 0',
+    certidao_permanente: 'RNPC501234567',
+    observacoes: 'Cliente estratégico',
   } as CorporateClient
 ];
 

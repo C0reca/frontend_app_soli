@@ -6,7 +6,7 @@ import api from '@/services/api';
 // Base client interface
 export interface BaseClient {
   id: string;
-  tipo: 'individual' | 'corporate';
+  tipo: 'singular' | 'coletivo';
   internalNumber: string;
   responsibleEmployee: string;
   status: 'active' | 'inactive';
@@ -16,94 +16,72 @@ export interface BaseClient {
 
 // Individual client (Pessoa Singular)
 export interface IndividualClient extends BaseClient {
-  tipo: 'individual';
+  tipo: 'singular';
   
-  // Identificação
+  // Dados principais
   nome: string;
-  nif: string;
-  citizenCardNumber: string;
-  citizenCardExpiry: string;
-  birthDate: string;
-  nationality: string;
-  maritalStatus: string;
-  profession: string;
-  socialSecurityNumber: string;
-  healthUserNumber: string;
-  civilIdentificationNumber: string;
+  email?: string;
+  telefone?: string;
   
-  // Contacto
-  email: string;
-  mobile: string;
-  landline: string;
-  address: {
-    street: string;
-    postalCode: string;
-    locality: string;
-    district: string;
-    country: string;
-  };
+  // Morada
+  morada?: string;
+  codigo_postal?: string;
+  localidade?: string;
+  distrito?: string;
+  pais?: string;
   
-  // Documentos
-  documents: {
-    citizenCardCopy?: string;
-    addressProof?: string;
-    bankProof?: string;
-    digitalSignature?: string;
-    otherDocuments?: string[];
-  };
+  // Pessoa Singular
+  nif?: string;
+  data_nascimento?: string;
+  estado_civil?: string;
+  profissao?: string;
+  num_cc?: string;
+  validade_cc?: string;
+  num_ss?: string;
+  num_sns?: string;
+  num_ident_civil?: string;
+  nacionalidade?: string;
   
-  // Dados Jurídicos/Processuais
-  hasLegalRepresentative: boolean;
-  legalRepresentativeName?: string;
-  powerOfAttorney?: string;
-  legalObservations?: string;
+  // Documentos e outros
+  iban?: string;
+  observacoes?: string;
 }
 
 // Corporate client (Pessoa Coletiva)
 export interface CorporateClient extends BaseClient {
-  tipo: 'corporate';
+  tipo: 'coletivo';
   
-  // Identificação
-  companyName: string;
-  nif: string;
-  commercialRegistrationNumber: string;
-  legalForm: string;
-  constitutionDate: string;
-  mainCAE: string;
-  shareCapital: string;
+  // Dados principais
+  nome_empresa: string;
+  email?: string;
+  telefone?: string;
   
-  // Representante(s) Legal(is)
-  legalRepresentatives: Array<{
-    name: string;
-    nif: string;
-    email: string;
-    mobile: string;
-    position: string;
-    appointmentDocument?: string;
-  }>;
+  // Morada
+  morada?: string;
+  codigo_postal?: string;
+  localidade?: string;
+  distrito?: string;
+  pais?: string;
   
-  // Contacto
-  email: string;
-  phone: string;
-  address: {
-    street: string;
-    postalCode: string;
-    locality: string;
-    country: string;
-  };
+  // Pessoa Coletiva
+  nif_empresa?: string;
+  forma_juridica?: string;
+  data_constituicao?: string;
+  registo_comercial?: string;
+  cae?: string;
+  capital_social?: string;
   
-  // Documentos
-  documents: {
-    permanentCertificate?: string;
-    iban?: string;
-    constitutionDeed?: string;
-    bylaws?: string;
-    otherDocuments?: string[];
-  };
+  // Representante Legal
+  representante_nome?: string;
+  representante_nif?: string;
+  representante_email?: string;
+  representante_telemovel?: string;
+  representante_cargo?: string;
   
-  // Internos
-  businessAreas: string[];
-  observations?: string;
+  // Documentos e outros
+  iban?: string;
+  certidao_permanente?: string;
+  observacoes?: string;
 }
 
 export type Client = IndividualClient | CorporateClient;

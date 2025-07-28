@@ -4,10 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2 } from 'lucide-react';
 import { CorporateClient } from '@/hooks/useClients';
 
 interface CorporateClientFormProps {
@@ -23,41 +21,10 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
 }) => {
   const { register, formState: { errors } } = form;
 
-  const addLegalRepresentative = () => {
-    const current = watch('legalRepresentatives') || [];
-    setValue('legalRepresentatives', [
-      ...current,
-      {
-        name: '',
-        nif: '',
-        email: '',
-        mobile: '',
-        position: '',
-        appointmentDocument: ''
-      }
-    ]);
-  };
-
-  const removeLegalRepresentative = (index: number) => {
-    const current = watch('legalRepresentatives') || [];
-    setValue('legalRepresentatives', current.filter((_: any, i: number) => i !== index));
-  };
-
-  const addBusinessArea = () => {
-    const current = watch('businessAreas') || [];
-    setValue('businessAreas', [...current, '']);
-  };
-
-  const removeBusinessArea = (index: number) => {
-    const current = watch('businessAreas') || [];
-    setValue('businessAreas', current.filter((_: any, i: number) => i !== index));
-  };
-
   return (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
-        <TabsTrigger value="representatives">Representantes</TabsTrigger>
         <TabsTrigger value="contact">Contacto</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
       </TabsList>
@@ -70,45 +37,45 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Nome da empresa</Label>
+                <Label htmlFor="nome_empresa">Nome da empresa</Label>
                 <Input
-                  id="companyName"
-                  {...register('companyName')}
+                  id="nome_empresa"
+                  {...register('nome_empresa')}
                   placeholder="Nome da empresa"
                 />
-                {errors.companyName && (
-                  <p className="text-sm text-red-600">{errors.companyName.message?.toString()}</p>
+                {errors.nome_empresa && (
+                  <p className="text-sm text-red-600">{errors.nome_empresa.message?.toString()}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nif">NIF</Label>
+                <Label htmlFor="nif_empresa">NIF</Label>
                 <Input
-                  id="nif"
-                  {...register('nif')}
+                  id="nif_empresa"
+                  {...register('nif_empresa')}
                   placeholder="123456789"
                 />
-                {errors.nif && (
-                  <p className="text-sm text-red-600">{errors.nif.message?.toString()}</p>
+                {errors.nif_empresa && (
+                  <p className="text-sm text-red-600">{errors.nif_empresa.message?.toString()}</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="commercialRegistrationNumber">N.º Registo Comercial</Label>
+                <Label htmlFor="registo_comercial">N.º Registo Comercial</Label>
                 <Input
-                  id="commercialRegistrationNumber"
-                  {...register('commercialRegistrationNumber')}
+                  id="registo_comercial"
+                  {...register('registo_comercial')}
                   placeholder="Número de registo"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="legalForm">Forma jurídica</Label>
+                <Label htmlFor="forma_juridica">Forma jurídica</Label>
                 <Select
-                  value={watch('legalForm')}
-                  onValueChange={(value) => setValue('legalForm', value)}
+                  value={watch('forma_juridica')}
+                  onValueChange={(value) => setValue('forma_juridica', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
@@ -127,130 +94,87 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="constitutionDate">Data de constituição</Label>
+                <Label htmlFor="data_constituicao">Data de constituição</Label>
                 <Input
-                  id="constitutionDate"
+                  id="data_constituicao"
                   type="date"
-                  {...register('constitutionDate')}
+                  {...register('data_constituicao')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="mainCAE">CAE principal</Label>
+                <Label htmlFor="cae">CAE principal</Label>
                 <Input
-                  id="mainCAE"
-                  {...register('mainCAE')}
+                  id="cae"
+                  {...register('cae')}
                   placeholder="12345"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="shareCapital">Capital social</Label>
+              <Label htmlFor="capital_social">Capital social</Label>
               <Input
-                id="shareCapital"
-                {...register('shareCapital')}
+                id="capital_social"
+                {...register('capital_social')}
                 placeholder="€ 5.000,00"
               />
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
 
-      <TabsContent value="representatives" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Representantes Legais
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addLegalRepresentative}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(watch('legalRepresentatives') || []).map((rep: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium">Representante {index + 1}</h4>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeLegalRepresentative(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            {/* Representante Legal */}
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="font-semibold">Representante Legal</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="representante_nome">Nome</Label>
+                  <Input
+                    id="representante_nome"
+                    {...register('representante_nome')}
+                    placeholder="Nome completo"
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`legalRepresentatives.${index}.name`}>Nome</Label>
-                    <Input
-                      {...register(`legalRepresentatives.${index}.name`)}
-                      placeholder="Nome completo"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`legalRepresentatives.${index}.nif`}>NIF</Label>
-                    <Input
-                      {...register(`legalRepresentatives.${index}.nif`)}
-                      placeholder="123456789"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`legalRepresentatives.${index}.email`}>Email</Label>
-                    <Input
-                      type="email"
-                      {...register(`legalRepresentatives.${index}.email`)}
-                      placeholder="email@exemplo.com"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`legalRepresentatives.${index}.mobile`}>Telemóvel</Label>
-                    <Input
-                      {...register(`legalRepresentatives.${index}.mobile`)}
-                      placeholder="+351 123 456 789"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`legalRepresentatives.${index}.position`}>Cargo</Label>
-                    <Input
-                      {...register(`legalRepresentatives.${index}.position`)}
-                      placeholder="Gerente, Administrador, etc."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`legalRepresentatives.${index}.appointmentDocument`}>Documento de nomeação</Label>
-                    <Input
-                      type="file"
-                      accept=".pdf"
-                      {...register(`legalRepresentatives.${index}.appointmentDocument`)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="representante_nif">NIF</Label>
+                  <Input
+                    id="representante_nif"
+                    {...register('representante_nif')}
+                    placeholder="123456789"
+                  />
                 </div>
               </div>
-            ))}
 
-            {(!watch('legalRepresentatives') || watch('legalRepresentatives').length === 0) && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum representante legal adicionado. Clique em "Adicionar" para começar.
-              </p>
-            )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="representante_email">Email</Label>
+                  <Input
+                    type="email"
+                    id="representante_email"
+                    {...register('representante_email')}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="representante_telemovel">Telemóvel</Label>
+                  <Input
+                    id="representante_telemovel"
+                    {...register('representante_telemovel')}
+                    placeholder="+351 123 456 789"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="representante_cargo">Cargo</Label>
+                <Input
+                  id="representante_cargo"
+                  {...register('representante_cargo')}
+                  placeholder="Gerente, Administrador, etc."
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -276,10 +200,10 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="telefone">Telefone</Label>
                 <Input
-                  id="phone"
-                  {...register('phone')}
+                  id="telefone"
+                  {...register('telefone')}
                   placeholder="+351 123 456 789"
                 />
               </div>
@@ -288,76 +212,54 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
             <div className="space-y-4">
               <h4 className="font-semibold">Morada da Sede</h4>
               <div className="space-y-2">
-                <Label htmlFor="address.street">Rua</Label>
+                <Label htmlFor="morada">Rua</Label>
                 <Input
-                  id="address.street"
-                  {...register('address.street')}
+                  id="morada"
+                  {...register('morada')}
                   placeholder="Rua, nº, andar"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address.postalCode">Código postal</Label>
+                  <Label htmlFor="codigo_postal">Código postal</Label>
                   <Input
-                    id="address.postalCode"
-                    {...register('address.postalCode')}
+                    id="codigo_postal"
+                    {...register('codigo_postal')}
                     placeholder="1234-567"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address.locality">Localidade</Label>
+                  <Label htmlFor="localidade">Localidade</Label>
                   <Input
-                    id="address.locality"
-                    {...register('address.locality')}
+                    id="localidade"
+                    {...register('localidade')}
                     placeholder="Lisboa"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address.country">País</Label>
-                <Input
-                  id="address.country"
-                  {...register('address.country')}
-                  placeholder="Portugal"
-                  defaultValue="Portugal"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Áreas de atuação</h4>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addBusinessArea}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar
-                </Button>
-              </div>
-
-              {(watch('businessAreas') || []).map((area: string, index: number) => (
-                <div key={index} className="flex gap-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="distrito">Distrito</Label>
                   <Input
-                    {...register(`businessAreas.${index}`)}
-                    placeholder="Ex: Fiscal, Laboral, Registos"
-                    className="flex-1"
+                    id="distrito"
+                    {...register('distrito')}
+                    placeholder="Lisboa"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeBusinessArea(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
-              ))}
+
+                <div className="space-y-2">
+                  <Label htmlFor="pais">País</Label>
+                  <Input
+                    id="pais"
+                    {...register('pais')}
+                    placeholder="Portugal"
+                    defaultValue="Portugal"
+                  />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -366,56 +268,34 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
       <TabsContent value="documents" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Documentos da Empresa</CardTitle>
+            <CardTitle>Documentos e Outros</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="documents.permanentCertificate">Certidão permanente</Label>
+                <Label htmlFor="certidao_permanente">Certidão permanente</Label>
                 <Input
-                  id="documents.permanentCertificate"
-                  {...register('documents.permanentCertificate')}
+                  id="certidao_permanente"
+                  {...register('certidao_permanente')}
                   placeholder="Código da certidão"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="documents.iban">IBAN</Label>
+                <Label htmlFor="iban">IBAN</Label>
                 <Input
-                  id="documents.iban"
-                  {...register('documents.iban')}
+                  id="iban"
+                  {...register('iban')}
                   placeholder="PT50 0000 0000 0000 0000 0000 0"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="documents.constitutionDeed">Escritura de constituição</Label>
-                <Input
-                  id="documents.constitutionDeed"
-                  type="file"
-                  accept=".pdf"
-                  {...register('documents.constitutionDeed')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="documents.bylaws">Estatutos</Label>
-                <Input
-                  id="documents.bylaws"
-                  type="file"
-                  accept=".pdf"
-                  {...register('documents.bylaws')}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="observations">Observações</Label>
+              <Label htmlFor="observacoes">Observações</Label>
               <Textarea
-                id="observations"
-                {...register('observations')}
+                id="observacoes"
+                {...register('observacoes')}
                 placeholder="Observações sobre a empresa..."
                 rows={4}
               />
