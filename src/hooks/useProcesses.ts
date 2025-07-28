@@ -25,9 +25,8 @@ export const useProcesses = () => {
   } = useQuery({
     queryKey: ['processes'],
     queryFn: async () => {
-      // Mock data for development
-      const { mockProcesses } = await import('@/data/mockData');
-      return mockProcesses;
+      const response = await api.get('/processos');
+      return response.data;
     },
   });
 

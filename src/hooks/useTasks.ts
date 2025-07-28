@@ -25,9 +25,8 @@ export const useTasks = () => {
   } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      // Mock data for development
-      const { mockTasks } = await import('@/data/mockData');
-      return mockTasks;
+      const response = await api.get('/tarefas');
+      return response.data;
     },
   });
 
