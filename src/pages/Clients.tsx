@@ -20,6 +20,7 @@ export const Clients: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const getClientName = (client: Client) => {
+    console.log(client);
     return client.tipo === 'singular' ? client.nome : client.nome_empresa;
   };
 
@@ -28,6 +29,7 @@ export const Clients: React.FC = () => {
   };
 
   const filteredClients = clients.filter((client: Client) => {
+    console.log(client)
     const nome = getClientName(client).toLowerCase();
     const email = client.email.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
