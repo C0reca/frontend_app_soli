@@ -25,7 +25,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   if (!process) return null;
 
   // Filter tasks related to this process
-  const relatedTasks = tasks.filter(task => task.process === process.id);
+  const relatedTasks = tasks.filter(task => task.process === process.id.toString());
 
   // Mock files for demonstration - in reality, this would come from an API
   const processFiles = [
@@ -75,14 +75,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'concluido':
         return 'bg-green-100 text-green-800';
-      case 'in_progress':
+      case 'em_curso':
         return 'bg-blue-100 text-blue-800';
-      case 'pending':
+      case 'pendente':
         return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -103,14 +101,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'concluido':
         return 'Concluído';
-      case 'in_progress':
-        return 'Em Andamento';
-      case 'pending':
+      case 'em_curso':
+        return 'Em Curso';
+      case 'pendente':
         return 'Pendente';
-      case 'cancelled':
-        return 'Cancelado';
       default:
         return status;
     }
@@ -129,7 +125,8 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     }
   };
 
-  const isOverdue = new Date(process.dueDate) < new Date() && process.status !== 'completed';
+  // Remove dueDate e priority não existem na nova interface
+  const isOverdue = false; // Temporariamente false até ser definido no backend
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -143,26 +140,28 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
         <div className="space-y-6">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">{process.name}</h2>
-              {process.description && (
-                <p className="text-muted-foreground mt-2">{process.description}</p>
-              )}
-            </div>
-            <div className="flex space-x-2">
-              <Badge className={getStatusColor(process.status)}>
-                {getStatusLabel(process.status)}
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold">{process.titulo}</h2>
+            {process.descricao && (
+              <p className="text-muted-foreground mt-2">{process.descricao}</p>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            <Badge className={getStatusColor(process.estado)}>
+              {getStatusLabel(process.estado)}
+            </Badge>
+            {process.tipo && (
+              <Badge variant="outline">
+                {process.tipo}
               </Badge>
-              <Badge className={getPriorityColor(process.priority)}>
-                {getPriorityLabel(process.priority)}
+            )}
+            {isOverdue && (
+              <Badge variant="destructive" className="flex items-center space-x-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>Atrasado</span>
               </Badge>
-              {isOverdue && (
-                <Badge variant="destructive" className="flex items-center space-x-1">
-                  <AlertCircle className="h-3 w-3" />
-                  <span>Atrasado</span>
-                </Badge>
-              )}
-            </div>
+            )}
+          </div>
           </div>
 
           <Tabs defaultValue="general" className="w-full">
@@ -181,7 +180,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <Building className="h-4 w-4" />
                       <span>Cliente</span>
                     </label>
-                    <p className="text-lg font-semibold">{process.client}</p>
+                    <p className="text-lg font-semibold">{process.cliente?.nome || `Cliente ID: ${process.cliente_id}`}</p>
                   </div>
 
                   <div>
@@ -189,7 +188,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <User className="h-4 w-4" />
                       <span>Responsável</span>
                     </label>
-                    <p className="text-sm">{process.employee}</p>
+                    <p className="text-sm">{process.funcionario?.nome || `Funcionário ID: ${process.funcionario_id}`}</p>
                   </div>
 
                   <div>
@@ -197,35 +196,21 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <Calendar className="h-4 w-4" />
                       <span>Data de Criação</span>
                     </label>
-                    <p className="text-sm">{new Date(process.createdAt).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-sm">{new Date(process.criado_em).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
-                      <Clock className="h-4 w-4" />
-                      <span>Prazo de Entrega</span>
-                    </label>
-                    <p className={`text-sm ${isOverdue ? 'text-red-600 font-semibold' : ''}`}>
-                      {new Date(process.dueDate).toLocaleDateString('pt-BR')}
-                    </p>
+                    <label className="text-sm font-medium text-muted-foreground">Tipo</label>
+                    <p className="text-sm">{process.tipo || 'Não definido'}</p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Prioridade</label>
+                    <label className="text-sm font-medium text-muted-foreground">Estado Atual</label>
                     <div className="mt-1">
-                      <Badge className={getPriorityColor(process.priority)}>
-                        {getPriorityLabel(process.priority)}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Status Atual</label>
-                    <div className="mt-1">
-                      <Badge className={getStatusColor(process.status)}>
-                        {getStatusLabel(process.status)}
+                      <Badge className={getStatusColor(process.estado)}>
+                        {getStatusLabel(process.estado)}
                       </Badge>
                     </div>
                   </div>
@@ -341,18 +326,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Criado:</span>
-                      <span>{new Date(process.createdAt).toLocaleDateString('pt-BR')}</span>
+                      <span>{new Date(process.criado_em).toLocaleDateString('pt-BR')}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Prazo:</span>
-                      <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
-                        {new Date(process.dueDate).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Status atual:</span>
-                      <Badge className={getStatusColor(process.status)} variant="outline">
-                        {getStatusLabel(process.status)}
+                      <span className="text-muted-foreground">Estado atual:</span>
+                      <Badge className={getStatusColor(process.estado)} variant="outline">
+                        {getStatusLabel(process.estado)}
                       </Badge>
                     </div>
                     {isOverdue && (
@@ -361,9 +340,6 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                           <AlertCircle className="h-4 w-4" />
                           <span className="font-medium">Este processo está atrasado</span>
                         </div>
-                        <p className="mt-1 text-xs">
-                          Venceu em {new Date(process.dueDate).toLocaleDateString('pt-BR')}
-                        </p>
                       </div>
                     )}
                   </div>

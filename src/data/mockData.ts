@@ -112,25 +112,28 @@ export const mockEmployees: Employee[] = [
 
 export const mockProcesses: Process[] = [
   {
-    id: '1',
-    name: 'Processo Cliente A',
-    client: 'João Silva',
-    employee: 'Ana Costa',
-    status: 'in_progress',
-    priority: 'high',
-    createdAt: '2024-03-01T08:00:00Z',
-    dueDate: '2024-03-15T18:00:00Z',
-    description: 'Processo importante para cliente A'
+    id: 1,
+    titulo: 'Processo Cliente A',
+    descricao: 'Processo importante para cliente A',
+    tipo: 'Contrato',
+    estado: 'em_curso',
+    criado_em: '2024-03-01T08:00:00Z',
+    cliente_id: 1,
+    funcionario_id: 1,
+    cliente: { id: 1, nome: 'João Silva' },
+    funcionario: { id: 1, nome: 'Ana Costa' }
   },
   {
-    id: '2',
-    name: 'Processo Cliente B',
-    client: 'Maria Santos',
-    employee: 'Carlos Oliveira',
-    status: 'pending',
-    priority: 'medium',
-    createdAt: '2024-03-05T10:30:00Z',
-    dueDate: '2024-03-20T17:00:00Z'
+    id: 2,
+    titulo: 'Processo Cliente B',
+    descricao: 'Processo para empresa B',
+    tipo: 'Consultoria',
+    estado: 'pendente',
+    criado_em: '2024-03-05T10:30:00Z',
+    cliente_id: 2,
+    funcionario_id: 2,
+    cliente: { id: 2, nome: 'Empresa B' },
+    funcionario: { id: 2, nome: 'Carlos Oliveira' }
   }
 ];
 

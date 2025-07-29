@@ -13,13 +13,12 @@ import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const processSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  client: z.string().min(1, 'Cliente é obrigatório'),
-  employee: z.string().min(1, 'Funcionário é obrigatório'),
-  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']),
-  priority: z.enum(['low', 'medium', 'high']),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  description: z.string().optional(),
+  titulo: z.string().min(1, 'Título é obrigatório'),
+  descricao: z.string().optional(),
+  tipo: z.string().optional(),
+  cliente_id: z.number().min(1, 'Cliente é obrigatório'),
+  funcionario_id: z.number().optional(),
+  estado: z.enum(['pendente', 'em_curso', 'concluido']).default('pendente'),
 });
 
 type ProcessFormData = z.infer<typeof processSchema>;
@@ -38,36 +37,33 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
   const form = useForm<ProcessFormData>({
     resolver: zodResolver(processSchema),
     defaultValues: {
-      name: '',
-      client: '',
-      employee: '',
-      status: 'pending',
-      priority: 'medium',
-      dueDate: '',
-      description: '',
+      titulo: '',
+      descricao: '',
+      tipo: '',
+      cliente_id: 1,
+      funcionario_id: undefined,
+      estado: 'pendente',
     },
   });
 
   useEffect(() => {
     if (process) {
       form.reset({
-        name: process.name,
-        client: process.client,
-        employee: process.employee,
-        status: process.status,
-        priority: process.priority,
-        dueDate: process.dueDate.split('T')[0],
-        description: process.description || '',
+        titulo: process.titulo,
+        descricao: process.descricao || '',
+        tipo: process.tipo || '',
+        cliente_id: process.cliente_id,
+        funcionario_id: process.funcionario_id || undefined,
+        estado: process.estado,
       });
     } else {
       form.reset({
-        name: '',
-        client: '',
-        employee: '',
-        status: 'pending',
-        priority: 'medium',
-        dueDate: '',
-        description: '',
+        titulo: '',
+        descricao: '',
+        tipo: '',
+        cliente_id: 1,
+        funcionario_id: undefined,
+        estado: 'pendente',
       });
     }
   }, [process, form]);
@@ -78,9 +74,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
         await updateProcess.mutateAsync({
           id: process.id,
           ...data,
-        } as Process & { id: string });
+        });
       } else {
-        await createProcess.mutateAsync(data as Omit<Process, 'id' | 'createdAt'>);
+        await createProcess.mutateAsync(data as { titulo: string; descricao?: string; tipo?: string; cliente_id: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' });
       }
       onClose();
     } catch (error) {
@@ -101,12 +97,12 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="titulo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Processo</FormLabel>
+                  <FormLabel>Título do Processo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite o nome do processo" {...field} />
+                    <Input placeholder="Digite o título do processo" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,7 +111,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
             
             <FormField
               control={form.control}
-              name="description"
+              name="descricao"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
@@ -127,14 +123,28 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Digite o tipo do processo" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="client"
+                name="cliente_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um cliente" />
@@ -155,11 +165,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
 
               <FormField
                 control={form.control}
-                name="employee"
+                name="funcionario_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Funcionário Responsável</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um funcionário" />
@@ -179,64 +189,24 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prioridade</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a prioridade" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="in_progress">Em Andamento</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="dueDate"
+              name="estado"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data de Vencimento</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                  <FormLabel>Estado</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o estado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="em_curso">Em Curso</SelectItem>
+                      <SelectItem value="concluido">Concluído</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

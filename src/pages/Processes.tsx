@@ -18,34 +18,19 @@ export const Processes: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredProcesses = processes.filter((process) =>
-    process.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    process.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    process.employee.toLowerCase().includes(searchTerm.toLowerCase())
+    process.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (process.cliente?.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (process.funcionario?.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'concluido':
         return 'bg-green-100 text-green-800';
-      case 'in_progress':
+      case 'em_curso':
         return 'bg-blue-100 text-blue-800';
-      case 'pending':
+      case 'pendente':
         return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-orange-100 text-orange-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -53,29 +38,14 @@ export const Processes: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'concluido':
         return 'Concluído';
-      case 'in_progress':
-        return 'Em Andamento';
-      case 'pending':
+      case 'em_curso':
+        return 'Em Curso';
+      case 'pendente':
         return 'Pendente';
-      case 'cancelled':
-        return 'Cancelado';
       default:
         return status;
-    }
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'Alta';
-      case 'medium':
-        return 'Média';
-      case 'low':
-        return 'Baixa';
-      default:
-        return priority;
     }
   };
 
@@ -89,7 +59,7 @@ export const Processes: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Tem certeza que deseja excluir este processo?')) {
       await deleteProcess.mutateAsync(id);
     }
@@ -161,29 +131,33 @@ export const Processes: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold">{process.name}</h3>
-                        <Badge className={getPriorityColor(process.priority)}>
-                          {getPriorityLabel(process.priority)}
-                        </Badge>
+                        <h3 className="text-lg font-semibold">{process.titulo}</h3>
+                        {process.tipo && (
+                          <Badge variant="outline">
+                            {process.tipo}
+                          </Badge>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
-                          <span className="font-medium">Cliente:</span> {process.client}
+                          <span className="font-medium">Cliente:</span> {process.cliente?.nome || `ID: ${process.cliente_id}`}
                         </div>
                         <div>
-                          <span className="font-medium">Responsável:</span> {process.employee}
+                          <span className="font-medium">Responsável:</span> {process.funcionario?.nome || `ID: ${process.funcionario_id}`}
                         </div>
                         <div>
-                          <span className="font-medium">Criado em:</span> {new Date(process.createdAt).toLocaleDateString('pt-BR')}
+                          <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
                         </div>
-                        <div>
-                          <span className="font-medium">Prazo:</span> {new Date(process.dueDate).toLocaleDateString('pt-BR')}
-                        </div>
+                        {process.descricao && (
+                          <div className="col-span-2">
+                            <span className="font-medium">Descrição:</span> {process.descricao}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(process.status)}>
-                        {getStatusLabel(process.status)}
+                      <Badge className={getStatusColor(process.estado)}>
+                        {getStatusLabel(process.estado)}
                       </Badge>
                        <div className="flex space-x-1">
                          <Button variant="ghost" size="sm" onClick={() => handleView(process)}>

@@ -3,15 +3,22 @@ import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Process {
-  id: string;
-  name: string;
-  client: string;
-  employee: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-  dueDate: string;
-  description?: string;
+  id: number;
+  titulo: string;
+  descricao?: string;
+  tipo?: string;
+  estado: 'pendente' | 'em_curso' | 'concluido';
+  criado_em: string;
+  cliente_id: number;
+  funcionario_id?: number;
+  cliente?: {
+    id: number;
+    nome: string;
+  };
+  funcionario?: {
+    id: number;
+    nome: string;
+  };
 }
 
 export const useProcesses = () => {
@@ -31,7 +38,7 @@ export const useProcesses = () => {
   });
 
   const createProcess = useMutation({
-    mutationFn: async (process: Omit<Process, 'id' | 'createdAt'>) => {
+    mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
       const response = await api.post('/processos', process);
       return response.data;
     },
@@ -52,7 +59,7 @@ export const useProcesses = () => {
   });
 
   const updateProcess = useMutation({
-    mutationFn: async ({ id, ...process }: Partial<Process> & { id: string }) => {
+    mutationFn: async ({ id, ...process }: Partial<Process> & { id: number }) => {
       const response = await api.put(`/processos/${id}`, process);
       return response.data;
     },
@@ -73,7 +80,7 @@ export const useProcesses = () => {
   });
 
   const deleteProcess = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: number) => {
       await api.delete(`/processos/${id}`);
     },
     onSuccess: () => {
