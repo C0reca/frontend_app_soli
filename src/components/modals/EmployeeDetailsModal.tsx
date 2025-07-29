@@ -1,9 +1,7 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Employee } from '@/hooks/useEmployees';
-import { User, Mail, Phone, Calendar, Briefcase, Building } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Mail, Phone, Briefcase, Building, Calendar } from 'lucide-react';
 
 interface EmployeeDetailsModalProps {
   isOpen: boolean;
@@ -20,121 +18,67 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <User className="h-6 w-6" />
-            <span>Detalhes do Funcionário</span>
+          <DialogTitle className="flex items-center gap-2">
+            Detalhes do Funcionário
           </DialogTitle>
         </DialogHeader>
-
+        
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nome Completo</label>
-                <p className="text-lg font-semibold">{employee.name}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
-                  <Mail className="h-4 w-4" />
-                  <span>Email</span>
-                </label>
-                <p className="text-sm">{employee.email}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
-                  <Phone className="h-4 w-4" />
-                  <span>Telefone</span>
-                </label>
-                <p className="text-sm">{employee.phone}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
-                  <Briefcase className="h-4 w-4" />
-                  <span>Cargo</span>
-                </label>
-                <p className="text-sm">{employee.position}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
-                  <Building className="h-4 w-4" />
-                  <span>Departamento</span>
-                </label>
-                <p className="text-sm">{employee.department}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
-                <div className="mt-1">
-                  <Badge className={
-                    employee.status === 'active' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }>
-                    {employee.status === 'active' ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+          {/* Header with name */}
+          <div className="text-center border-b pb-4">
+            <h2 className="text-xl font-semibold text-gray-900">{employee.nome}</h2>
+            <p className="text-gray-600">{employee.email}</p>
           </div>
 
-          <Separator />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
-                <Calendar className="h-4 w-4" />
-                <span>Data de Contratação</span>
-              </label>
-              <p className="text-sm">{new Date(employee.createdAt).toLocaleDateString('pt-BR')}</p>
+          {/* Contact Information */}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <Mail className="h-5 w-5 text-gray-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-700">Email</p>
+                <p className="text-gray-900">{employee.email}</p>
+              </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Situação Atual</label>
-              <p className="text-sm">
-                {employee.status === 'active' 
-                  ? 'Funcionário ativo na empresa'
-                  : 'Funcionário inativo na empresa'
-                }
-              </p>
-            </div>
-          </div>
+            {employee.telefone && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Phone className="h-5 w-5 text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Telefone</p>
+                  <p className="text-gray-900">{employee.telefone}</p>
+                </div>
+              </div>
+            )}
 
-          <Separator />
+            {employee.cargo && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Briefcase className="h-5 w-5 text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Cargo</p>
+                  <p className="text-gray-900">{employee.cargo}</p>
+                </div>
+              </div>
+            )}
 
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Informações Profissionais</h3>
-            <div className="bg-muted p-4 rounded-lg">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Cargo:</span>
-                  <span className="font-medium">{employee.position}</span>
+            {employee.departamento && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Building className="h-5 w-5 text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Departamento</p>
+                  <p className="text-gray-900">{employee.departamento}</p>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Departamento:</span>
-                  <span className="font-medium">{employee.department}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Contratado em:</span>
-                  <span>{new Date(employee.createdAt).toLocaleDateString('pt-BR')}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge className={
-                    employee.status === 'active' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }>
-                    {employee.status === 'active' ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <Calendar className="h-5 w-5 text-gray-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-700">Data de Criação</p>
+                <p className="text-gray-900">
+                  {new Date(employee.criado_em).toLocaleDateString('pt-BR')}
+                </p>
               </div>
             </div>
           </div>

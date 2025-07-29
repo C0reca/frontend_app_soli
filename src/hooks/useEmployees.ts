@@ -3,14 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 
 export interface Employee {
-  id: string;
-  name: string;
+  id: number;
+  nome: string;
   email: string;
-  phone: string;
-  position: string;
-  department: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
+  telefone?: string;
+  cargo?: string;
+  departamento?: string;
+  criado_em: string;
 }
 
 export const useEmployees = () => {
@@ -29,7 +28,7 @@ export const useEmployees = () => {
   });
 
   const createEmployee = useMutation({
-    mutationFn: async (employee: Omit<Employee, 'id' | 'createdAt'>) => {
+    mutationFn: async (employee: Omit<Employee, 'id' | 'criado_em'>) => {
       const response = await api.post('/funcionarios', employee);
       return response.data;
     },
@@ -39,7 +38,7 @@ export const useEmployees = () => {
   });
 
   const updateEmployee = useMutation({
-    mutationFn: async ({ id, ...employee }: Partial<Employee> & { id: string }) => {
+    mutationFn: async ({ id, ...employee }: Partial<Employee> & { id: number }) => {
       const response = await api.put(`/funcionarios/${id}`, employee);
       return response.data;
     },
@@ -49,7 +48,7 @@ export const useEmployees = () => {
   });
 
   const deleteEmployee = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: number) => {
       await api.delete(`/funcionarios/${id}`);
     },
     onSuccess: () => {

@@ -25,12 +25,11 @@ import { useEmployees, Employee } from '@/hooks/useEmployees';
 import { Loader2 } from 'lucide-react';
 
 const employeeSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
-  phone: z.string().min(8, 'Telefone deve ter pelo menos 8 caracteres'),
-  position: z.string().min(2, 'Cargo deve ter pelo menos 2 caracteres'),
-  department: z.string().min(2, 'Departamento deve ter pelo menos 2 caracteres'),
-  status: z.enum(['active', 'inactive']),
+  telefone: z.string().optional().transform(val => val || undefined),
+  cargo: z.string().optional().transform(val => val || undefined),
+  departamento: z.string().optional().transform(val => val || undefined),
 });
 
 type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -59,37 +58,48 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: employee || {
-      name: '',
+      nome: '',
       email: '',
-      phone: '',
-      position: '',
-      department: '',
-      status: 'active',
+      telefone: '',
+      cargo: '',
+      departamento: '',
     },
   });
 
   React.useEffect(() => {
     if (employee) {
-      reset(employee);
+      reset({
+        nome: employee.nome,
+        email: employee.email,
+        telefone: employee.telefone || '',
+        cargo: employee.cargo || '',
+        departamento: employee.departamento || '',
+      });
     } else {
       reset({
-        name: '',
+        nome: '',
         email: '',
-        phone: '',
-        position: '',
-        department: '',
-        status: 'active',
+        telefone: '',
+        cargo: '',
+        departamento: '',
       });
     }
   }, [employee, reset]);
 
   const onSubmit = async (data: EmployeeFormData) => {
     try {
+      const employeeData = {
+        nome: data.nome,
+        email: data.email,
+        telefone: data.telefone,
+        cargo: data.cargo,
+        departamento: data.departamento,
+      };
+      
       if (isEditing && employee) {
-        await updateEmployee.mutateAsync({ id: employee.id, ...data });
+        await updateEmployee.mutateAsync({ id: employee.id, ...employeeData });
       } else {
-        // Cast the validated data to the expected type
-        await createEmployee.mutateAsync(data as Omit<Employee, 'id' | 'createdAt'>);
+        await createEmployee.mutateAsync(employeeData);
       }
       onClose();
     } catch (error) {
@@ -112,14 +122,14 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
+            <Label htmlFor="nome">Nome</Label>
             <Input
-              id="name"
-              {...register('name')}
+              id="nome"
+              {...register('nome')}
               placeholder="Nome do funcionário"
             />
-            {errors.name && (
-              <p className="text-sm text-red-600">{errors.name.message}</p>
+            {errors.nome && (
+              <p className="text-sm text-red-600">{errors.nome.message}</p>
             )}
           </div>
 
@@ -137,55 +147,39 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Telefone</Label>
+            <Label htmlFor="telefone">Telefone</Label>
             <Input
-              id="phone"
-              {...register('phone')}
+              id="telefone"
+              {...register('telefone')}
               placeholder="+351 123 456 789"
             />
-            {errors.phone && (
-              <p className="text-sm text-red-600">{errors.phone.message}</p>
+            {errors.telefone && (
+              <p className="text-sm text-red-600">{errors.telefone.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="position">Cargo</Label>
+            <Label htmlFor="cargo">Cargo</Label>
             <Input
-              id="position"
-              {...register('position')}
+              id="cargo"
+              {...register('cargo')}
               placeholder="Cargo do funcionário"
             />
-            {errors.position && (
-              <p className="text-sm text-red-600">{errors.position.message}</p>
+            {errors.cargo && (
+              <p className="text-sm text-red-600">{errors.cargo.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="department">Departamento</Label>
+            <Label htmlFor="departamento">Departamento</Label>
             <Input
-              id="department"
-              {...register('department')}
+              id="departamento"
+              {...register('departamento')}
               placeholder="Departamento"
             />
-            {errors.department && (
-              <p className="text-sm text-red-600">{errors.department.message}</p>
+            {errors.departamento && (
+              <p className="text-sm text-red-600">{errors.departamento.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={watch('status')}
-              onValueChange={(value) => setValue('status', value as 'active' | 'inactive')}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="inactive">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <DialogFooter>

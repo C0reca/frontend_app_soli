@@ -89,24 +89,22 @@ export const mockClients: Client[] = [
 
 export const mockEmployees: Employee[] = [
   {
-    id: '1',
-    name: 'Ana Costa',
+    id: 1,
+    nome: 'Ana Costa',
     email: 'ana@empresa.com',
-    phone: '(11) 77777-7777',
-    position: 'Analista',
-    department: 'TI',
-    status: 'active',
-    createdAt: '2024-01-20T09:00:00Z'
+    telefone: '(11) 77777-7777',
+    cargo: 'Analista',
+    departamento: 'TI',
+    criado_em: '2024-01-20T09:00:00Z'
   },
   {
-    id: '2',
-    name: 'Carlos Oliveira',
+    id: 2,
+    nome: 'Carlos Oliveira',
     email: 'carlos@empresa.com',
-    phone: '(11) 66666-6666',
-    position: 'Gerente',
-    department: 'Vendas',
-    status: 'active',
-    createdAt: '2024-02-05T11:15:00Z'
+    telefone: '(11) 66666-6666',
+    cargo: 'Gerente',
+    departamento: 'Vendas',
+    criado_em: '2024-02-05T11:15:00Z'
   }
 ];
 
