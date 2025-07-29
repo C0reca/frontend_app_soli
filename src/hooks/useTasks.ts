@@ -4,14 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Task {
   id: string;
-  title: string;
-  description: string;
-  process: string;
-  assignee: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'in_progress' | 'completed';
-  dueDate: string;
-  createdAt: string;
+  titulo: string;
+  descricao: string;
+  processo_id: number;
+  responsavel_id: number | null;
+  prioridade: 'baixa' | 'media' | 'alta' | null;
+  concluida: boolean;
+  data_fim: string | null;
+  criado_em: string;
 }
 
 export const useTasks = () => {
@@ -31,7 +31,7 @@ export const useTasks = () => {
   });
 
   const createTask = useMutation({
-    mutationFn: async (task: Omit<Task, 'id' | 'createdAt'>) => {
+    mutationFn: async (task: Omit<Task, 'id' | 'criado_em'>) => {
       const response = await api.post('/tarefas', task);
       return response.data;
     },
@@ -93,8 +93,8 @@ export const useTasks = () => {
   });
 
   const updateTaskStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Task['status'] }) => {
-      const response = await api.patch(`/tarefas/${id}/status`, { status });
+    mutationFn: async ({ id, concluida }: { id: string; concluida: boolean }) => {
+      const response = await api.patch(`/tarefas/${id}/status`, { concluida });
       return response.data;
     },
     onSuccess: () => {

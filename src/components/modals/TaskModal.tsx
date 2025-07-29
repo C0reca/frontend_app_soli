@@ -14,13 +14,13 @@ import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const taskSchema = z.object({
-  title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().min(1, 'Descrição é obrigatória'),
-  process: z.string().min(1, 'Processo é obrigatório'),
-  assignee: z.string().min(1, 'Responsável é obrigatório'),
-  priority: z.enum(['low', 'medium', 'high']),
-  status: z.enum(['pending', 'in_progress', 'completed']),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+  titulo: z.string().min(1, 'Título é obrigatório'),
+  descricao: z.string().min(1, 'Descrição é obrigatória'),
+  processo_id: z.number().min(1, 'Processo é obrigatório'),
+  responsavel_id: z.number().nullable().optional(),
+  prioridade: z.enum(['baixa', 'media', 'alta']).nullable().optional(),
+  concluida: z.boolean(),
+  data_fim: z.string().nullable().optional(),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -39,36 +39,36 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      process: '',
-      assignee: '',
-      priority: 'medium',
-      status: 'pending',
-      dueDate: '',
+      titulo: '',
+      descricao: '',
+      processo_id: 0,
+      responsavel_id: null,
+      prioridade: 'media',
+      concluida: false,
+      data_fim: null,
     },
   });
 
   useEffect(() => {
     if (task) {
       form.reset({
-        title: task.title,
-        description: task.description,
-        process: task.process,
-        assignee: task.assignee,
-        priority: task.priority,
-        status: task.status,
-        dueDate: task.dueDate.split('T')[0], // Format for date input
+        titulo: task.titulo,
+        descricao: task.descricao,
+        processo_id: task.processo_id,
+        responsavel_id: task.responsavel_id,
+        prioridade: task.prioridade,
+        concluida: task.concluida,
+        data_fim: task.data_fim ? task.data_fim.split('T')[0] : null, // Format for date input
       });
     } else {
       form.reset({
-        title: '',
-        description: '',
-        process: '',
-        assignee: '',
-        priority: 'medium',
-        status: 'pending',
-        dueDate: '',
+        titulo: '',
+        descricao: '',
+        processo_id: 0,
+        responsavel_id: null,
+        prioridade: 'media',
+        concluida: false,
+        data_fim: null,
       });
     }
   }, [task, form]);
@@ -81,7 +81,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
           ...data,
         } as Task & { id: string });
       } else {
-        await createTask.mutateAsync(data as Omit<Task, 'id' | 'createdAt'>);
+        await createTask.mutateAsync(data as Omit<Task, 'id' | 'criado_em'>);
       }
       onClose();
     } catch (error) {
@@ -102,7 +102,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="title"
+              name="titulo"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Título</FormLabel>
@@ -116,7 +116,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
             
             <FormField
               control={form.control}
-              name="description"
+              name="descricao"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
@@ -130,11 +130,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
 
             <FormField
               control={form.control}
-              name="process"
+              name="processo_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Processo</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um processo" />
@@ -142,8 +142,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
                     </FormControl>
                     <SelectContent>
                       {processes.map((process) => (
-                        <SelectItem key={process.id} value={process.id}>
-                          {process.name}
+                        <SelectItem key={process.id} value={process.id.toString()}>
+                          {process.titulo}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -155,11 +155,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
 
             <FormField
               control={form.control}
-              name="assignee"
+              name="responsavel_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Responsável</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={(value) => field.onChange(value ? Number(value) : null)} value={field.value?.toString()}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um funcionário" />
@@ -181,20 +181,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="priority"
+                name="prioridade"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Prioridade</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a prioridade" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="baixa">Baixa</SelectItem>
+                        <SelectItem value="media">Média</SelectItem>
+                        <SelectItem value="alta">Alta</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -204,20 +204,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
 
               <FormField
                 control={form.control}
-                name="status"
+                name="concluida"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(value) => field.onChange(value === 'true')} value={field.value.toString()}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="in_progress">Em Andamento</SelectItem>
-                        <SelectItem value="completed">Concluída</SelectItem>
+                        <SelectItem value="false">Pendente</SelectItem>
+                        <SelectItem value="true">Concluída</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -228,12 +227,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
 
             <FormField
               control={form.control}
-              name="dueDate"
+              name="data_fim"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Vencimento</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

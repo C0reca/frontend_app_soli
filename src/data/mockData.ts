@@ -140,25 +140,25 @@ export const mockProcesses: Process[] = [
 export const mockTasks: Task[] = [
   {
     id: '1',
-    title: 'Revisar documentação',
-    description: 'Revisar todos os documentos do processo',
-    process: 'Processo Cliente A',
-    assignee: 'Ana Costa',
-    priority: 'high',
-    status: 'in_progress',
-    dueDate: '2024-03-10T17:00:00Z',
-    createdAt: '2024-03-01T09:00:00Z'
+    titulo: 'Revisar documentação',
+    descricao: 'Revisar todos os documentos do processo',
+    processo_id: 1,
+    responsavel_id: 1,
+    prioridade: 'alta',
+    concluida: false,
+    data_fim: '2024-03-10T17:00:00Z',
+    criado_em: '2024-03-01T09:00:00Z'
   },
   {
     id: '2',
-    title: 'Entrar em contato com cliente',
-    description: 'Ligar para confirmar detalhes',
-    process: 'Processo Cliente B',
-    assignee: 'Carlos Oliveira',
-    priority: 'medium',
-    status: 'pending',
-    dueDate: '2024-03-12T16:00:00Z',
-    createdAt: '2024-03-05T11:00:00Z'
+    titulo: 'Entrar em contato com cliente',
+    descricao: 'Ligar para confirmar detalhes',
+    processo_id: 2,
+    responsavel_id: 2,
+    prioridade: 'media',
+    concluida: false,
+    data_fim: '2024-03-12T16:00:00Z',
+    criado_em: '2024-03-05T11:00:00Z'
   }
 ];
 

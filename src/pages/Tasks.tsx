@@ -18,78 +18,54 @@ export const Tasks: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.assignee.toLowerCase().includes(searchTerm.toLowerCase())
+    task.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.descricao.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusColor = (concluida: boolean) => {
+    return concluida 
+      ? 'bg-green-100 text-green-800'
+      : 'bg-yellow-100 text-yellow-800';
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
+  const getPriorityColor = (prioridade: string | null) => {
+    switch (prioridade) {
+      case 'alta':
         return 'bg-red-100 text-red-800';
-      case 'medium':
+      case 'media':
         return 'bg-orange-100 text-orange-800';
-      case 'low':
+      case 'baixa':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Concluída';
-      case 'in_progress':
-        return 'Em Andamento';
-      case 'pending':
-        return 'Pendente';
-      default:
-        return status;
-    }
+  const getStatusLabel = (concluida: boolean) => {
+    return concluida ? 'Concluída' : 'Pendente';
   };
 
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'high':
+  const getPriorityLabel = (prioridade: string | null) => {
+    switch (prioridade) {
+      case 'alta':
         return 'Alta';
-      case 'medium':
+      case 'media':
         return 'Média';
-      case 'low':
+      case 'baixa':
         return 'Baixa';
       default:
-        return priority;
+        return 'Sem prioridade';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckSquare className="h-4 w-4 text-green-600" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4 text-blue-600" />;
-      case 'pending':
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-      default:
-        return null;
-    }
+  const getStatusIcon = (concluida: boolean) => {
+    return concluida 
+      ? <CheckSquare className="h-4 w-4 text-green-600" />
+      : <AlertCircle className="h-4 w-4 text-yellow-600" />;
   };
 
-  const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date() && tasks.find(t => t.dueDate === dueDate)?.status !== 'completed';
+  const isOverdue = (dataFim: string | null) => {
+    return dataFim && new Date(dataFim) < new Date() && tasks.find(t => t.data_fim === dataFim)?.concluida === false;
   };
 
   const handleView = (task: Task) => {
@@ -108,8 +84,8 @@ export const Tasks: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: string, status: Task['status']) => {
-    await updateTaskStatus.mutateAsync({ id, status });
+  const handleStatusChange = async (id: string, concluida: boolean) => {
+    await updateTaskStatus.mutateAsync({ id, concluida });
   };
 
   const handleCloseModal = () => {
@@ -162,7 +138,7 @@ export const Tasks: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {tasks.filter(t => t.status === 'pending').length}
+              {tasks.filter(t => !t.concluida).length}
             </div>
           </CardContent>
         </Card>
@@ -171,12 +147,12 @@ export const Tasks: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <Clock className="mr-2 h-5 w-5 text-blue-600" />
-              Em Andamento
+              Atrasadas
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {tasks.filter(t => t.status === 'in_progress').length}
+              {tasks.filter(t => isOverdue(t.data_fim)).length}
             </div>
           </CardContent>
         </Card>
@@ -190,7 +166,7 @@ export const Tasks: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {tasks.filter(t => t.status === 'completed').length}
+              {tasks.filter(t => t.concluida).length}
             </div>
           </CardContent>
         </Card>
@@ -217,30 +193,32 @@ export const Tasks: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredTasks.map((task) => (
-              <Card key={task.id} className={`hover:shadow-md transition-shadow ${isOverdue(task.dueDate) ? 'border-red-200 bg-red-50' : ''}`}>
+              <Card key={task.id} className={`hover:shadow-md transition-shadow ${isOverdue(task.data_fim) ? 'border-red-200 bg-red-50' : ''}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        {getStatusIcon(task.status)}
-                        <h3 className="font-semibold">{task.title}</h3>
-                        {isOverdue(task.dueDate) && (
+                        {getStatusIcon(task.concluida)}
+                        <h3 className="font-semibold">{task.titulo}</h3>
+                        {isOverdue(task.data_fim) && (
                           <Badge variant="destructive">Atrasada</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{task.description}</p>
+                      <p className="text-sm text-gray-600 mb-3">{task.descricao}</p>
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span><strong>Processo:</strong> {task.process}</span>
-                        <span><strong>Responsável:</strong> {task.assignee}</span>
-                        <span><strong>Prazo:</strong> {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                        <span><strong>Processo:</strong> {task.processo_id}</span>
+                        <span><strong>Responsável:</strong> {task.responsavel_id || 'Não atribuído'}</span>
+                        {task.data_fim && (
+                          <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col space-y-2">
-                      <Badge className={getStatusColor(task.status)}>
-                        {getStatusLabel(task.status)}
+                      <Badge className={getStatusColor(task.concluida)}>
+                        {getStatusLabel(task.concluida)}
                       </Badge>
-                       <Badge className={getPriorityColor(task.priority)}>
-                         {getPriorityLabel(task.priority)}
+                       <Badge className={getPriorityColor(task.prioridade)}>
+                         {getPriorityLabel(task.prioridade)}
                        </Badge>
                      </div>
                      <div className="flex space-x-2 mt-2">
@@ -266,11 +244,11 @@ export const Tasks: React.FC = () => {
                        >
                          <Trash2 className="h-4 w-4" />
                        </Button>
-                       {task.status !== 'completed' && (
+                       {!task.concluida && (
                          <Button
                            variant="outline"
                            size="sm"
-                           onClick={() => handleStatusChange(task.id, 'completed')}
+                           onClick={() => handleStatusChange(task.id, true)}
                            className="text-green-600 hover:text-green-700"
                          >
                            <CheckSquare className="h-4 w-4" />
