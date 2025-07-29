@@ -23,9 +23,8 @@ export const useEmployees = () => {
   } = useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
-      // Mock data for development
-      const { mockEmployees } = await import('@/data/mockData');
-      return mockEmployees;
+      const response = await api.get('/funcionarios/');
+      return response.data;
     },
   });
 
