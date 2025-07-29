@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -106,10 +107,10 @@ export const useTasks = () => {
     },
   });
 
-  const getTasksByProcess = async (processoId: number) => {
+  const getTasksByProcess = useCallback(async (processoId: number) => {
     const response = await api.get(`/processos/${processoId}`);
     return response.data;
-  };
+  }, []);
 
   return {
     tasks,
