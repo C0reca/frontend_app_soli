@@ -106,6 +106,11 @@ export const useTasks = () => {
     },
   });
 
+  const getTasksByProcess = async (processoId: number) => {
+    const response = await api.get(`/processo/${processoId}`);
+    return response.data;
+  };
+
   return {
     tasks,
     isLoading,
@@ -114,5 +119,6 @@ export const useTasks = () => {
     updateTask,
     deleteTask,
     updateTaskStatus,
+    getTasksByProcess,
   };
 };

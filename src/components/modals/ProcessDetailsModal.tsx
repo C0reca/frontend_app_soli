@@ -20,12 +20,28 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   onClose,
   process,
 }) => {
-  const { tasks } = useTasks();
+  const { getTasksByProcess } = useTasks();
+  const [processTasks, setProcessTasks] = React.useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (process && isOpen) {
+      setLoadingTasks(true);
+      getTasksByProcess(process.id)
+        .then(data => {
+          setProcessTasks(data.tarefas || []);
+        })
+        .catch(error => {
+          console.error('Erro ao buscar tarefas:', error);
+          setProcessTasks([]);
+        })
+        .finally(() => {
+          setLoadingTasks(false);
+        });
+    }
+  }, [process, isOpen, getTasksByProcess]);
   
   if (!process) return null;
-
-  // Filter tasks related to this process
-  const relatedTasks = tasks.filter(task => task.process === process.id.toString());
 
   // Mock files for demonstration - in reality, this would come from an API
   const processFiles = [
@@ -221,39 +237,42 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
             <TabsContent value="tasks" className="space-y-6 mt-6">
               <div>
                 <h3 className="text-lg font-semibold mb-4">Tarefas Relacionadas</h3>
-                {relatedTasks.length > 0 ? (
+                {loadingTasks ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <p>Carregando tarefas...</p>
+                  </div>
+                ) : processTasks.length > 0 ? (
                   <div className="space-y-3">
-                    {relatedTasks.map((task) => (
+                    {processTasks.map((task) => (
                       <Card key={task.id} className="border-l-4 border-l-blue-500">
                         <CardHeader className="pb-2">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-base font-medium">{task.title}</CardTitle>
+                            <CardTitle className="text-base font-medium">{task.titulo}</CardTitle>
                             <div className="flex items-center space-x-2">
-                              {task.status === 'completed' ? (
+                              {task.concluida ? (
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              ) : task.status === 'in_progress' ? (
-                                <Play className="h-4 w-4 text-blue-600" />
                               ) : (
-                                <Pause className="h-4 w-4 text-yellow-600" />
+                                <AlertCircle className="h-4 w-4 text-yellow-600" />
                               )}
                               <Badge 
-                                variant={task.status === 'completed' ? 'default' : task.status === 'in_progress' ? 'secondary' : 'outline'}
+                                variant={task.concluida ? 'default' : 'outline'}
                                 className="text-xs"
                               >
-                                {task.status === 'completed' ? 'Concluída' : 
-                                 task.status === 'in_progress' ? 'Em Andamento' : 'Pendente'}
+                                {task.concluida ? 'Concluída' : 'Pendente'}
                               </Badge>
                             </div>
                           </div>
                         </CardHeader>
                         <CardContent className="pt-0">
-                          {task.description && (
-                            <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+                          {task.descricao && (
+                            <p className="text-sm text-muted-foreground mb-2">{task.descricao}</p>
                           )}
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Prioridade: {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}</span>
-                            {task.dueDate && (
-                              <span>Prazo: {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
+                            {task.prioridade && (
+                              <span>Prioridade: {task.prioridade === 'alta' ? 'Alta' : task.prioridade === 'media' ? 'Média' : 'Baixa'}</span>
+                            )}
+                            {task.data_fim && (
+                              <span>Prazo: {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
                             )}
                           </div>
                         </CardContent>
