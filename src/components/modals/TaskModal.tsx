@@ -167,8 +167,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
                     </FormControl>
                     <SelectContent>
                       {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          {employee.name}
+                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                          {employee.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -177,8 +177,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                       </FormControl>
                       <SelectContent>
                         {employees.map((employee) => (
-                          <SelectItem key={employee.id} value={employee.id}>
-                            {employee.name}
+                          <SelectItem key={employee.id} value={employee.id.toString()}>
+                            {employee.nome}
                           </SelectItem>
                         ))}
                       </SelectContent>

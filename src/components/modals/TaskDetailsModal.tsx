@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { CheckSquare, Clock, AlertCircle, Calendar, User, Building } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
+import { useEmployees } from '@/hooks/useEmployees';
 
 interface TaskDetailsModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   onClose,
   task,
 }) => {
+  const { employees } = useEmployees();
   if (!task) return null;
 
   const getStatusColor = (concluida: boolean) => {
@@ -112,7 +114,11 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <User className="h-4 w-4 text-gray-400" />
                 <div>
                   <label className="text-sm font-medium text-gray-500">Responsável</label>
-                  <p className="text-sm text-gray-900">{task.responsavel_id || 'Não atribuído'}</p>
+                  <p className="text-sm text-gray-900">
+                    {task.responsavel_id 
+                      ? employees.find(emp => emp.id === task.responsavel_id)?.nome || `ID: ${task.responsavel_id}`
+                      : 'Não atribuído'}
+                  </p>
                 </div>
               </div>
 

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Building, Loader2 } from 'lucide-react';
 import { useClients, Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
+import { useEmployees } from '@/hooks/useEmployees';
 import { IndividualClientForm } from './IndividualClientForm';
 import { CorporateClientForm } from './CorporateClientForm';
 import { useToast } from '@/hooks/use-toast';
@@ -111,6 +112,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   client,
 }) => {
   const { createClient, updateClient } = useClients();
+  const { employees } = useEmployees();
   const { toast } = useToast();
   const isEditing = !!client;
   const [tipo, setTipo] = useState<'singular' | 'coletivo'>(
@@ -290,9 +292,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="emp1">João Silva</SelectItem>
-                      <SelectItem value="emp2">Maria Santos</SelectItem>
-                      <SelectItem value="emp3">Pedro Oliveira</SelectItem>
+                      {employees.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                          {employee.nome}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {errors.responsibleEmployee && (
