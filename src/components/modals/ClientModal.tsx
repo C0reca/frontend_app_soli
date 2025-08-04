@@ -222,6 +222,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         variant: "destructive",
       });
     }
+    form.reset();
   };
 
   return (

@@ -26,32 +26,62 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
   const { toast } = useToast();
 
   const handleCitizenCardScan = async () => {
-    // Mock function - in reality this would integrate with a card reader API
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A leitura do Cartão de Cidadão será implementada em breve.",
-    });
-    
-    // Example of how it could work:
-    // const mockData = {
-    //   nome: "João Silva Santos",
-    //   nif: "123456789",
-    //   num_cc: "12345678 9 ZZ1",
-    //   validade_cc: "2025-12-31",
-    //   data_nascimento: "1985-03-15",
-    //   nacionalidade: "Portuguesa"
-    // };
-    // 
-    // Object.keys(mockData).forEach(key => {
-    //   setValue(key, mockData[key]);
-    // });
+    try {
+      const response = await fetch('http://localhost:8081/cc');
+      if (!response.ok) throw new Error("Erro ao obter dados do Cartão de Cidadão.");
+
+      const data = await response.json();
+
+      // Conversão de datas para formato YYYY-MM-DD (compatível com input type="date")
+      const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        const cleaned = dateStr.trim().replace(/\s+/g, '/'); // troca espaços por barras
+        const parts = cleaned.split('/');
+        return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
+      };
+
+
+      setValue('nome', `${data.givenName ?? ''} ${data.surname ?? ''}`.trim());
+      setValue('nif', data.taxNo ?? '');
+      setValue('num_cc', data.documentNumber ?? '');
+      setValue('validade_cc', formatDate(data.validityEndDate));
+      setValue('data_nascimento', formatDate(data.dateOfBirth));
+      setValue('nacionalidade', data.nationality ?? '');
+      setValue('num_ss', data.socialSecurityNumber ?? '');
+      setValue('num_sns', data.healthNumber ?? '');
+      setValue('num_ident_civil', data.civilianIdNumber ?? '');
+
+      console.log("Validade formatada:", formatDate(data.validityEndDate));
+      console.log("Nascimento formatada:", formatDate(data.dateOfBirth));
+
+      // Morada
+      const address = data.address ?? {};
+      setValue('morada', address.street ?? '');
+      setValue('codigo_postal', address.postalCode ?? '');
+      setValue('localidade', address.municipality ?? '');
+      setValue('distrito', address.district ?? '');
+      setValue('pais', address.countryCode ?? 'Portugal');
+
+      toast({
+        title: "Dados preenchidos com sucesso",
+        description: "Os dados do Cartão de Cidadão foram carregados.",
+      });
+
+    } catch (err: any) {
+      toast({
+        title: "Erro ao ler Cartão de Cidadão",
+        description: err.message || "Verifica se o cartão está inserido.",
+        variant: "destructive"
+      });
+    }
   };
+
 
   return (
     <Tabs defaultValue="identification" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
-        <TabsTrigger value="contact">Contacto</TabsTrigger>
+        <TabsTrigger value="contact">Contacto / Morada</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
       </TabsList>
 
@@ -68,7 +98,6 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 className="flex items-center space-x-2"
               >
                 <CreditCard className="h-4 w-4" />
-                <Scan className="h-4 w-4" />
                 <span>Ler CC</span>
               </Button>
             </div>
@@ -231,15 +260,20 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 />
               </div>
             </div>
-
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Morada</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-4">
-              <h4 className="font-semibold">Morada</h4>
               <div className="space-y-2">
                 <Label htmlFor="morada">Rua</Label>
                 <Input
-                  id="morada"
-                  {...register('morada')}
-                  placeholder="Rua, nº, andar"
+                    id="morada"
+                    {...register('morada')}
+                    placeholder="Rua, nº, andar"
                 />
               </div>
 
@@ -247,18 +281,18 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="codigo_postal">Código postal</Label>
                   <Input
-                    id="codigo_postal"
-                    {...register('codigo_postal')}
-                    placeholder="1234-567"
+                      id="codigo_postal"
+                      {...register('codigo_postal')}
+                      placeholder="1234-567"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="localidade">Localidade</Label>
                   <Input
-                    id="localidade"
-                    {...register('localidade')}
-                    placeholder="Lisboa"
+                      id="localidade"
+                      {...register('localidade')}
+                      placeholder="Lisboa"
                   />
                 </div>
               </div>
@@ -267,19 +301,19 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="distrito">Distrito</Label>
                   <Input
-                    id="distrito"
-                    {...register('distrito')}
-                    placeholder="Lisboa"
+                      id="distrito"
+                      {...register('distrito')}
+                      placeholder="Lisboa"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="pais">País</Label>
                   <Input
-                    id="pais"
-                    {...register('pais')}
-                    placeholder="Portugal"
-                    defaultValue="Portugal"
+                      id="pais"
+                      {...register('pais')}
+                      placeholder="Portugal"
+                      defaultValue="Portugal"
                   />
                 </div>
               </div>
