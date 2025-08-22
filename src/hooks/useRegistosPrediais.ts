@@ -10,13 +10,13 @@ export interface RegistoPredial {
   freguesia: string;
   registo: string;
   conservatoria: string;
-  requeisicao: string;
+  requisicao: string;
   apresentacao: string;
   data: string;
   apresentacao_complementar?: string;
   data_criacao: string;
   outras_observacoes?: string;
-  estado: 'concluido' | 'desistencia' | 'recusado' | 'provisorios';
+  estado: 'Concluído' | 'Desistência' | 'Recusado' | 'Provisórios';
   cliente?: {
     id: number;
     nome: string;

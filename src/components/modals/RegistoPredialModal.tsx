@@ -37,12 +37,12 @@ const formSchema = z.object({
   freguesia: z.string().min(1, 'Freguesia é obrigatória'),
   registo: z.string().min(1, 'Registo é obrigatório'),
   conservatoria: z.string().min(1, 'Conservatória é obrigatória'),
-  requeisicao: z.string().min(1, 'Requerimento é obrigatório'),
+  requisicao: z.string().min(1, 'Requerimento é obrigatório'),
   apresentacao: z.string().min(1, 'Apresentação é obrigatória'),
   data: z.string().min(1, 'Data é obrigatória'),
   apresentacao_complementar: z.string().optional(),
   outras_observacoes: z.string().optional(),
-  estado: z.enum(['concluido', 'desistencia', 'recusado', 'provisorios']),
+  estado: z.enum(['Concluído', 'Desistência', 'Recusado', 'Provisórios']),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -71,12 +71,12 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
       freguesia: '',
       registo: '',
       conservatoria: '',
-      requeisicao: '',
+      requisicao: '',
       apresentacao: '',
       data: '',
       apresentacao_complementar: '',
       outras_observacoes: '',
-      estado: 'provisorios',
+      estado: 'Provisórios',
     },
   });
 
@@ -89,7 +89,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
         freguesia: registo.freguesia,
         registo: registo.registo,
         conservatoria: registo.conservatoria,
-        requeisicao: registo.requeisicao,
+        requisicao: registo.requisicao,
         apresentacao: registo.apresentacao,
         data: registo.data,
         apresentacao_complementar: registo.apresentacao_complementar || '',
@@ -104,12 +104,12 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
         freguesia: '',
         registo: '',
         conservatoria: '',
-        requeisicao: '',
+        requisicao: '',
         apresentacao: '',
         data: '',
         apresentacao_complementar: '',
         outras_observacoes: '',
-        estado: 'provisorios',
+        estado: 'Provisórios',
       });
     }
   }, [registo, form]);
@@ -123,7 +123,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
         freguesia: data.freguesia,
         registo: data.registo,
         conservatoria: data.conservatoria,
-        requeisicao: data.requeisicao,
+        requisicao: data.requisicao,
         apresentacao: data.apresentacao,
         data: data.data,
         apresentacao_complementar: data.apresentacao_complementar,
@@ -267,7 +267,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="requeisicao"
+                name="requisicao"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Requerimento</FormLabel>
@@ -322,10 +322,10 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="provisorios">Provisórios</SelectItem>
-                        <SelectItem value="concluido">Concluído</SelectItem>
-                        <SelectItem value="desistencia">Desistência</SelectItem>
-                        <SelectItem value="recusado">Recusado</SelectItem>
+                        <SelectItem value="Provisórios">Provisórios</SelectItem>
+                        <SelectItem value="Concluído">Concluído</SelectItem>
+                        <SelectItem value="Desistência">Desistência</SelectItem>
+                        <SelectItem value="Recusado">Recusado</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

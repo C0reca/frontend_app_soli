@@ -27,13 +27,13 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
 
   const getStatusColor = (estado: string) => {
     switch (estado) {
-      case 'concluido':
+      case 'Concluído':
         return 'bg-green-100 text-green-800';
-      case 'desistencia':
+      case 'Desistência':
         return 'bg-gray-100 text-gray-800';
-      case 'recusado':
+      case 'Recusado':
         return 'bg-red-100 text-red-800';
-      case 'provisorios':
+      case 'Provisórios':
         return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -42,13 +42,13 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
 
   const getStatusLabel = (estado: string) => {
     switch (estado) {
-      case 'concluido':
+      case 'Concluído':
         return 'Concluído';
-      case 'desistencia':
+      case 'Desistência':
         return 'Desistência';
-      case 'recusado':
+      case 'Recusado':
         return 'Recusado';
-      case 'provisorios':
+      case 'Provisórios':
         return 'Provisórios';
       default:
         return 'Desconhecido';
@@ -128,7 +128,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Requerimento</label>
-                <p className="text-sm">{registo.requeisicao}</p>
+                <p className="text-sm">{registo.requisicao}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Apresentação</label>
