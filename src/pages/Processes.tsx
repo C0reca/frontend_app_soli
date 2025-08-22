@@ -126,7 +126,7 @@ export const Processes: React.FC = () => {
         <CardContent>
           <div className="grid gap-4">
             {filteredProcesses.map((process) => (
-              <Card key={process.id} className="hover:shadow-md transition-shadow">
+              <Card key={process.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleView(process)}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -160,13 +160,13 @@ export const Processes: React.FC = () => {
                         {getStatusLabel(process.estado)}
                       </Badge>
                        <div className="flex space-x-1">
-                         <Button variant="ghost" size="sm" onClick={() => handleView(process)}>
+                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleView(process); }}>
                            <Eye className="h-4 w-4" />
                          </Button>
-                         <Button variant="ghost" size="sm" onClick={() => handleEdit(process)}>
+                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(process); }}>
                            <Edit className="h-4 w-4" />
                          </Button>
-                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(process.id)}>
+                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); handleDelete(process.id); }}>
                            <Trash2 className="h-4 w-4" />
                          </Button>
                        </div>
