@@ -132,32 +132,48 @@ export const Calendar: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 h-full">,
         {/* Calendário */}
-        <Card className="lg:col-span-2">
+        <Card className="xl:col-span-3 h-fit">,
           <CardHeader>
             <CardTitle>
               {format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR })}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <CalendarComponent
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
-              className="rounded-md border w-full"
+              className="rounded-md border-0 w-full h-full flex justify-center"
+              classNames={{
+                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                month: "space-y-4 w-full",
+                table: "w-full border-collapse space-y-1 table-fixed",
+                head_row: "flex w-full",
+                head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-sm text-center py-2",
+                row: "flex w-full mt-2",
+                cell: "flex-1 text-center text-sm p-0 relative h-12 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-12 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors",
+                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                day_today: "bg-accent text-accent-foreground font-semibold",
+                day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                day_hidden: "invisible",
+              }}
               modifiers={{
                 hasEvents: (date) => hasEvents(date),
               }}
               modifiersClassNames={{
-                hasEvents: "bg-primary/10 text-primary font-medium",
+                hasEvents: "bg-primary/10 text-primary font-medium border border-primary/20",
               }}
             />
           </CardContent>
         </Card>
 
         {/* Eventos do dia selecionado */}
-        <Card>
+        <Card className="h-fit">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <span>Eventos de</span>
