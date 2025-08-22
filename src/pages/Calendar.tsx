@@ -265,14 +265,14 @@ export const Calendar: React.FC = () => {
                     onClick={() => setSelectedEvent(event)}
                     className={`p-4 rounded-lg border transition-colors cursor-pointer ${
                       event.isUserResponsible 
-                        ? 'bg-primary/5 border-primary/20 hover:bg-primary/10' 
+                        ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
                         : 'bg-card hover:bg-accent/50'
                     }`}
                   >
                     <div className="space-y-3">
                       <div className="space-y-2">
                         <h4 className={`font-medium text-sm ${
-                          event.isUserResponsible ? 'text-primary' : ''
+                          event.isUserResponsible ? 'text-blue-700' : ''
                         }`}>
                           {event.title}
                         </h4>
@@ -300,7 +300,7 @@ export const Calendar: React.FC = () => {
                         {event.isUserResponsible && (
                           <Badge
                             variant="outline"
-                            className="text-xs border-primary text-primary"
+                            className="text-xs border-blue-400 text-blue-700 bg-blue-50"
                           >
                             Minha
                           </Badge>
@@ -363,7 +363,7 @@ export const Calendar: React.FC = () => {
               {selectedEvent?.isUserResponsible && (
                 <Badge
                   variant="outline"
-                  className="text-xs border-primary text-primary"
+                  className="text-xs border-blue-400 text-blue-700 bg-blue-50"
                 >
                   Minha
                 </Badge>
