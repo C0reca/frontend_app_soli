@@ -6,7 +6,8 @@ import {
   FolderOpen,
   CheckSquare,
   FileText,
-  LogOut
+  LogOut,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ const navItems = [
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
+  { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: FileText, label: 'Documentos', path: '/documentos' },
 ];
 

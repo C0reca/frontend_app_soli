@@ -9,7 +9,8 @@ import {
   CheckSquare,
   FileText,
   FileText as FileTemplate,
-  LogOut
+  LogOut,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ const navItems = [
   { icon: UserCog, label: 'Funcionários', path: '/funcionarios' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
+  { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: FileTemplate, label: 'Templates', path: '/templates' },
   { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
   { icon: FileText, label: 'Documentos', path: '/documentos' },

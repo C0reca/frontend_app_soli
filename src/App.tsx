@@ -15,6 +15,7 @@ import { Tasks } from "@/pages/Tasks";
 import { Templates } from "@/pages/Templates";
 import { DocumentTemplates } from "@/pages/DocumentTemplates";
 import { Documents } from "@/pages/Documents";
+import { Calendar } from "@/pages/Calendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const AppRoutes = () => {
         <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />
         <Route path="document-templates" element={<AdminRoute><DocumentTemplates /></AdminRoute>} />
         <Route path="documentos" element={<Documents />} />
+        <Route path="calendario" element={<Calendar />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
