@@ -291,10 +291,7 @@ export const Calendar: React.FC = () => {
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
                         <Badge
-                          variant={
-                            event.type === 'task' ? 'default' : 
-                            event.type === 'process' ? 'secondary' : 'outline'
-                          }
+                          variant="outline"
                           className="text-xs"
                         >
                           {event.type === 'task' ? 'Tarefa' : 
@@ -310,12 +307,15 @@ export const Calendar: React.FC = () => {
                         )}
                         {event.status && (
                           <Badge
-                            variant={
-                              event.status === 'concluida' || event.status === 'concluido' || event.status === 'Concluído'
-                                ? 'default'
-                                : 'outline'
-                            }
-                            className="text-xs"
+                            variant="outline"
+                            className={`text-xs ${
+                              event.type === 'registo' ? (
+                                event.status === 'Concluído' ? 'bg-green-100 text-green-800 border-green-300' :
+                                event.status === 'Desistência' ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                                event.status === 'Recusado' ? 'bg-red-100 text-red-800 border-red-300' :
+                                event.status === 'Provisórios' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : ''
+                              ) : ''
+                            }`}
                           >
                             {event.status === 'concluida' ? 'Concluída' :
                              event.status === 'concluido' || event.status === 'Concluído' ? 'Concluído' :
@@ -354,10 +354,7 @@ export const Calendar: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Badge
-                variant={
-                  selectedEvent?.type === 'task' ? 'default' : 
-                  selectedEvent?.type === 'process' ? 'secondary' : 'outline'
-                }
+                variant="outline"
                 className="text-xs"
               >
                 {selectedEvent?.type === 'task' ? 'Tarefa' : 
@@ -406,12 +403,15 @@ export const Calendar: React.FC = () => {
                   <div className="flex flex-wrap gap-2">
                     {selectedEvent.status && (
                       <Badge
-                        variant={
-                          selectedEvent.status === 'concluida' || selectedEvent.status === 'concluido' || selectedEvent.status === 'Concluído'
-                            ? 'default'
-                            : 'outline'
-                        }
-                        className="text-xs"
+                        variant="outline"
+                        className={`text-xs ${
+                          selectedEvent.type === 'registo' ? (
+                            selectedEvent.status === 'Concluído' ? 'bg-green-100 text-green-800 border-green-300' :
+                            selectedEvent.status === 'Desistência' ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                            selectedEvent.status === 'Recusado' ? 'bg-red-100 text-red-800 border-red-300' :
+                            selectedEvent.status === 'Provisórios' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : ''
+                          ) : ''
+                        }`}
                       >
                         {selectedEvent.status === 'concluida' ? 'Concluída' :
                          selectedEvent.status === 'concluido' || selectedEvent.status === 'Concluído' ? 'Concluído' :
