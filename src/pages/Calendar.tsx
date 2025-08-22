@@ -191,14 +191,39 @@ export const Calendar: React.FC = () => {
         {/* Eventos do dia selecionado */}
         <Card className="lg:col-span-1 xl:col-span-1 h-full flex flex-col">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <span>Eventos de</span>
-              <span className="text-primary">
-                {format(selectedDate, "dd/MM", { locale: ptBR })}
-              </span>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span>Eventos de</span>
+                <span className="text-primary">
+                  {format(selectedDate, "dd/MM", { locale: ptBR })}
+                </span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {selectedDateEvents.length} evento{selectedDateEvents.length !== 1 ? 's' : ''}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 flex-1 overflow-y-auto">
+            {/* Estatísticas do dia */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-2">
+                  <div className="h-2 w-2 rounded-full bg-primary"></div>
+                  <span className="text-xs font-medium">
+                    {selectedDateEvents.filter(e => e.type === 'task').length} Tarefas
+                  </span>
+                </div>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-2">
+                  <div className="h-2 w-2 rounded-full bg-secondary"></div>
+                  <span className="text-xs font-medium">
+                    {selectedDateEvents.filter(e => e.type === 'process').length} Processos
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3 h-full">
               {selectedDateEvents.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
@@ -288,39 +313,6 @@ export const Calendar: React.FC = () => {
         </Card>
       </div>
 
-      {/* Resumo de eventos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-3 w-3 rounded-full bg-primary"></div>
-              <span className="text-sm font-medium">
-                {events.filter(e => e.type === 'task').length} Tarefas
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-3 w-3 rounded-full bg-secondary"></div>
-              <span className="text-sm font-medium">
-                {events.filter(e => e.type === 'process').length} Processos
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-3 w-3 rounded-full bg-accent"></div>
-              <span className="text-sm font-medium">
-                {events.length} Total de Eventos
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };
