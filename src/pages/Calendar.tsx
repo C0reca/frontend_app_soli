@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, ExternalLink, RefreshCw } from 'lucide-react';
@@ -27,6 +28,7 @@ interface CalendarEvent {
 export const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const { tasks } = useTasks();
   const { processes } = useProcesses();
@@ -235,7 +237,8 @@ export const Calendar: React.FC = () => {
                 selectedDateEvents.map((event) => (
                   <div
                     key={event.id}
-                    className={`p-4 rounded-lg border transition-colors ${
+                    onClick={() => setSelectedEvent(event)}
+                    className={`p-4 rounded-lg border transition-colors cursor-pointer ${
                       event.isUserResponsible 
                         ? 'bg-primary/5 border-primary/20 hover:bg-primary/10' 
                         : 'bg-card hover:bg-accent/50'
@@ -313,6 +316,92 @@ export const Calendar: React.FC = () => {
         </Card>
       </div>
 
+      {/* Modal de Preview do Evento */}
+      <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Badge
+                variant={selectedEvent?.type === 'task' ? 'default' : 'secondary'}
+                className="text-xs"
+              >
+                {selectedEvent?.type === 'task' ? 'Tarefa' : 'Processo'}
+              </Badge>
+              {selectedEvent?.isUserResponsible && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-primary text-primary"
+                >
+                  Minha
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-lg mb-2">{selectedEvent.title}</h3>
+                {selectedEvent.description && (
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">Descrição:</h4>
+                    <p className="text-sm">{selectedEvent.description}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">Data:</h4>
+                  <p className="text-sm">
+                    {format(selectedEvent.date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+
+                {selectedEvent.responsibleName && (
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">Responsável:</h4>
+                    <p className="text-sm">{selectedEvent.responsibleName}</p>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-2">Status e Prioridade:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEvent.status && (
+                      <Badge
+                        variant={
+                          selectedEvent.status === 'concluida' || selectedEvent.status === 'concluido'
+                            ? 'default'
+                            : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        {selectedEvent.status === 'concluida' ? 'Concluída' :
+                         selectedEvent.status === 'concluido' ? 'Concluído' :
+                         selectedEvent.status === 'em_curso' ? 'Em Curso' :
+                         selectedEvent.status === 'pendente' ? 'Pendente' : selectedEvent.status}
+                      </Badge>
+                    )}
+                    {selectedEvent.priority && (
+                      <Badge
+                        variant={
+                          selectedEvent.priority === 'alta' ? 'destructive' :
+                          selectedEvent.priority === 'media' ? 'default' : 'secondary'
+                        }
+                        className="text-xs"
+                      >
+                        {selectedEvent.priority === 'alta' ? 'Alta' :
+                         selectedEvent.priority === 'media' ? 'Média' : 'Baixa'}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
