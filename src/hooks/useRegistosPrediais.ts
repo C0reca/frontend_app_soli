@@ -34,14 +34,14 @@ export const useRegistosPrediais = () => {
   } = useQuery({
     queryKey: ['registos-prediais'],
     queryFn: async () => {
-      const response = await api.get('/registos-prediais');
+      const response = await api.get('/registos/');
       return response.data;
     },
   });
 
   const createRegisto = useMutation({
     mutationFn: async (registo: Omit<RegistoPredial, 'id' | 'data_criacao'>) => {
-      const response = await api.post('/registos-prediais', registo);
+      const response = await api.post('/registos/', registo);
       return response.data;
     },
     onSuccess: () => {
@@ -62,7 +62,7 @@ export const useRegistosPrediais = () => {
 
   const updateRegisto = useMutation({
     mutationFn: async ({ id, ...registo }: Partial<RegistoPredial> & { id: string }) => {
-      const response = await api.put(`/registos-prediais/${id}`, registo);
+      const response = await api.put(`/registos/${id}`, registo);
       return response.data;
     },
     onSuccess: () => {
@@ -83,7 +83,7 @@ export const useRegistosPrediais = () => {
 
   const deleteRegisto = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/registos-prediais/${id}`);
+      await api.delete(`/registos/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registos-prediais'] });
