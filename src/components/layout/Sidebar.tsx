@@ -17,11 +17,11 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: UserCog, label: 'Funcionários', path: '/funcionarios' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
-  { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: FileTemplate, label: 'Templates', path: '/templates' },
   { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
   { icon: FileText, label: 'Documentos', path: '/documentos' },
