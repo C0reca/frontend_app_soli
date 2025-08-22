@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarIcon, ExternalLink, RefreshCw } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
+import { useRegistosPrediais } from '@/hooks/useRegistosPrediais';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,7 +18,7 @@ interface CalendarEvent {
   title: string;
   description?: string;
   date: Date;
-  type: 'task' | 'process';
+  type: 'task' | 'process' | 'registo';
   status?: string;
   priority?: string;
   responsibleId?: number | null;
@@ -32,6 +33,7 @@ export const Calendar: React.FC = () => {
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const { tasks } = useTasks();
   const { processes } = useProcesses();
+  const { registos } = useRegistosPrediais();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -76,8 +78,23 @@ export const Calendar: React.FC = () => {
       }
     });
 
+    // Adicionar registos prediais com data
+    registos?.forEach(registo => {
+      if (registo.data) {
+        calendarEvents.push({
+          id: `registo-${registo.id}`,
+          title: `Registo: ${registo.numero_processo}`,
+          description: `${registo.predio} - ${registo.freguesia}`,
+          date: parseISO(registo.data),
+          type: 'registo',
+          status: registo.estado,
+          responsibleName: registo.cliente?.nome || 'N/A',
+        });
+      }
+    });
+
     setEvents(calendarEvents);
-  }, [tasks, processes, user]);
+  }, [tasks, processes, registos, user]);
 
   // Filtrar eventos para a data selecionada
   const selectedDateEvents = events.filter(event =>
@@ -207,7 +224,7 @@ export const Calendar: React.FC = () => {
           </CardHeader>
           <CardContent className="p-4 flex-1 overflow-y-auto">
             {/* Estatísticas do dia */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 rounded-full bg-primary"></div>
@@ -221,6 +238,14 @@ export const Calendar: React.FC = () => {
                   <div className="h-2 w-2 rounded-full bg-secondary"></div>
                   <span className="text-xs font-medium">
                     {selectedDateEvents.filter(e => e.type === 'process').length} Processos
+                  </span>
+                </div>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-2">
+                  <div className="h-2 w-2 rounded-full bg-accent"></div>
+                  <span className="text-xs font-medium">
+                    {selectedDateEvents.filter(e => e.type === 'registo').length} Registos
                   </span>
                 </div>
               </div>
@@ -266,10 +291,14 @@ export const Calendar: React.FC = () => {
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
                         <Badge
-                          variant={event.type === 'task' ? 'default' : 'secondary'}
+                          variant={
+                            event.type === 'task' ? 'default' : 
+                            event.type === 'process' ? 'secondary' : 'outline'
+                          }
                           className="text-xs"
                         >
-                          {event.type === 'task' ? 'Tarefa' : 'Processo'}
+                          {event.type === 'task' ? 'Tarefa' : 
+                           event.type === 'process' ? 'Processo' : 'Registo'}
                         </Badge>
                         {event.isUserResponsible && (
                           <Badge
@@ -282,16 +311,19 @@ export const Calendar: React.FC = () => {
                         {event.status && (
                           <Badge
                             variant={
-                              event.status === 'concluida' || event.status === 'concluido'
+                              event.status === 'concluida' || event.status === 'concluido' || event.status === 'Concluído'
                                 ? 'default'
                                 : 'outline'
                             }
                             className="text-xs"
                           >
                             {event.status === 'concluida' ? 'Concluída' :
-                             event.status === 'concluido' ? 'Concluído' :
+                             event.status === 'concluido' || event.status === 'Concluído' ? 'Concluído' :
                              event.status === 'em_curso' ? 'Em Curso' :
-                             event.status === 'pendente' ? 'Pendente' : event.status}
+                             event.status === 'pendente' ? 'Pendente' :
+                             event.status === 'Desistência' ? 'Desistência' :
+                             event.status === 'Recusado' ? 'Recusado' :
+                             event.status === 'Provisórios' ? 'Provisórios' : event.status}
                           </Badge>
                         )}
                         {event.priority && (
@@ -322,10 +354,14 @@ export const Calendar: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Badge
-                variant={selectedEvent?.type === 'task' ? 'default' : 'secondary'}
+                variant={
+                  selectedEvent?.type === 'task' ? 'default' : 
+                  selectedEvent?.type === 'process' ? 'secondary' : 'outline'
+                }
                 className="text-xs"
               >
-                {selectedEvent?.type === 'task' ? 'Tarefa' : 'Processo'}
+                {selectedEvent?.type === 'task' ? 'Tarefa' : 
+                 selectedEvent?.type === 'process' ? 'Processo' : 'Registo'}
               </Badge>
               {selectedEvent?.isUserResponsible && (
                 <Badge
@@ -371,16 +407,19 @@ export const Calendar: React.FC = () => {
                     {selectedEvent.status && (
                       <Badge
                         variant={
-                          selectedEvent.status === 'concluida' || selectedEvent.status === 'concluido'
+                          selectedEvent.status === 'concluida' || selectedEvent.status === 'concluido' || selectedEvent.status === 'Concluído'
                             ? 'default'
                             : 'outline'
                         }
                         className="text-xs"
                       >
                         {selectedEvent.status === 'concluida' ? 'Concluída' :
-                         selectedEvent.status === 'concluido' ? 'Concluído' :
+                         selectedEvent.status === 'concluido' || selectedEvent.status === 'Concluído' ? 'Concluído' :
                          selectedEvent.status === 'em_curso' ? 'Em Curso' :
-                         selectedEvent.status === 'pendente' ? 'Pendente' : selectedEvent.status}
+                         selectedEvent.status === 'pendente' ? 'Pendente' :
+                         selectedEvent.status === 'Desistência' ? 'Desistência' :
+                         selectedEvent.status === 'Recusado' ? 'Recusado' :
+                         selectedEvent.status === 'Provisórios' ? 'Provisórios' : selectedEvent.status}
                       </Badge>
                     )}
                     {selectedEvent.priority && (
