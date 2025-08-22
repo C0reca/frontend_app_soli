@@ -132,31 +132,31 @@ export const Calendar: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 h-full">,
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 h-full min-h-[600px]">
         {/* Calendário */}
-        <Card className="xl:col-span-3 h-fit">,
+        <Card className="lg:col-span-1 xl:col-span-2 h-full flex flex-col">
           <CardHeader>
             <CardTitle>
               {format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR })}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-6 flex-1 flex flex-col">
             <CalendarComponent
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
-              className="rounded-md border-0 w-full h-full flex justify-center"
+              className="rounded-md border-0 w-full flex-1 flex justify-center items-center"
               classNames={{
-                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
-                month: "space-y-4 w-full",
-                table: "w-full border-collapse space-y-1 table-fixed",
-                head_row: "flex w-full",
-                head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-sm text-center py-2",
-                row: "flex w-full mt-2",
-                cell: "flex-1 text-center text-sm p-0 relative h-12 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-12 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors",
+                months: "flex flex-col space-y-4 w-full h-full",
+                month: "space-y-4 w-full flex-1 flex flex-col",
+                table: "w-full h-full border-collapse flex-1 table-fixed",
+                head_row: "flex w-full mb-2",
+                head_cell: "text-muted-foreground rounded-md flex-1 font-medium text-sm text-center py-3",
+                row: "flex w-full flex-1",
+                cell: "flex-1 text-center text-sm p-1 relative flex items-center justify-center min-h-[3rem] [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-full w-full p-2 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors flex items-center justify-center min-h-[3rem]",
                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground font-semibold",
+                day_today: "bg-accent text-accent-foreground font-bold border-2 border-primary",
                 day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
                 day_disabled: "text-muted-foreground opacity-50",
                 day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
@@ -166,14 +166,14 @@ export const Calendar: React.FC = () => {
                 hasEvents: (date) => hasEvents(date),
               }}
               modifiersClassNames={{
-                hasEvents: "bg-primary/10 text-primary font-medium border border-primary/20",
+                hasEvents: "bg-primary/15 text-primary font-bold border border-primary/30 shadow-sm",
               }}
             />
           </CardContent>
         </Card>
 
         {/* Eventos do dia selecionado */}
-        <Card className="h-fit">
+        <Card className="lg:col-span-1 xl:col-span-1 h-full flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <span>Eventos de</span>
@@ -182,17 +182,19 @@ export const Calendar: React.FC = () => {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-4 flex-1 overflow-y-auto">
+            <div className="space-y-3 h-full">
               {selectedDateEvents.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Nenhum evento nesta data.
-                </p>
+                <div className="flex items-center justify-center h-32">
+                  <p className="text-muted-foreground text-sm text-center">
+                    Nenhum evento nesta data.
+                  </p>
+                </div>
               ) : (
                 selectedDateEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
