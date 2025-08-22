@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarIcon, ExternalLink, RefreshCw } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
+import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -13,10 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 interface CalendarEvent {
   id: string;
   title: string;
+  description?: string;
   date: Date;
   type: 'task' | 'process';
   status?: string;
   priority?: string;
+  responsibleId?: number | null;
+  responsibleName?: string;
+  isUserResponsible?: boolean;
 }
 
 export const Calendar: React.FC = () => {
@@ -25,6 +30,7 @@ export const Calendar: React.FC = () => {
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const { tasks } = useTasks();
   const { processes } = useProcesses();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   // Combinar dados de tarefas e processos em eventos do calendário
@@ -34,13 +40,18 @@ export const Calendar: React.FC = () => {
     // Adicionar tarefas com data_fim
     tasks?.forEach(task => {
       if (task.data_fim) {
+        const isUserResponsible = user && task.responsavel_id === parseInt(user.id);
         calendarEvents.push({
           id: `task-${task.id}`,
           title: task.titulo,
+          description: task.descricao,
           date: parseISO(task.data_fim),
           type: 'task',
           status: task.concluida ? 'concluida' : 'pendente',
           priority: task.prioridade || undefined,
+          responsibleId: task.responsavel_id,
+          responsibleName: task.responsavel_id === 1 ? 'Ana Costa' : task.responsavel_id === 2 ? 'Carlos Oliveira' : 'Não atribuído',
+          isUserResponsible,
         });
       }
     });
@@ -48,18 +59,23 @@ export const Calendar: React.FC = () => {
     // Adicionar processos com criado_em
     processes?.forEach(process => {
       if (process.criado_em) {
+        const isUserResponsible = user && process.funcionario_id === parseInt(user.id);
         calendarEvents.push({
           id: `process-${process.id}`,
           title: process.titulo,
+          description: process.descricao,
           date: parseISO(process.criado_em),
           type: 'process',
           status: process.estado,
+          responsibleId: process.funcionario_id,
+          responsibleName: process.funcionario?.nome || 'Não atribuído',
+          isUserResponsible,
         });
       }
     });
 
     setEvents(calendarEvents);
-  }, [tasks, processes]);
+  }, [tasks, processes, user]);
 
   // Filtrar eventos para a data selecionada
   const selectedDateEvents = events.filter(event =>
@@ -194,46 +210,74 @@ export const Calendar: React.FC = () => {
                 selectedDateEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className={`p-4 rounded-lg border transition-colors ${
+                      event.isUserResponsible 
+                        ? 'bg-primary/5 border-primary/20 hover:bg-primary/10' 
+                        : 'bg-card hover:bg-accent/50'
+                    }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-medium text-sm">{event.title}</h4>
-                        <div className="flex items-center space-x-2">
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <h4 className={`font-medium text-sm ${
+                          event.isUserResponsible ? 'text-primary' : ''
+                        }`}>
+                          {event.title}
+                        </h4>
+                        {event.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {event.description.length > 80 
+                              ? `${event.description.substring(0, 80)}...` 
+                              : event.description}
+                          </p>
+                        )}
+                        {event.responsibleName && (
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium">Responsável:</span> {event.responsibleName}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Badge
+                          variant={event.type === 'task' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {event.type === 'task' ? 'Tarefa' : 'Processo'}
+                        </Badge>
+                        {event.isUserResponsible && (
                           <Badge
-                            variant={event.type === 'task' ? 'default' : 'secondary'}
+                            variant="outline"
+                            className="text-xs border-primary text-primary"
+                          >
+                            Minha
+                          </Badge>
+                        )}
+                        {event.status && (
+                          <Badge
+                            variant={
+                              event.status === 'concluida' || event.status === 'concluido'
+                                ? 'default'
+                                : 'outline'
+                            }
                             className="text-xs"
                           >
-                            {event.type === 'task' ? 'Tarefa' : 'Processo'}
+                            {event.status === 'concluida' ? 'Concluída' :
+                             event.status === 'concluido' ? 'Concluído' :
+                             event.status === 'em_curso' ? 'Em Curso' :
+                             event.status === 'pendente' ? 'Pendente' : event.status}
                           </Badge>
-                          {event.status && (
-                            <Badge
-                              variant={
-                                event.status === 'concluida' || event.status === 'concluido'
-                                  ? 'default'
-                                  : 'outline'
-                              }
-                              className="text-xs"
-                            >
-                              {event.status === 'concluida' ? 'Concluída' :
-                               event.status === 'concluido' ? 'Concluído' :
-                               event.status === 'em_curso' ? 'Em Curso' :
-                               event.status === 'pendente' ? 'Pendente' : event.status}
-                            </Badge>
-                          )}
-                          {event.priority && (
-                            <Badge
-                              variant={
-                                event.priority === 'alta' ? 'destructive' :
-                                event.priority === 'media' ? 'default' : 'secondary'
-                              }
-                              className="text-xs"
-                            >
-                              {event.priority === 'alta' ? 'Alta' :
-                               event.priority === 'media' ? 'Média' : 'Baixa'}
-                            </Badge>
-                          )}
-                        </div>
+                        )}
+                        {event.priority && (
+                          <Badge
+                            variant={
+                              event.priority === 'alta' ? 'destructive' :
+                              event.priority === 'media' ? 'default' : 'secondary'
+                            }
+                            className="text-xs"
+                          >
+                            {event.priority === 'alta' ? 'Alta' :
+                             event.priority === 'media' ? 'Média' : 'Baixa'}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
