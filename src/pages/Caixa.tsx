@@ -161,10 +161,9 @@ export const Caixa: React.FC = () => {
                   <Label htmlFor="tipo">Tipo</Label>
                   <Select value={filtroTipo} onValueChange={setFiltroTipo}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Todos" />
+                      <SelectValue placeholder="Todos os tipos" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
                       <SelectItem value="entrada">Entrada</SelectItem>
                       <SelectItem value="saida">Saída</SelectItem>
                     </SelectContent>
