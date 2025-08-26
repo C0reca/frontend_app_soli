@@ -11,7 +11,8 @@ import {
   FileText as FileTemplate,
   LogOut,
   Calendar,
-  Building
+  Building,
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const navItems = [
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
+  { icon: Wallet, label: 'Caixa', path: '/caixa' },
   { icon: FileTemplate, label: 'Templates', path: '/templates' },
   { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
   { icon: FileText, label: 'Documentos', path: '/documentos' },
