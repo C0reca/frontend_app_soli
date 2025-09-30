@@ -30,8 +30,8 @@ export const Clients: React.FC = () => {
 
   const filteredClients = clients.filter((client: Client) => {
     console.log(client)
-    const nome = getClientName(client).toLowerCase();
-    const email = client.email.toLowerCase();
+    const nome = getClientName(client)?.toLowerCase() || '';
+    const email = client.email?.toLowerCase() || '';
     const searchLower = searchTerm.toLowerCase();
     
     return nome.includes(searchLower) || email.includes(searchLower);
