@@ -277,10 +277,10 @@ export const mockDocumentTemplates = [
 ];
 
 export const mockDashboardKPIs: DashboardKPIs = {
-  totalClients: 25,
-  activeProcesses: 8,
-  completedTasks: 42,
-  pendingTasks: 15,
-  activeTemplates: 6,
-  processCompletionRate: 85
+  totalClients: 3752,
+  activeProcesses: 0,
+  completedTasks: 0,
+  pendingTasks: 0,
+  activeTemplates: 0,
+  processCompletionRate: 0
 };
