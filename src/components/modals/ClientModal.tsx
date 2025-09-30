@@ -116,7 +116,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const { toast } = useToast();
   const isEditing = !!client;
   const [tipo, setTipo] = useState<'singular' | 'coletivo'>(
-    client?.tipo || 'singular'
+    // Se tipo for null/undefined ou não for válido, assume como singular
+    client?.tipo === 'coletivo' ? 'coletivo' : 'singular'
   );
 
   const getSchema = () => {
@@ -124,7 +125,15 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   };
 
   const getDefaultValues = () => {
-    if (client) return client;
+    if (client) {
+      // Se for edição e não tiver tipo definido, assume como singular
+      const clientWithDefaults = {
+        ...client,
+        tipo: client.tipo || 'singular',
+        status: client.status || 'active'
+      };
+      return clientWithDefaults;
+    }
     
     const baseDefaults = {
       internalNumber: '',
