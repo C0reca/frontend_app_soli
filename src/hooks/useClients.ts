@@ -86,44 +86,20 @@ export interface CorporateClient extends BaseClient {
 
 export type Client = IndividualClient | CorporateClient;
 
-interface PaginationParams {
-  page: number;
-  limit: number;
-  search?: string;
-}
-
-interface PaginatedResponse {
-  data: Client[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export const useClients = (params?: PaginationParams) => {
+export const useClients = () => {
   const queryClient = useQueryClient();
 
   const {
-    data: response,
+    data: clients = [],
     isLoading,
     error
   } = useQuery({
-    queryKey: ['clients', params],
+    queryKey: ['clients'],
     queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      
-      if (params?.page) searchParams.append('page', params.page.toString());
-      if (params?.limit) searchParams.append('limit', params.limit.toString());
-      if (params?.search) searchParams.append('search', params.search);
-      
-      const url = `/clientes${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-      const response = await api.get<PaginatedResponse>(url);
+      const response = await api.get('/clientes');
       return response.data;
     },
   });
-
-  const clients = response?.data || [];
-  const total = response?.total || 0;
-  const totalPages = response?.totalPages || 0;
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
@@ -157,8 +133,6 @@ export const useClients = (params?: PaginationParams) => {
 
   return {
     clients,
-    total,
-    totalPages,
     isLoading,
     error,
     createClient,
