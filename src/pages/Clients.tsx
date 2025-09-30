@@ -11,16 +11,23 @@ import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const Clients: React.FC = () => {
-  const { clients, isLoading, deleteClient } = useClients();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const itemsPerPage = 10;
+  
+  const { clients, total, totalPages, isLoading, deleteClient } = useClients({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debouncedSearchTerm
+  });
+  
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const getClientName = (client: Client) => {
     console.log(client);
@@ -31,25 +38,20 @@ export const Clients: React.FC = () => {
     return client.telefone;
   };
 
-  const filteredClients = clients.filter((client: Client) => {
-    console.log(client)
-    const nome = getClientName(client).toLowerCase();
-    const email = client.email.toLowerCase();
-    const searchLower = searchTerm.toLowerCase();
-    
-    return nome.includes(searchLower) || email.includes(searchLower);
-  });
-
-  // Paginação
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentClients = filteredClients.slice(startIndex, endIndex);
-
-  // Reset página quando filtro muda
+  // Debounce para pesquisa
   React.useEffect(() => {
-    setCurrentPage(1);
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset para primeira página quando busca
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Atualizar parâmetros de busca
+  React.useEffect(() => {
+    // O hook useClients já vai refazer a query automaticamente
+  }, [debouncedSearchTerm, currentPage]);
 
   const generatePaginationItems = () => {
     const items = [];
@@ -150,7 +152,7 @@ export const Clients: React.FC = () => {
         <CardHeader>
           <CardTitle>Lista de Clientes</CardTitle>
           <CardDescription>
-            Total de {filteredClients.length} clientes encontrados ({clients.length} cadastrados)
+            Total de {total} clientes encontrados
           </CardDescription>
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 max-w-sm">
@@ -178,7 +180,7 @@ export const Clients: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentClients.map((client: Client) => (
+              {clients.map((client: Client) => (
                 <TableRow key={client.id}>
                   <TableCell>
                     <div className="flex items-center space-x-2">
@@ -240,7 +242,7 @@ export const Clients: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {currentClients.length === 0 && (
+              {clients.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     {searchTerm ? 'Nenhum cliente encontrado com os critérios de busca.' : 'Nenhum cliente cadastrado.'}
@@ -300,7 +302,7 @@ export const Clients: React.FC = () => {
               </Pagination>
               
               <div className="text-sm text-muted-foreground text-center mt-2">
-                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredClients.length)} de {filteredClients.length} clientes
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, total)} de {total} clientes
               </div>
             </div>
           )}

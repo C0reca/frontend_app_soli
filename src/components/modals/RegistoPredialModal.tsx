@@ -193,7 +193,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                       <SelectContent>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id.toString()}>
-                            {client.nome}
+                            {client.tipo === 'singular' ? client.nome : client.nome_empresa}
                           </SelectItem>
                         ))}
                       </SelectContent>
