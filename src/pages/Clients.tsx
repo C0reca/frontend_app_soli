@@ -158,11 +158,11 @@ export const Clients: React.FC = () => {
                   <TableCell>{(client.tipo || 'singular') === 'singular' ? (client as any).nif : (client as any).nif_empresa}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      client.status === 'active' 
+                      (client.status || 'active') === 'active' 
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                      {(client.status || 'active') === 'active' ? 'Ativo' : 'Inativo'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">

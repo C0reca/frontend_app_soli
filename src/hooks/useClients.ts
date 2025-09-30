@@ -9,7 +9,7 @@ export interface BaseClient {
   tipo?: 'singular' | 'coletivo';
   internalNumber: string;
   responsibleEmployee: string;
-  status: 'active' | 'inactive';
+  status?: 'active' | 'inactive';
   createdAt: string;
   internalNotes: string;
 }
