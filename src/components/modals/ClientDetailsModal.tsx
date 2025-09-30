@@ -375,7 +375,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            {client.tipo === 'singular' ? (
+            {(client.tipo || 'singular') === 'singular' ? (
               <>
                 <User className="h-6 w-6 text-blue-600" />
                 <span>Detalhes do Cliente - Pessoa Singular</span>
@@ -405,11 +405,11 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                 <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <div className="mt-1">
                   <Badge className={
-                    client.status === 'active' 
+                    (client.status || 'active') === 'active' 
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                   }>
-                    {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                    {(client.status || 'active') === 'active' ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
               </div>
@@ -421,7 +421,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           </div>
 
           {/* Client Type Specific Content */}
-          {client.tipo === 'singular' 
+          {(client.tipo || 'singular') === 'singular' 
             ? renderIndividualClient(client as IndividualClient)
             : renderCorporateClient(client as CorporateClient)
           }
