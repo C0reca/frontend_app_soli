@@ -21,7 +21,13 @@ export const Clients: React.FC = () => {
 
   const getClientName = (client: Client) => {
     console.log(client);
-    return client.tipo === 'singular' ? client.nome : client.nome_empresa;
+    // Se tipo for null/undefined, assume como pessoa singular
+    const tipo = client.tipo || 'singular';
+    if (tipo === 'singular') {
+      return (client as any).nome;
+    } else {
+      return (client as any).nome_empresa;
+    }
   };
 
   const getClientPhone = (client: Client) => {
@@ -133,7 +139,7 @@ export const Clients: React.FC = () => {
                 <TableRow key={client.id}>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      {client.tipo === 'singular' ? (
+                      {(client.tipo || 'singular') === 'singular' ? (
                         <>
                           <User className="h-4 w-4 text-blue-600" />
                           <span className="text-xs text-muted-foreground">Particular</span>
@@ -149,7 +155,7 @@ export const Clients: React.FC = () => {
                   <TableCell className="font-medium">{getClientName(client)}</TableCell>
                   <TableCell>{client.email}</TableCell>
                   <TableCell>{getClientPhone(client)}</TableCell>
-                  <TableCell>{client.tipo === 'singular' ? client.nif : client.nif_empresa}</TableCell>
+                  <TableCell>{(client.tipo || 'singular') === 'singular' ? (client as any).nif : (client as any).nif_empresa}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       client.status === 'active' 

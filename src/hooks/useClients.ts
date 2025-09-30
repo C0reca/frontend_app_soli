@@ -6,7 +6,7 @@ import api from '@/services/api';
 // Base client interface
 export interface BaseClient {
   id: string;
-  tipo: 'singular' | 'coletivo';
+  tipo?: 'singular' | 'coletivo';
   internalNumber: string;
   responsibleEmployee: string;
   status: 'active' | 'inactive';
@@ -16,7 +16,7 @@ export interface BaseClient {
 
 // Individual client (Pessoa Singular)
 export interface IndividualClient extends BaseClient {
-  tipo: 'singular';
+  tipo?: 'singular';
   
   // Dados principais
   nome: string;
@@ -49,7 +49,7 @@ export interface IndividualClient extends BaseClient {
 
 // Corporate client (Pessoa Coletiva)
 export interface CorporateClient extends BaseClient {
-  tipo: 'coletivo';
+  tipo?: 'coletivo';
   
   // Dados principais
   nome_empresa: string;
