@@ -96,8 +96,14 @@ export const useClients = () => {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
+      console.log('Fetching clients...');
       const response = await api.get('/clientes');
-      return response.data;
+      console.log('API response:', response.data);
+      // Handle both paginated and non-paginated responses
+      if (response.data && Array.isArray(response.data.data)) {
+        return response.data.data; // Paginated response
+      }
+      return response.data || []; // Direct array response
     },
   });
 
