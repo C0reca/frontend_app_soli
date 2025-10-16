@@ -75,13 +75,6 @@ export const LoginPage: React.FC = () => {
               Entrar
             </Button>
           </form>
-          <div className="mt-4 text-sm text-center text-gray-600">
-            <p className="mb-2">Credenciais de teste:</p>
-            <div className="space-y-1">
-              <p><strong>Admin:</strong> admin@empresa.com / admin123</p>
-              <p><strong>Funcionário:</strong> funcionario@empresa.com / func123</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
