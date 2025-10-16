@@ -95,12 +95,10 @@ export const Clients: React.FC = () => {
             {isAdmin ? 'Gerencie os clientes da empresa' : 'Visualize e trabalhe com clientes'}
           </p>
         </div>
-        {isAdmin && (
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Cliente
           </Button>
-        )}
       </div>
 
       <Card>
