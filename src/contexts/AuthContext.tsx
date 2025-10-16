@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const mockUser = {
           id: '2',
           email: 'funcionario@empresa.com',
-          name: 'João Silva',
+          name: 'Helena Melo',
           role: 'employee'
         };
         const mockToken = 'mock-jwt-token-employee';
