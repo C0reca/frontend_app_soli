@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
       }
       
-      if (email === 'helena' && password === 'helena123') {
+      if (email === 'helenamelosolicitadora@gmail.com' && password === 'helena123') {
         const mockUser = {
           id: '2',
           email: 'funcionario@empresa.com',
