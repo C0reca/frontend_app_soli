@@ -13,13 +13,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
   { icon: Calendar, label: 'Calendário', path: '/calendario' },
-  { icon: FileText, label: 'Documentos', path: '/documentos' },
 ];
 
 export const EmployeeSidebar: React.FC = () => {
