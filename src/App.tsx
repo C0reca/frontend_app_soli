@@ -40,7 +40,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
   if (user?.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/clientes" replace />;
   }
   
   return <>{children}</>;
@@ -53,7 +53,7 @@ const AppRoutes = () => {
     <Routes>
       <Route 
         path="/login" 
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+        element={isAuthenticated ? <Navigate to="/clientes" replace /> : <LoginPage />}
       />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
