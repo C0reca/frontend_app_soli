@@ -167,7 +167,6 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                         </FormItem>
                     )}
                 />
-              />
 
               <FormField
                 control={form.control}
