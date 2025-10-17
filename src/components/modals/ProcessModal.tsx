@@ -52,7 +52,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
         titulo: process.titulo,
         descricao: process.descricao || '',
         tipo: process.tipo || '',
-        cliente_id: process.cliente_id,
+        cliente_id: process.cliente_id || undefined,
         funcionario_id: process.funcionario_id || undefined,
         estado: process.estado,
       });
