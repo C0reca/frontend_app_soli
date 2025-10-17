@@ -145,13 +145,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Cliente</FormLabel>
-                            <FormControl>
-                                <ClientCombobox
-                                    clients={clients}
-                                    value={field.value}
-                                    onChange={(id) => field.onChange(id)}
-                                />
-                            </FormControl>
+                            <ClientCombobox
+                                clients={clients}
+                                value={field.value}
+                                onChange={(id) => field.onChange(id)}
+                            />
                             <FormMessage />
                         </FormItem>
                     )}
