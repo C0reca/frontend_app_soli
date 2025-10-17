@@ -398,7 +398,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                 <p className="font-mono">{client.internalNumber}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Funcionário Responsável</label>
+                <label className="text-sm font-medium text-muted-foreground">Responsável</label>
                 <p>{client.responsibleEmployee}</p>
               </div>
               <div>

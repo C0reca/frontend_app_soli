@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 // Schema base para campos comuns
 const baseClientSchema = z.object({
   internalNumber: z.string().min(1, 'Número interno é obrigatório'),
-  responsibleEmployee: z.string().min(1, 'Funcionário responsável é obrigatório'),
+  responsibleEmployee: z.string().min(1, 'Responsável é obrigatório'),
   status: z.enum(['active', 'inactive']),
   internalNotes: z.string().optional(),
 });
@@ -293,7 +293,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="responsibleEmployee">Funcionário Responsável</Label>
+                  <Label htmlFor="responsibleEmployee">Responsável</Label>
                   <Select
                     value={watch('responsibleEmployee')}
                     onValueChange={(value) => setValue('responsibleEmployee', value)}
