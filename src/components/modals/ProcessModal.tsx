@@ -156,9 +156,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                                 <SelectContent>
                                     {clients.map((client) => (
                                         <SelectItem key={client.id} value={client.id.toString()}>
-                                            {client.nome
-                                                .toLocaleLowerCase()
-                                                .replace(/\b\w/g, (char) => char.toUpperCase())}
+                                            {client.nome}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
