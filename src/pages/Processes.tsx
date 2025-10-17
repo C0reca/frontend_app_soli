@@ -9,6 +9,7 @@ import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
 
+
 export const Processes: React.FC = () => {
   const { processes, isLoading, deleteProcess } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');

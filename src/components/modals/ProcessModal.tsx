@@ -11,6 +11,7 @@ import { useProcesses, Process } from '@/hooks/useProcesses';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ClientCombobox } from "@/components/ui/clientcombobox";
 
 const processSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
@@ -144,23 +145,13 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Cliente</FormLabel>
-                            <Select
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                                value={field.value?.toString()}
-                            >
-                                <FormControl>
-                                    <SelectTrigger className="text-left">
-                                        <SelectValue placeholder="Selecione um cliente" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {clients.map((client) => (
-                                        <SelectItem key={client.id} value={client.id.toString()}>
-                                            {client.nome}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <FormControl>
+                                <ClientCombobox
+                                    clients={clients}
+                                    value={field.value}
+                                    onChange={(id) => field.onChange(id)}
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
