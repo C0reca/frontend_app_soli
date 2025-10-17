@@ -162,7 +162,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
                   <Select onValueChange={(value) => field.onChange(value ? Number(value) : null)} value={field.value?.toString()}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um funcionário" />
+                        <SelectValue placeholder="Selecione um responsável" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
