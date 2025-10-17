@@ -168,7 +168,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                 name="funcionario_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Funcionário Responsável</FormLabel>
+                    <FormLabel>Responsável</FormLabel>
                     <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                       <FormControl>
                         <SelectTrigger>
