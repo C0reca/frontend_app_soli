@@ -138,29 +138,35 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="cliente_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um cliente" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id.toString()}>
-                            {client.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                <FormField
+                    control={form.control}
+                    name="cliente_id"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Cliente</FormLabel>
+                            <Select
+                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                value={field.value?.toString()}
+                            >
+                                <FormControl>
+                                    <SelectTrigger className="text-left">
+                                        <SelectValue placeholder="Selecione um cliente" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {clients.map((client) => (
+                                        <SelectItem key={client.id} value={client.id.toString()}>
+                                            {client.nome
+                                                .toLocaleLowerCase()
+                                                .replace(/\b\w/g, (char) => char.toUpperCase())}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
               />
 
               <FormField
