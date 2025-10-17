@@ -152,8 +152,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({ isOpen, onClose, pro
                       </FormControl>
                       <SelectContent>
                         {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id.toString()}>
-                            {client.tipo === 'singular' ? client.nome : client.nome_empresa}
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.nome}
                           </SelectItem>
                         ))}
                       </SelectContent>
