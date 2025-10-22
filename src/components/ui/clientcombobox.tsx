@@ -79,27 +79,30 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                         onValueChange={setSearch}
                     />
                     <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                    <CommandGroup>
-                        {filteredClients.map((client) => (
-                            <CommandItem
-                                key={client.id}
-                                value={client.nome ?? ""}
-                                onSelect={() => {
-                                    onChange(client.id);
-                                    setOpen(false);
-                                    setSearch("");
-                                }}
-                            >
-                                <Check
-                                    className={cn(
-                                        "mr-2 h-4 w-4",
-                                        client.id === value ? "opacity-100" : "opacity-0"
-                                    )}
-                                />
-                                {client.nome ?? "Cliente sem nome"}
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
+
+                    {Array.isArray(filteredClients) && filteredClients.length > 0 && (
+                        <CommandGroup>
+                            {filteredClients.map((client) => (
+                                <CommandItem
+                                    key={client.id}
+                                    value={client.nome ?? ""}
+                                    onSelect={() => {
+                                        onChange(client.id);
+                                        setOpen(false);
+                                        setSearch("");
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            client.id === value ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {client.nome ?? "Cliente sem nome"}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    )}
                 </Command>
             </PopoverContent>
         </Popover>
