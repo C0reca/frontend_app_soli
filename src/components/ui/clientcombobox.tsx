@@ -1,20 +1,10 @@
-// ClientCombobox.tsx (versão corrigida e funcional)
-import React, { useState } from "react";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Command, CommandInput, CommandItem, CommandList, CommandEmpty } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from "@/components/ui/command";
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 interface Client {
     id: number;
@@ -24,82 +14,70 @@ interface Client {
 interface ClientComboboxProps {
     clients: Client[];
     value?: number;
-    onChange: (id: number) => void;
+    onChange: (value: number) => void;
     isLoading?: boolean;
 }
 
-export const ClientCombobox: React.FC<ClientComboboxProps> = ({
-                                                                  clients = [],
-                                                                  value,
-                                                                  onChange,
-                                                                  isLoading = false,
-                                                              }) => {
+export function ClientCombobox({ clients = [], value, onChange, isLoading }: ClientComboboxProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
-    const selectedClient = clients.find((c) => c.id === value);
+    const normalize = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    const filteredClients = Array.isArray(clients)
-        ? clients.filter((client) => {
+    const filteredClients = useMemo(() => {
+        const normSearch = normalize(search);
+        return (clients ?? []).filter((client) => {
             const nome = client?.nome || "";
-            return nome.toLowerCase().includes(search.toLowerCase());
-        })
-        : [];
+            return normalize(nome).includes(normSearch);
+        });
+    }, [clients, search]);
+
+    const selectedClient = clients.find((c) => c.id === value);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between"
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A carregar...
-                        </>
-                    ) : selectedClient ? (
-                        selectedClient.nome || "Cliente sem nome"
-                    ) : (
-                        "Selecione um cliente"
-                    )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <Button variant="outline" role="combobox" className="w-full justify-between">
+                    {selectedClient?.nome ?? "Selecione um cliente"}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0">
-                <Command shouldFilter={false}>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                <Command>
                     <CommandInput
                         placeholder="Pesquisar cliente..."
                         value={search}
                         onValueChange={setSearch}
                     />
-                    <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                    {filteredClients.length > 0 && (
-                        <CommandGroup>
-                            {filteredClients.map((client) => (
-                                <CommandItem
-                                    key={client.id}
-                                    value={client.nome ?? ""}
-                                    onSelect={() => {
-                                        onChange(client.id);
-                                        setOpen(false);
-                                        setSearch("");
-                                    }}
-                                >
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            client.id === value ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {client.nome ?? "Cliente sem nome"}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    )}
+                    <CommandList>
+                        {isLoading ? (
+                            <div className="p-4 text-sm text-muted-foreground">A carregar clientes...</div>
+                        ) : (
+                            <>
+                                <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                                {filteredClients.map((client) => (
+                                    <CommandItem
+                                        key={client.id}
+                                        onSelect={() => {
+                                            onChange(client.id);
+                                            setOpen(false);
+                                        }}
+                                        className="flex justify-between"
+                                    >
+                                        {client.nome}
+                                        <Check
+                                            className={cn(
+                                                "ml-2 h-4 w-4",
+                                                client.id === value ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                    </CommandItem>
+                                ))}
+                            </>
+                        )}
+                    </CommandList>
                 </Command>
             </PopoverContent>
         </Popover>
     );
-};
+}
