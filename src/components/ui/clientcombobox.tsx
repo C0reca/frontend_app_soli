@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 interface ClientComboboxProps {
-    clients: { id: number; nome: string }[];
+    clients: { id: number; nome: string | null }[];
     value?: number;
     onChange: (id: number) => void;
 }
@@ -27,10 +27,19 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                                                                   onChange,
                                                               }) => {
     const [open, setOpen] = useState(false);
-    const [search, setSearch] = useState(""); // filtro local
+    const [search, setSearch] = useState("");
 
+    // Função para normalizar texto (remove acentos e põe em minúsculas)
+    function normalize(str: string | null | undefined): string {
+        return (str || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+    }
+
+    // Filtro que ignora acentos e é case-insensitive
     const filteredClients = clients.filter((client) =>
-        client.nome.toLowerCase().includes(search.toLowerCase())
+        normalize(client.nome).includes(normalize(search))
     );
 
     const selectedClient = clients.find((c) => c.id === value);
@@ -59,11 +68,11 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                         {filteredClients.map((client) => (
                             <CommandItem
                                 key={client.id}
-                                value={client.nome}
+                                value={client.nome ?? ""}
                                 onSelect={() => {
                                     onChange(client.id);
                                     setOpen(false);
-                                    setSearch(""); // reset após seleção
+                                    setSearch(""); // limpa o input após seleção
                                 }}
                             >
                                 <Check
@@ -72,7 +81,7 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                                         client.id === value ? "opacity-100" : "opacity-0"
                                     )}
                                 />
-                                {client.nome}
+                                {client.nome ?? "Sem nome"}
                             </CommandItem>
                         ))}
                     </CommandGroup>
