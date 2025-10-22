@@ -1,4 +1,4 @@
-// ClientCombobox.tsx
+// ClientCombobox.tsx (versão corrigida e funcional)
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 interface Client {
     id: number;
-    nome: string;
+    nome: string | null;
 }
 
 interface ClientComboboxProps {
@@ -39,9 +39,12 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
 
     const selectedClient = clients.find((c) => c.id === value);
 
-    const filteredClients = clients.filter((client) =>
-        client.nome.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredClients = Array.isArray(clients)
+        ? clients.filter((client) => {
+            const nome = client?.nome || "";
+            return nome.toLowerCase().includes(search.toLowerCase());
+        })
+        : [];
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -57,7 +60,7 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> A carregar...
                         </>
                     ) : selectedClient ? (
-                        selectedClient.nome
+                        selectedClient.nome || "Cliente sem nome"
                     ) : (
                         "Selecione um cliente"
                     )}
@@ -65,34 +68,36 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0">
-                <Command>
+                <Command shouldFilter={false}>
                     <CommandInput
                         placeholder="Pesquisar cliente..."
                         value={search}
                         onValueChange={setSearch}
                     />
                     <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                    <CommandGroup>
-                        {filteredClients.map((client) => (
-                            <CommandItem
-                                key={client.id}
-                                value={client.nome}
-                                onSelect={() => {
-                                    onChange(client.id);
-                                    setOpen(false);
-                                    setSearch("");
-                                }}
-                            >
-                                <Check
-                                    className={cn(
-                                        "mr-2 h-4 w-4",
-                                        client.id === value ? "opacity-100" : "opacity-0"
-                                    )}
-                                />
-                                {client.nome}
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
+                    {filteredClients.length > 0 && (
+                        <CommandGroup>
+                            {filteredClients.map((client) => (
+                                <CommandItem
+                                    key={client.id}
+                                    value={client.nome ?? ""}
+                                    onSelect={() => {
+                                        onChange(client.id);
+                                        setOpen(false);
+                                        setSearch("");
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            client.id === value ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {client.nome ?? "Cliente sem nome"}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    )}
                 </Command>
             </PopoverContent>
         </Popover>
