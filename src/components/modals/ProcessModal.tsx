@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -6,23 +6,23 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useProcesses, Process } from '@/hooks/useProcesses';
-import { useClients } from '@/hooks/useClients';
-import { useEmployees } from '@/hooks/useEmployees';
+} from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useProcesses, Process } from "@/hooks/useProcesses";
+import { useClients } from "@/hooks/useClients";
+import { useEmployees } from "@/hooks/useEmployees";
 import {
     Form,
     FormControl,
@@ -30,17 +30,17 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from '@/components/ui/form';
-import { ClientCombobox } from '@/components/ui/clientcombobox';
-import { Loader2 } from 'lucide-react';
+} from "@/components/ui/form";
+import { ClientCombobox } from "@/components/ui/clientcombobox";
+import { Loader2 } from "lucide-react";
 
 const processSchema = z.object({
-    titulo: z.string().min(1, 'Título é obrigatório'),
+    titulo: z.string().min(1, "Título é obrigatório"),
     descricao: z.string().optional(),
     tipo: z.string().optional(),
-    cliente_id: z.number().min(1, 'Cliente é obrigatório'),
+    cliente_id: z.number().min(1, "Cliente é obrigatório"),
     funcionario_id: z.number().optional(),
-    estado: z.enum(['pendente', 'em_curso', 'concluido']).default('pendente'),
+    estado: z.enum(["pendente", "em_curso", "concluido"]).default("pendente"),
 });
 
 type ProcessFormData = z.infer<typeof processSchema>;
@@ -63,12 +63,12 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const form = useForm<ProcessFormData>({
         resolver: zodResolver(processSchema),
         defaultValues: {
-            titulo: '',
-            descricao: '',
-            tipo: '',
+            titulo: "",
+            descricao: "",
+            tipo: "",
             cliente_id: undefined,
             funcionario_id: undefined,
-            estado: 'pendente',
+            estado: "pendente",
         },
     });
 
@@ -76,20 +76,20 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         if (process) {
             form.reset({
                 titulo: process.titulo,
-                descricao: process.descricao || '',
-                tipo: process.tipo || '',
+                descricao: process.descricao || "",
+                tipo: process.tipo || "",
                 cliente_id: process.cliente_id || undefined,
                 funcionario_id: process.funcionario_id || undefined,
                 estado: process.estado,
             });
         } else {
             form.reset({
-                titulo: '',
-                descricao: '',
-                tipo: '',
+                titulo: "",
+                descricao: "",
+                tipo: "",
                 cliente_id: undefined,
                 funcionario_id: undefined,
-                estado: 'pendente',
+                estado: "pendente",
             });
         }
     }, [process, form]);
@@ -116,11 +116,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>{process ? 'Editar Processo' : 'Novo Processo'}</DialogTitle>
+                    <DialogTitle>{process ? "Editar Processo" : "Novo Processo"}</DialogTitle>
                     <DialogDescription>
                         {process
-                            ? 'Edite os dados do processo.'
-                            : 'Preencha os dados para criar um novo processo.'}
+                            ? "Edite os dados do processo."
+                            : "Preencha os dados para criar um novo processo."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -199,8 +199,10 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         <FormItem>
                                             <FormLabel>Responsável</FormLabel>
                                             <Select
-                                                onValueChange={(value) => field.onChange(parseInt(value))}
-                                                value={field.value?.toString()}
+                                                onValueChange={(value) =>
+                                                    field.onChange(value ? parseInt(value) : undefined)
+                                                }
+                                                value={field.value?.toString() ?? ""}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
@@ -209,7 +211,10 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 </FormControl>
                                                 <SelectContent>
                                                     {employees.map((employee) => (
-                                                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                                                        <SelectItem
+                                                            key={employee.id}
+                                                            value={employee.id.toString()}
+                                                        >
                                                             {employee.nome}
                                                         </SelectItem>
                                                     ))}
@@ -227,7 +232,10 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Estado</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione o estado" />
@@ -253,8 +261,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     disabled={createProcess.isPending || updateProcess.isPending}
                                 >
                                     {createProcess.isPending || updateProcess.isPending
-                                        ? 'Salvando...'
-                                        : 'Salvar'}
+                                        ? "Salvando..."
+                                        : "Salvar"}
                                 </Button>
                             </DialogFooter>
                         </form>
