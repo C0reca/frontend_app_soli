@@ -27,6 +27,11 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                                                                   onChange,
                                                               }) => {
     const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState(""); // filtro local
+
+    const filteredClients = clients.filter((client) =>
+        client.nome.toLowerCase().includes(search.toLowerCase())
+    );
 
     const selectedClient = clients.find((c) => c.id === value);
 
@@ -43,17 +48,22 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-full p-0">
-                <Command>
-                    <CommandInput placeholder="Pesquisar cliente..." />
+                <Command shouldFilter={false}>
+                    <CommandInput
+                        placeholder="Pesquisar cliente..."
+                        value={search}
+                        onValueChange={setSearch}
+                    />
                     <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                     <CommandGroup>
-                        {clients.map((client) => (
+                        {filteredClients.map((client) => (
                             <CommandItem
                                 key={client.id}
                                 value={client.nome}
                                 onSelect={() => {
                                     onChange(client.id);
                                     setOpen(false);
+                                    setSearch(""); // reset após seleção
                                 }}
                             >
                                 <Check
