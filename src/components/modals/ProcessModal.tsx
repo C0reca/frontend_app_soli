@@ -182,7 +182,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         <FormItem>
                                             <FormLabel>Cliente</FormLabel>
                                             <ClientCombobox
-                                                clients={clients}
+                                                clients={clients ?? []}
                                                 value={field.value}
                                                 onChange={field.onChange}
                                                 isLoading={isClientsLoading}

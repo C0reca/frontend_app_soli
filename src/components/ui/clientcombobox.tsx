@@ -36,13 +36,9 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
-    // Função segura para normalizar texto (ignora acentos)
     function normalize(str: string | null | undefined): string {
         if (typeof str !== "string") return "";
-        return str
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     }
 
     const filteredClients = Array.isArray(clients)
