@@ -10,15 +10,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 
 interface Client {
     id: number;
-    nome: string;
+    nome: string | null;
 }
 
 interface ClientComboboxProps {
@@ -37,16 +36,17 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
-    // Normaliza texto (ignora acentos)
-    function normalize(str: string): string {
+    // ✅ Função segura que ignora acentos e evita erros de null
+    function normalize(str: string | null | undefined): string {
+        if (typeof str !== "string") return "";
         return str
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase();
     }
 
-    const filteredClients = clients.filter((client) =>
-        normalize(client.nome).includes(normalize(search))
+    const filteredClients = (clients || []).filter((client) =>
+        normalize(client?.nome).includes(normalize(search))
     );
 
     const selectedClient = clients.find((c) => c.id === value);
@@ -66,7 +66,7 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                             A carregar clientes...
                         </>
                     ) : selectedClient ? (
-                        selectedClient.nome
+                        selectedClient.nome || "Cliente sem nome"
                     ) : (
                         "Selecione um cliente"
                     )}
@@ -85,7 +85,7 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                         {filteredClients.map((client) => (
                             <CommandItem
                                 key={client.id}
-                                value={client.nome}
+                                value={client.nome ?? ""}
                                 onSelect={() => {
                                     onChange(client.id);
                                     setOpen(false);
@@ -98,7 +98,7 @@ export const ClientCombobox: React.FC<ClientComboboxProps> = ({
                                         client.id === value ? "opacity-100" : "opacity-0"
                                     )}
                                 />
-                                {client.nome}
+                                {client.nome ?? "Cliente sem nome"}
                             </CommandItem>
                         ))}
                     </CommandGroup>
