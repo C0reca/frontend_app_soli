@@ -9,11 +9,13 @@ import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
 import { useClients } from '@/hooks/useClients';
+import { useEmployees } from '@/hooks/useEmployees';
 
 
 export const Processes: React.FC = () => {
   const { processes, isLoading, deleteProcess } = useProcesses();
   const { clients } = useClients();
+  const { employees } = useEmployees();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,10 +28,16 @@ export const Processes: React.FC = () => {
     return client?.nome || client?.nome_empresa || '';
   };
 
+  const getEmployeeNameById = (id?: number) => {
+    if (!id) return '';
+    const employee = employees.find((e: any) => e.id?.toString() === id.toString());
+    return employee?.nome || '';
+  };
+
   const filteredProcesses = processes.filter((process) => {
     const term = searchTerm.toLowerCase();
     const clienteNome = process.cliente?.nome || getClientNameById(process.cliente_id) || '';
-    const funcionarioNome = process.funcionario?.nome || '';
+    const funcionarioNome = process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || '';
     return (
       process.titulo.toLowerCase().includes(term) ||
       clienteNome.toLowerCase().includes(term) ||
@@ -157,7 +165,7 @@ export const Processes: React.FC = () => {
                           <span className="font-medium">Cliente:</span> {process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
                         </div>
                         <div>
-                          <span className="font-medium">Responsável:</span> {process.funcionario?.nome || `ID: ${process.funcionario_id}`}
+                          <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
                         </div>
                         <div>
                           <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
