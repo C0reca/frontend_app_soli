@@ -34,9 +34,9 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
     enabled: !!registo?.cliente_id,
   });
 
-  const clienteNome = clienteData?.nome || clienteData?.nome_empresa || registo.cliente?.nome || `ID: ${registo.cliente_id}`;
-
   if (!registo) return null;
+
+  const clienteNome = clienteData?.nome || clienteData?.nome_empresa || registo.cliente?.nome || `ID: ${registo.cliente_id}`;
 
   const getStatusColor = (estado: string) => {
     switch (estado) {
