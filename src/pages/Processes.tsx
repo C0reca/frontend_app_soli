@@ -8,21 +8,34 @@ import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
+import { useClients } from '@/hooks/useClients';
 
 
 export const Processes: React.FC = () => {
   const { processes, isLoading, deleteProcess } = useProcesses();
+  const { clients } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProcessDetails, setSelectedProcessDetails] = useState<Process | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  const filteredProcesses = processes.filter((process) =>
-    process.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (process.cliente?.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (process.funcionario?.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getClientNameById = (id?: number) => {
+    if (!id) return '';
+    const client = clients.find((c: any) => c.id?.toString() === id.toString());
+    return client?.nome || client?.nome_empresa || '';
+  };
+
+  const filteredProcesses = processes.filter((process) => {
+    const term = searchTerm.toLowerCase();
+    const clienteNome = process.cliente?.nome || getClientNameById(process.cliente_id) || '';
+    const funcionarioNome = process.funcionario?.nome || '';
+    return (
+      process.titulo.toLowerCase().includes(term) ||
+      clienteNome.toLowerCase().includes(term) ||
+      funcionarioNome.toLowerCase().includes(term)
+    );
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -141,7 +154,7 @@ export const Processes: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
-                          <span className="font-medium">Cliente:</span> {process.cliente?.nome || `ID: ${process.cliente_id}`}
+                          <span className="font-medium">Cliente:</span> {process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
                         </div>
                         <div>
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome || `ID: ${process.funcionario_id}`}
