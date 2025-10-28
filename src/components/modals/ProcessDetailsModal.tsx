@@ -1,4 +1,6 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -20,6 +22,26 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   onClose,
   process,
 }) => {
+  const { data: clienteData, isLoading: loadingCliente } = useQuery({
+    queryKey: ['cliente', process?.cliente_id],
+    queryFn: async () => {
+      const response = await api.get(`/clientes/${process?.cliente_id}`);
+      return response.data;
+    },
+    enabled: !!process?.cliente_id,
+  });
+
+  const { data: funcionarioData, isLoading: loadingFuncionario } = useQuery({
+    queryKey: ['funcionario', process?.funcionario_id],
+    queryFn: async () => {
+      const response = await api.get(`/funcionarios/${process?.funcionario_id}`);
+      return response.data;
+    },
+    enabled: !!process?.funcionario_id,
+  });
+
+  const clienteNome = clienteData?.nome || clienteData?.nome_empresa || process?.cliente?.nome || (process ? `Cliente ID: ${process.cliente_id}` : '');
+  const funcionarioNome = funcionarioData?.nome || process?.funcionario?.nome || (process?.funcionario_id ? `Funcionário ID: ${process.funcionario_id}` : 'N/A');
   const { getTasksByProcess } = useTasks();
   const [processTasks, setProcessTasks] = React.useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = React.useState(false);
@@ -196,7 +218,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <Building className="h-4 w-4" />
                       <span>Cliente</span>
                     </label>
-                    <p className="text-lg font-semibold">{process.cliente?.nome || `Cliente ID: ${process.cliente_id}`}</p>
+                    <p className="text-lg font-semibold">{loadingCliente ? 'A carregar...' : (clienteNome || 'N/A')}</p>
                   </div>
 
                   <div>
@@ -204,7 +226,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <User className="h-4 w-4" />
                       <span>Responsável</span>
                     </label>
-                    <p className="text-sm">{process.funcionario?.nome || `Funcionário ID: ${process.funcionario_id}`}</p>
+                    <p className="text-sm">{loadingFuncionario ? 'A carregar...' : (funcionarioNome || 'N/A')}</p>
                   </div>
 
                   <div>
