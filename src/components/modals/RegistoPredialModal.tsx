@@ -118,7 +118,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
     try {
       const registoData = {
         numero_processo: data.numero_processo,
-        cliente_id: parseInt(data.cliente_id),
+        cliente_id: data.cliente_id,
         predio: data.predio,
         freguesia: data.freguesia,
         registo: data.registo,
