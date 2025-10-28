@@ -1,4 +1,6 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/services/api';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +25,17 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
   onClose,
   registo,
 }) => {
+  const { data: clienteData, isLoading: isLoadingCliente } = useQuery({
+    queryKey: ['cliente', registo?.cliente_id],
+    queryFn: async () => {
+      const response = await api.get(`/clientes/${registo?.cliente_id}`);
+      return response.data;
+    },
+    enabled: !!registo?.cliente_id,
+  });
+
+  const clienteNome = clienteData?.nome || clienteData?.nome_empresa || registo.cliente?.nome || `ID: ${registo.cliente_id}`;
+
   if (!registo) return null;
 
   const getStatusColor = (estado: string) => {
@@ -89,7 +102,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
               Cliente
             </h4>
             <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium">{registo.cliente?.nome || 'N/A'}</p>
+              <p className="font-medium">{isLoadingCliente ? 'A carregar...' : (clienteNome || 'N/A')}</p>
             </div>
           </div>
 
