@@ -8,8 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Process } from '@/hooks/useProcesses';
-import { useTasks } from '@/hooks/useTasks';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Download, Upload, Eye, FileIcon } from 'lucide-react';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { useLogsProcesso, LogProcesso } from '@/hooks/useLogsProcesso';
+import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
+import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Download, Upload, Eye, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare } from 'lucide-react';
+import { useMinimize } from '@/contexts/MinimizeContext';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
@@ -43,15 +47,22 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const clienteNome = clienteData?.nome || clienteData?.nome_empresa || process?.cliente?.nome || (process ? `Cliente ID: ${process.cliente_id}` : '');
   const funcionarioNome = funcionarioData?.nome || process?.funcionario?.nome || (process?.funcionario_id ? `Funcionário ID: ${process.funcionario_id}` : 'N/A');
   const { getTasksByProcess } = useTasks();
+  const { logs, isLoading: loadingLogs } = useLogsProcesso(process?.id);
   const [processTasks, setProcessTasks] = React.useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = React.useState(false);
+  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = React.useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = React.useState(false);
+  const [selectedLog, setSelectedLog] = React.useState<LogProcesso | null>(null);
+  const { minimize } = useMinimize();
   
   React.useEffect(() => {
     if (process && isOpen) {
       setLoadingTasks(true);
       getTasksByProcess(process.id)
         .then(data => {
-          setProcessTasks(data.tarefas || []);
+          const tasks = Array.isArray(data) ? data : (data?.tarefas || []);
+          setProcessTasks(tasks);
         })
         .catch(error => {
           console.error('Erro ao buscar tarefas:', error);
@@ -137,6 +148,87 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     }
   };
 
+  const handleAddLog = () => {
+    setSelectedLog(null);
+    setIsLogModalOpen(true);
+  };
+
+  const handleEditLog = (log: LogProcesso) => {
+    if (log.is_automatico) {
+      toast({
+        title: "Aviso",
+        description: "Não é possível editar logs automáticos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSelectedLog(log);
+    setIsLogModalOpen(true);
+  };
+
+  const handleViewTask = (tarefaId: number) => {
+    // Buscar a tarefa e abrir o modal de detalhes
+    const task = tasks.find(t => t.id === tarefaId.toString());
+    if (task) {
+      setSelectedTaskDetails(task);
+      setIsDetailsModalOpen(true);
+    }
+  };
+
+  const getLogIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'criacao':
+        return <Plus className="h-4 w-4 text-green-600" />;
+      case 'alteracao':
+        return <FileText className="h-4 w-4 text-blue-600" />;
+      case 'tarefa_criada':
+        return <Plus className="h-4 w-4 text-purple-600" />;
+      case 'tarefa_concluida':
+        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case 'estado_alterado':
+        return <AlertCircle className="h-4 w-4 text-orange-600" />;
+      case 'telefone':
+        return <Phone className="h-4 w-4 text-blue-600" />;
+      case 'reuniao':
+        return <Users className="h-4 w-4 text-purple-600" />;
+      case 'email':
+        return <Mail className="h-4 w-4 text-red-600" />;
+      case 'documento':
+        return <File className="h-4 w-4 text-gray-600" />;
+      case 'observacao':
+        return <MessageSquare className="h-4 w-4 text-gray-600" />;
+      default:
+        return <History className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getLogColor = (tipo: string) => {
+    switch (tipo) {
+      case 'criacao':
+        return 'bg-green-50 border-green-200';
+      case 'alteracao':
+        return 'bg-blue-50 border-blue-200';
+      case 'tarefa_criada':
+        return 'bg-purple-50 border-purple-200';
+      case 'tarefa_concluida':
+        return 'bg-green-50 border-green-200';
+      case 'estado_alterado':
+        return 'bg-orange-50 border-orange-200';
+      case 'telefone':
+        return 'bg-blue-50 border-blue-200';
+      case 'reuniao':
+        return 'bg-purple-50 border-purple-200';
+      case 'email':
+        return 'bg-red-50 border-red-200';
+      case 'documento':
+        return 'bg-gray-50 border-gray-200';
+      case 'observacao':
+        return 'bg-gray-50 border-gray-200';
+      default:
+        return 'bg-gray-50 border-gray-200';
+    }
+  };
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'concluido':
@@ -168,12 +260,26 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <FileText className="h-6 w-6" />
-            <span>Detalhes do Processo</span>
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center space-x-2">
+              <FileText className="h-6 w-6" />
+              <span>Detalhes do Processo</span>
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-12 top-4"
+              onClick={() => {
+                minimize({ type: 'process', title: `Processo: ${process?.titulo ?? ''}` , payload: { process } });
+                onClose();
+              }}
+              aria-label={'Minimizar'}
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -266,7 +372,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 ) : processTasks.length > 0 ? (
                   <div className="space-y-3">
                     {processTasks.map((task) => (
-                      <Card key={task.id} className="border-l-4 border-l-blue-500">
+                      <Card
+                        key={task.id}
+                        className="border-l-4 border-l-blue-500 hover:shadow cursor-pointer"
+                        onClick={() => { setSelectedTask(task as Task); setIsTaskDetailsOpen(true); }}
+                      >
                         <CardHeader className="pb-2">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-base font-medium">{task.titulo}</CardTitle>
@@ -361,35 +471,93 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
             </TabsContent>
 
             <TabsContent value="timeline" className="space-y-6 mt-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Timeline do Processo</h3>
-                <div className="bg-muted p-4 rounded-lg">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Criado:</span>
-                      <span>{new Date(process.criado_em).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Estado atual:</span>
-                      <Badge className={getStatusColor(process.estado)} variant="outline">
-                        {getStatusLabel(process.estado)}
-                      </Badge>
-                    </div>
-                    {isOverdue && (
-                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                        <div className="flex items-center space-x-2">
-                          <AlertCircle className="h-4 w-4" />
-                          <span className="font-medium">Este processo está atrasado</span>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Timeline do Processo</h3>
+                <Button onClick={handleAddLog} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Log
+                </Button>
+              </div>
+              
+              {loadingLogs ? (
+                <div className="flex justify-center py-8">
+                  <div className="text-muted-foreground">Carregando logs...</div>
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum log registrado ainda.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {logs.map((log) => (
+                    <div
+                      key={log.id}
+                      className={`p-4 rounded-lg border ${getLogColor(log.tipo)}`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 mt-1">
+                          {getLogIcon(log.tipo)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                                 <div className="flex items-center justify-between">
+                                   <h4 className="text-sm font-medium text-gray-900">
+                                     {log.titulo}
+                                   </h4>
+                                   <div className="flex items-center space-x-2">
+                                     <span className="text-xs text-gray-500">
+                                       {new Date(log.data_hora).toLocaleString('pt-BR')}
+                                     </span>
+                                     {log.tarefa_id && (
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         onClick={() => handleViewTask(log.tarefa_id!)}
+                                         className="h-6 px-2"
+                                         title="Ver tarefa"
+                                       >
+                                         <CheckSquare className="h-3 w-3" />
+                                       </Button>
+                                     )}
+                                     {!log.is_automatico && (
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         onClick={() => handleEditLog(log)}
+                                         className="h-6 px-2"
+                                         title="Editar log"
+                                       >
+                                         <Edit className="h-3 w-3" />
+                                       </Button>
+                                     )}
+                                   </div>
+                                 </div>
+                          {log.descricao && (
+                            <p className="mt-1 text-sm text-gray-600">
+                              {log.descricao}
+                            </p>
+                          )}
+                          {log.funcionario_nome && (
+                            <p className="mt-1 text-xs text-gray-500">
+                              Por: {log.funcionario_nome}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
       </DialogContent>
+      <TaskDetailsModal isOpen={isTaskDetailsOpen} onClose={() => setIsTaskDetailsOpen(false)} task={selectedTask} />
+      <LogProcessoModal 
+        isOpen={isLogModalOpen} 
+        onClose={() => setIsLogModalOpen(false)} 
+        processoId={process?.id || 0}
+        log={selectedLog}
+      />
     </Dialog>
   );
 };

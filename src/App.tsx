@@ -19,6 +19,9 @@ import { Calendar } from "@/pages/Calendar";
 import { RegistosPrediais } from "@/pages/RegistosPrediais";
 import { Caixa } from "@/pages/Caixa";
 import NotFound from "./pages/NotFound";
+import { MinimizeProvider } from "@/contexts/MinimizeContext";
+import { MinimizeDock } from "@/components/MinimizeDock";
+import { MinimizeRenderer } from "@/components/MinimizeRenderer";
 
 const queryClient = new QueryClient();
 
@@ -81,7 +84,11 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AppRoutes />
+          <MinimizeProvider>
+            <AppRoutes />
+            <MinimizeDock />
+            <MinimizeRenderer />
+          </MinimizeProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

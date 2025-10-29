@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Minimize2 } from 'lucide-react';
+import { useMinimize } from '@/contexts/MinimizeContext';
 
 const taskSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
@@ -21,6 +23,9 @@ const taskSchema = z.object({
   prioridade: z.enum(['baixa', 'media', 'alta']).nullable().optional(),
   concluida: z.boolean(),
   data_fim: z.string().nullable().optional(),
+  autor_id: z.number().nullable().optional(),
+  tipo: z.enum(['reuniao','telefonema','tarefa']).nullable().optional(),
+  parent_id: z.number().nullable().optional(),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -29,23 +34,30 @@ interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task?: Task | null;
+  parentId?: number | null;
+  processoId?: number | null;
+  initialData?: Partial<TaskFormData> | null;
 }
 
-export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) => {
+export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, parentId = null, processoId = null, initialData = null }) => {
   const { createTask, updateTask } = useTasks();
   const { processes } = useProcesses();
   const { employees } = useEmployees();
+  const { minimize } = useMinimize();
   
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      titulo: '',
-      descricao: '',
-      processo_id: 0,
-      responsavel_id: null,
-      prioridade: 'media',
-      concluida: false,
-      data_fim: null,
+      titulo: initialData?.titulo ?? '',
+      descricao: initialData?.descricao ?? '',
+      processo_id: initialData?.processo_id ?? (processoId ?? 0),
+      responsavel_id: initialData?.responsavel_id ?? null,
+      prioridade: (initialData?.prioridade as any) ?? 'media',
+      concluida: initialData?.concluida ?? false,
+      data_fim: (initialData?.data_fim as any) ?? null,
+      autor_id: (initialData as any)?.autor_id ?? null,
+      tipo: (initialData as any)?.tipo ?? null,
+      parent_id: (initialData as any)?.parent_id ?? parentId,
     },
   });
 
@@ -59,19 +71,25 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
         prioridade: task.prioridade,
         concluida: task.concluida,
         data_fim: task.data_fim ? task.data_fim.split('T')[0] : null, // Format for date input
+        autor_id: task.autor_id ?? null,
+        tipo: (task as any).tipo ?? null,
+        parent_id: task.parent_id ?? null,
       });
     } else {
       form.reset({
-        titulo: '',
-        descricao: '',
-        processo_id: 0,
-        responsavel_id: null,
-        prioridade: 'media',
-        concluida: false,
-        data_fim: null,
+        titulo: initialData?.titulo ?? '',
+        descricao: initialData?.descricao ?? '',
+        processo_id: initialData?.processo_id ?? (processoId ?? 0),
+        responsavel_id: initialData?.responsavel_id ?? null,
+        prioridade: (initialData?.prioridade as any) ?? 'media',
+        concluida: initialData?.concluida ?? false,
+        data_fim: (initialData?.data_fim as any) ?? null,
+        autor_id: (initialData as any)?.autor_id ?? null,
+        tipo: (initialData as any)?.tipo ?? null,
+        parent_id: (initialData as any)?.parent_id ?? parentId,
       });
     }
-  }, [task, form]);
+  }, [task, form, parentId, processoId, initialData]);
 
   const onSubmit = async (data: TaskFormData) => {
     try {
@@ -91,12 +109,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
-          <DialogDescription>
-            {task ? 'Edite os dados da tarefa.' : 'Preencha os dados para criar uma nova tarefa.'}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+              <DialogDescription>
+                {task ? 'Edite os dados da tarefa.' : 'Preencha os dados para criar uma nova tarefa.'}
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-12 top-4"
+              onClick={() => {
+                const data = form.getValues();
+                minimize({ type: 'task', title: task ? `Editar: ${task.titulo}` : 'Nova Tarefa', payload: { data, parentId, processoId } });
+                onClose();
+              }}
+              aria-label={'Minimizar'}
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -204,6 +239,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
 
               <FormField
                 control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="reuniao">Reunião</SelectItem>
+                        <SelectItem value="telefonema">Telefonema</SelectItem>
+                        <SelectItem value="tarefa">Tarefa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="concluida"
                 render={({ field }) => (
                   <FormItem>
@@ -234,6 +292,31 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task }) =
                   <FormControl>
                     <Input type="date" {...field} value={field.value || ''} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="autor_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Autor</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(value ? Number(value) : null)} value={field.value?.toString()}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o autor" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {employees.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                          {employee.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

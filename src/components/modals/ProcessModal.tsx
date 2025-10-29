@@ -32,7 +32,8 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { ClientCombobox } from "@/components/ui/clientcombobox";
-import { Loader2 } from "lucide-react";
+import { Loader2, Minimize2 } from "lucide-react";
+import { useMinimize } from '@/contexts/MinimizeContext';
 
 const processSchema = z.object({
     titulo: z.string().min(1, "Título é obrigatório"),
@@ -49,26 +50,30 @@ interface ProcessModalProps {
     isOpen: boolean;
     onClose: () => void;
     process?: Process | null;
+    initialData?: Partial<ProcessFormData> | null;
 }
 
 export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                               isOpen,
                                                               onClose,
                                                               process,
+                                                              initialData = null,
                                                           }) => {
     const { createProcess, updateProcess } = useProcesses();
     const { clients = [], isLoading: isClientsLoading } = useClients();
     const { employees = [], isLoading: isEmployeesLoading } = useEmployees();
 
+    const { minimize } = useMinimize();
+
     const form = useForm<ProcessFormData>({
         resolver: zodResolver(processSchema),
         defaultValues: {
-            titulo: "",
-            descricao: "",
-            tipo: "",
-            cliente_id: undefined,
-            funcionario_id: undefined,
-            estado: "pendente",
+            titulo: initialData?.titulo ?? "",
+            descricao: initialData?.descricao ?? "",
+            tipo: initialData?.tipo ?? "",
+            cliente_id: initialData?.cliente_id ?? undefined,
+            funcionario_id: initialData?.funcionario_id ?? undefined,
+            estado: initialData?.estado ?? "pendente",
         },
     });
 
@@ -84,15 +89,15 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
             });
         } else {
             form.reset({
-                titulo: "",
-                descricao: "",
-                tipo: "",
-                cliente_id: undefined,
-                funcionario_id: undefined,
-                estado: "pendente",
+                titulo: initialData?.titulo ?? "",
+                descricao: initialData?.descricao ?? "",
+                tipo: initialData?.tipo ?? "",
+                cliente_id: initialData?.cliente_id ?? undefined,
+                funcionario_id: initialData?.funcionario_id ?? undefined,
+                estado: initialData?.estado ?? "pendente",
             });
         }
-    }, [process, form]);
+    }, [process, form, initialData]);
 
     const onSubmit = async (data: ProcessFormData) => {
         try {
@@ -114,14 +119,31 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{process ? "Editar Processo" : "Novo Processo"}</DialogTitle>
-                    <DialogDescription>
-                        {process
-                            ? "Edite os dados do processo."
-                            : "Preencha os dados para criar um novo processo."}
-                    </DialogDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <DialogTitle>{process ? "Editar Processo" : "Novo Processo"}</DialogTitle>
+                            <DialogDescription>
+                                {process
+                                    ? "Edite os dados do processo."
+                                    : "Preencha os dados para criar um novo processo."}
+                            </DialogDescription>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-12 top-4"
+                            onClick={() => {
+                                const data = form.getValues();
+                                minimize({ type: 'process', title: process ? `Editar: ${process.titulo}` : 'Novo Processo', payload: { data, process } });
+                                onClose();
+                            }}
+                            aria-label={'Minimizar'}
+                        >
+                            <Minimize2 className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </DialogHeader>
 
                 {isLoading ? (

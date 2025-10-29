@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Minimize2 } from 'lucide-react';
+import { useMinimize } from '@/contexts/MinimizeContext';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -104,13 +106,16 @@ interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   client?: Client | null;
+  initialData?: any;
 }
 
 export const ClientModal: React.FC<ClientModalProps> = ({
   isOpen,
   onClose,
   client,
+  initialData,
 }) => {
+  const { minimize } = useMinimize();
   const { createClient, updateClient } = useClients();
   const { employees } = useEmployees();
   const { toast } = useToast();
@@ -125,6 +130,9 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   };
 
   const getDefaultValues = () => {
+    if (initialData) {
+      return initialData;
+    }
     if (client) {
       // Se for edição e não tiver tipo definido, assume como singular
       const clientWithDefaults = {
@@ -205,7 +213,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   React.useEffect(() => {
     reset(getDefaultValues());
-  }, [tipo, client]);
+  }, [tipo, client, initialData]);
 
   const onSubmit = async (data: any) => {
     try {
@@ -238,14 +246,31 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Editar Cliente' : 'Novo Cliente'}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? 'Altere as informações do cliente'
-              : 'Preencha os dados do novo cliente'}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>
+                {isEditing ? 'Editar Cliente' : 'Novo Cliente'}
+              </DialogTitle>
+              <DialogDescription>
+                {isEditing
+                  ? 'Altere as informações do cliente'
+                  : 'Preencha os dados do novo cliente'}
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-12 top-4"
+              onClick={() => {
+                const data = form.getValues();
+                minimize({ type: 'client', title: isEditing ? `Editar: ${client?.nome || (client as any)?.nome_empresa || 'Cliente'}` : 'Novo Cliente', payload: { data, client } });
+                onClose();
+              }}
+              aria-label={'Minimizar'}
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

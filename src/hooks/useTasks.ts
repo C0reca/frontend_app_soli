@@ -9,10 +9,14 @@ export interface Task {
   descricao: string;
   processo_id: number;
   responsavel_id: number | null;
+  autor_id?: number | null;
   prioridade: 'baixa' | 'media' | 'alta' | null;
   concluida: boolean;
   data_fim: string | null;
   criado_em: string;
+  tipo?: 'reuniao' | 'telefonema' | 'tarefa' | null;
+  parent_id?: number | null;
+  subtarefas_count?: number;
 }
 
 export const useTasks = () => {
@@ -26,8 +30,13 @@ export const useTasks = () => {
   } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const response = await api.get('/tarefas');
-      return response.data;
+      try {
+        const response = await api.get('/tarefas/with_counts');
+        return response.data;
+      } catch (e) {
+        const fallback = await api.get('/tarefas');
+        return fallback.data;
+      }
     },
   });
 
@@ -43,10 +52,11 @@ export const useTasks = () => {
         description: "Tarefa criada com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || "Erro ao criar tarefa.";
       toast({
         title: "Erro",
-        description: "Erro ao criar tarefa.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -64,10 +74,11 @@ export const useTasks = () => {
         description: "Tarefa atualizada com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || "Erro ao atualizar tarefa.";
       toast({
         title: "Erro",
-        description: "Erro ao atualizar tarefa.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -95,7 +106,7 @@ export const useTasks = () => {
 
   const updateTaskStatus = useMutation({
     mutationFn: async ({ id, concluida }: { id: string; concluida: boolean }) => {
-      const response = await api.patch(`/tarefas/${id}/status`, { concluida });
+      const response = await api.patch(`/tarefas/concluir/${id}`);
       return response.data;
     },
     onSuccess: () => {
@@ -108,7 +119,7 @@ export const useTasks = () => {
   });
 
   const getTasksByProcess = useCallback(async (processoId: number) => {
-    const response = await api.get(`/processos/${processoId}`);
+    const response = await api.get(`/tarefas/processo/${processoId}`);
     return response.data;
   }, []);
 
