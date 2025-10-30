@@ -344,7 +344,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               <Label htmlFor="iban">IBAN</Label>
               <Input
                 id="iban"
-                {...register('iban')}
+                {...form.register('iban')}
                 placeholder="PT50 0000 0000 0000 0000 0000 0"
               />
             </div>
@@ -353,10 +353,31 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea
                 id="observacoes"
-                {...register('observacoes')}
+                {...form.register('observacoes')}
                 placeholder="Observações..."
                 rows={4}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="senha_financas">Senha Finanças</Label>
+                <Input
+                  id="senha_financas"
+                  type="password"
+                  {...form.register('senha_financas')}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="senha_ss">Senha Segurança Social</Label>
+                <Input
+                  id="senha_ss"
+                  type="password"
+                  {...form.register('senha_ss')}
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

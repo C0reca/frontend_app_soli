@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +7,16 @@ import { CalendarIcon, ExternalLink, RefreshCw } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useRegistosPrediais } from '@/hooks/useRegistosPrediais';
+import { useEmployees } from '@/hooks/useEmployees';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
+import interactionPlugin from '@fullcalendar/interaction';
 
 interface CalendarEvent {
   id: string;
@@ -34,14 +39,30 @@ export const Calendar: React.FC = () => {
   const { tasks } = useTasks();
   const { processes } = useProcesses();
   const { registos } = useRegistosPrediais();
+  const { employees } = useEmployees();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Combinar dados de tarefas e processos em eventos do calendário
+  const employeeColors = useMemo(() => {
+    const fallback = ['#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899'];
+    const map = new Map<number, string>();
+    employees.forEach((emp, idx) => {
+      const color = (emp as any).cor || fallback[idx % fallback.length];
+      map.set(emp.id, color);
+    });
+    return map;
+  }, [employees]);
+
+  const [visibleEmployees, setVisibleEmployees] = useState<Record<number, boolean>>({});
+  useEffect(() => {
+    const next: Record<number, boolean> = {};
+    employees.forEach(e => { next[e.id] = true; });
+    setVisibleEmployees(next);
+  }, [employees]);
+
   useEffect(() => {
     const calendarEvents: CalendarEvent[] = [];
 
-    // Adicionar tarefas com data_fim
     tasks?.forEach(task => {
       if (task.data_fim) {
         const isUserResponsible = user && task.responsavel_id === parseInt(user.id);
@@ -54,13 +75,12 @@ export const Calendar: React.FC = () => {
           status: task.concluida ? 'concluida' : 'pendente',
           priority: task.prioridade || undefined,
           responsibleId: task.responsavel_id,
-          responsibleName: task.responsavel_id === 1 ? 'Ana Costa' : task.responsavel_id === 2 ? 'Carlos Oliveira' : 'Não atribuído',
+          responsibleName: undefined,
           isUserResponsible,
         });
       }
     });
 
-    // Adicionar processos com criado_em
     processes?.forEach(process => {
       if (process.criado_em) {
         const isUserResponsible = user && process.funcionario_id === parseInt(user.id);
@@ -78,7 +98,6 @@ export const Calendar: React.FC = () => {
       }
     });
 
-    // Adicionar registos prediais com data
     registos?.forEach(registo => {
       if (registo.data) {
         calendarEvents.push({
@@ -96,71 +115,52 @@ export const Calendar: React.FC = () => {
     setEvents(calendarEvents);
   }, [tasks, processes, registos, user]);
 
-  // Filtrar eventos para a data selecionada
-  const selectedDateEvents = events.filter(event =>
-    isSameDay(event.date, selectedDate)
-  );
+  const fcEvents = useMemo(() => {
+    return events
+      .filter(ev => ev.responsibleId == null || visibleEmployees[ev.responsibleId])
+      .map(ev => ({
+        id: ev.id,
+        title: ev.title,
+        start: ev.date,
+        allDay: true,
+        extendedProps: ev,
+        backgroundColor: ev.type === 'task' && ev.responsibleId != null ? (employeeColors.get(ev.responsibleId) || '#64748b') : (ev.type === 'process' ? '#64748b' : ev.type === 'registo' ? '#94a3b8' : undefined),
+        borderColor: ev.type === 'task' && ev.responsibleId != null ? (employeeColors.get(ev.responsibleId) || '#64748b') : (ev.type === 'process' ? '#64748b' : ev.type === 'registo' ? '#94a3b8' : undefined),
+        textColor: '#ffffff',
+      }));
+  }, [events, visibleEmployees, employeeColors]);
 
-  // Função para conectar com Google Calendar
+  const selectedDateEvents = events.filter(event => isSameDay(event.date, selectedDate));
+
   const connectGoogleCalendar = async () => {
     try {
-      // Aqui você implementaria a autenticação OAuth do Google
-      toast({
-        title: "Google Calendar",
-        description: "Funcionalidade de sincronização em desenvolvimento.",
-      });
+      toast({ title: 'Google Calendar', description: 'Funcionalidade de sincronização em desenvolvimento.' });
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao conectar com Google Calendar.",
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: 'Erro ao conectar com Google Calendar.', variant: 'destructive' });
     }
   };
 
-  // Função para sincronizar dados
   const syncCalendar = async () => {
     try {
-      // Aqui você implementaria a sincronização
-      toast({
-        title: "Sincronização",
-        description: "Dados sincronizados com sucesso.",
-      });
+      toast({ title: 'Sincronização', description: 'Dados sincronizados com sucesso.' });
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao sincronizar dados.",
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: 'Erro ao sincronizar dados.', variant: 'destructive' });
     }
-  };
-
-  // Verificar se uma data tem eventos
-  const hasEvents = (date: Date) => {
-    return events.some(event => isSameDay(event.date, date));
   };
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <CalendarIcon className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Calendário</h1>
         </div>
         <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={connectGoogleCalendar}
-            className="flex items-center space-x-2"
-          >
+          <Button variant="outline" onClick={connectGoogleCalendar} className="flex items-center space-x-2">
             <ExternalLink className="h-4 w-4" />
             <span>Google Calendar</span>
           </Button>
-          <Button
-            onClick={syncCalendar}
-            className="flex items-center space-x-2"
-          >
+          <Button onClick={syncCalendar} className="flex items-center space-x-2">
             <RefreshCw className="h-4 w-4" />
             <span>Sincronizar</span>
           </Button>
@@ -168,95 +168,102 @@ export const Calendar: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 h-full min-h-[600px]">
-        {/* Calendário */}
+        {/* Estilos FullCalendar para combinar com a estética do programa */}
+        <style>{`
+          .fc .fc-button {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+          }
+          .fc .fc-button:hover {
+            filter: brightness(0.95);
+          }
+          .fc .fc-button:disabled {
+            background-color: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
+            opacity: .8;
+          }
+          .fc .fc-toolbar-title {
+            font-weight: 600;
+            color: hsl(var(--foreground));
+          }
+          .fc .fc-daygrid-day.fc-day-today {
+            background: hsl(var(--accent));
+          }
+          .fc .fc-daygrid-event, .fc .fc-timegrid-event {
+            border-radius: 0.375rem;
+          }
+          /* Bordas arredondadas no calendário em si */
+          .fc .fc-scrollgrid, .fc .fc-daygrid, .fc .fc-timegrid, .fc .fc-view-harness {
+            border-radius: 0.5rem;
+            overflow: hidden;
+          }
+          .fc .fc-col-header, .fc .fc-daygrid-body, .fc .fc-timegrid-body {
+            border-radius: 0.5rem;
+          }
+        `}</style>
         <Card className="lg:col-span-1 xl:col-span-2 h-full flex flex-col">
           <CardHeader>
-            <CardTitle>
-              {format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR })}
-            </CardTitle>
+            <CardTitle>Agenda</CardTitle>
           </CardHeader>
-          <CardContent className="p-6 flex-1 flex flex-col">
-            <CalendarComponent
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              className="rounded-md border-0 w-full flex-1 flex justify-center items-center"
-              classNames={{
-                months: "flex flex-col space-y-4 w-full h-full",
-                month: "space-y-4 w-full flex-1 flex flex-col",
-                table: "w-full h-full border-collapse flex-1 table-fixed",
-                head_row: "flex w-full mb-2",
-                head_cell: "text-muted-foreground rounded-md flex-1 font-medium text-sm text-center py-3",
-                row: "flex w-full flex-1",
-                cell: "flex-1 text-center text-sm p-1 relative flex items-center justify-center min-h-[3rem] [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-full w-full p-2 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors flex items-center justify-center min-h-[3rem]",
-                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground font-bold border-2 border-primary",
-                day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-                day_disabled: "text-muted-foreground opacity-50",
-                day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                day_hidden: "invisible",
+          <CardContent className="p-4 flex-1 min-h-[560px]">
+            <FullCalendar
+              plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listYear' }}
+              locale='pt'
+              height="100%"
+              events={fcEvents}
+              navLinks={true}
+              selectable={true}
+              dayMaxEventRows={3}
+              nowIndicator={true}
+              eventClick={(info) => {
+                const ev = info.event.extendedProps as any;
+                if (ev?.date) setSelectedDate(new Date(ev.date));
+                if (ev) setSelectedEvent(ev);
               }}
-              modifiers={{
-                hasEvents: (date) => hasEvents(date),
-              }}
-              modifiersClassNames={{
-                hasEvents: "bg-primary/15 text-primary font-bold border border-primary/30 shadow-sm",
+              dateClick={(arg) => {
+                setSelectedDate(arg.date);
               }}
             />
           </CardContent>
         </Card>
 
-        {/* Eventos do dia selecionado */}
         <Card className="lg:col-span-1 xl:col-span-1 h-full flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span>Eventos de</span>
-                <span className="text-primary">
-                  {format(selectedDate, "dd/MM", { locale: ptBR })}
-                </span>
+                <span className="text-primary">{format(selectedDate, 'dd/MM', { locale: ptBR })}</span>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {selectedDateEvents.length} evento{selectedDateEvents.length !== 1 ? 's' : ''}
-              </div>
+              <div className="text-xs text-muted-foreground">{selectedDateEvents.length} evento{selectedDateEvents.length !== 1 ? 's' : ''}</div>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 flex-1 overflow-y-auto">
-            {/* Estatísticas do dia */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-muted/30">
-                <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full bg-primary"></div>
-                  <span className="text-xs font-medium">
-                    {selectedDateEvents.filter(e => e.type === 'task').length} Tarefas
-                  </span>
-                </div>
-              </div>
-              <div className="p-2 rounded-lg bg-muted/30">
-                <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full bg-secondary"></div>
-                  <span className="text-xs font-medium">
-                    {selectedDateEvents.filter(e => e.type === 'process').length} Processos
-                  </span>
-                </div>
-              </div>
-              <div className="p-2 rounded-lg bg-muted/30">
-                <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full bg-accent"></div>
-                  <span className="text-xs font-medium">
-                    {selectedDateEvents.filter(e => e.type === 'registo').length} Registos
-                  </span>
-                </div>
+            <div className="mb-4">
+              <h4 className="text-sm font-medium mb-2">Responsáveis</h4>
+              <div className="flex flex-wrap gap-2">
+                {employees.map(emp => (
+                  <label key={emp.id} className="flex items-center gap-2 text-xs px-2 py-1 rounded border" style={{ borderColor: employeeColors.get(emp.id) || '#CBD5E1' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!visibleEmployees[emp.id]}
+                      onChange={(e) => setVisibleEmployees(prev => ({ ...prev, [emp.id]: e.target.checked }))}
+                    />
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: employeeColors.get(emp.id) || '#64748b' }} />
+                    <span>{emp.nome}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
             <div className="space-y-3 h-full">
               {selectedDateEvents.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
-                  <p className="text-muted-foreground text-sm text-center">
-                    Nenhum evento nesta data.
-                  </p>
+                  <p className="text-muted-foreground text-sm text-center">Nenhum evento nesta data.</p>
                 </div>
               ) : (
                 selectedDateEvents.map((event) => (
@@ -264,23 +271,15 @@ export const Calendar: React.FC = () => {
                     key={event.id}
                     onClick={() => setSelectedEvent(event)}
                     className={`p-4 rounded-lg border transition-colors cursor-pointer ${
-                      event.isUserResponsible 
-                        ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
-                        : 'bg-card hover:bg-accent/50'
+                      event.isUserResponsible ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' : 'bg-card hover:bg-accent/50'
                     }`}
                   >
                     <div className="space-y-3">
                       <div className="space-y-2">
-                        <h4 className={`font-medium text-sm ${
-                          event.isUserResponsible ? 'text-blue-700' : ''
-                        }`}>
-                          {event.title}
-                        </h4>
+                        <h4 className={`font-medium text-sm ${event.isUserResponsible ? 'text-blue-700' : ''}`}>{event.title}</h4>
                         {event.description && (
                           <p className="text-xs text-muted-foreground line-clamp-2">
-                            {event.description.length > 80 
-                              ? `${event.description.substring(0, 80)}...` 
-                              : event.description}
+                            {event.description.length > 80 ? `${event.description.substring(0, 80)}...` : event.description}
                           </p>
                         )}
                         {event.responsibleName && (
@@ -290,52 +289,23 @@ export const Calendar: React.FC = () => {
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
-                        <Badge
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {event.type === 'task' ? 'Tarefa' : 
-                           event.type === 'process' ? 'Processo' : 'Registo'}
+                        <Badge variant="outline" className="text-xs">
+                          {event.type === 'task' ? 'Tarefa' : event.type === 'process' ? 'Processo' : 'Registo'}
                         </Badge>
                         {event.isUserResponsible && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs border-blue-400 text-blue-700 bg-blue-50"
-                          >
-                            Minha
-                          </Badge>
+                          <Badge variant="outline" className="text-xs border-blue-400 text-blue-700 bg-blue-50">Minha</Badge>
                         )}
                         {event.status && (
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${
-                              event.type === 'registo' ? (
-                                event.status === 'Concluído' ? 'bg-green-100 text-green-800 border-green-300' :
-                                event.status === 'Desistência' ? 'bg-purple-100 text-purple-800 border-purple-300' :
-                                event.status === 'Recusado' ? 'bg-red-100 text-red-800 border-red-300' :
-                                event.status === 'Provisórios' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : ''
-                              ) : ''
-                            }`}
-                          >
-                            {event.status === 'concluida' ? 'Concluída' :
-                             event.status === 'concluido' || event.status === 'Concluído' ? 'Concluído' :
-                             event.status === 'em_curso' ? 'Em Curso' :
-                             event.status === 'pendente' ? 'Pendente' :
-                             event.status === 'Desistência' ? 'Desistência' :
-                             event.status === 'Recusado' ? 'Recusado' :
-                             event.status === 'Provisórios' ? 'Provisórios' : event.status}
+                          <Badge variant="outline" className="text-xs">
+                            {event.status === 'concluida' ? 'Concluída' : event.status}
                           </Badge>
                         )}
                         {event.priority && (
                           <Badge
-                            variant={
-                              event.priority === 'alta' ? 'destructive' :
-                              event.priority === 'media' ? 'default' : 'secondary'
-                            }
+                            variant={event.priority === 'alta' ? 'destructive' : event.priority === 'media' ? 'default' : 'secondary'}
                             className="text-xs"
                           >
-                            {event.priority === 'alta' ? 'Alta' :
-                             event.priority === 'media' ? 'Média' : 'Baixa'}
+                            {event.priority === 'alta' ? 'Alta' : event.priority === 'media' ? 'Média' : 'Baixa'}
                           </Badge>
                         )}
                       </div>
@@ -348,29 +318,18 @@ export const Calendar: React.FC = () => {
         </Card>
       </div>
 
-      {/* Modal de Preview do Evento */}
       <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <Badge
-                variant="outline"
-                className="text-xs"
-              >
-                {selectedEvent?.type === 'task' ? 'Tarefa' : 
-                 selectedEvent?.type === 'process' ? 'Processo' : 'Registo'}
+              <Badge variant="outline" className="text-xs">
+                {selectedEvent?.type === 'task' ? 'Tarefa' : selectedEvent?.type === 'process' ? 'Processo' : 'Registo'}
               </Badge>
               {selectedEvent?.isUserResponsible && (
-                <Badge
-                  variant="outline"
-                  className="text-xs border-blue-400 text-blue-700 bg-blue-50"
-                >
-                  Minha
-                </Badge>
+                <Badge variant="outline" className="text-xs border-blue-400 text-blue-700 bg-blue-50">Minha</Badge>
               )}
             </DialogTitle>
           </DialogHeader>
-          
           {selectedEvent && (
             <div className="space-y-4">
               <div>
@@ -382,60 +341,17 @@ export const Calendar: React.FC = () => {
                   </div>
                 )}
               </div>
-
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">Data:</h4>
-                  <p className="text-sm">
-                    {format(selectedEvent.date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </p>
+                  <p className="text-sm">{format(selectedEvent.date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
                 </div>
-
                 {selectedEvent.responsibleName && (
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground mb-1">Responsável:</h4>
                     <p className="text-sm">{selectedEvent.responsibleName}</p>
                   </div>
                 )}
-
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-2">Status e Prioridade:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedEvent.status && (
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${
-                          selectedEvent.type === 'registo' ? (
-                            selectedEvent.status === 'Concluído' ? 'bg-green-100 text-green-800 border-green-300' :
-                            selectedEvent.status === 'Desistência' ? 'bg-purple-100 text-purple-800 border-purple-300' :
-                            selectedEvent.status === 'Recusado' ? 'bg-red-100 text-red-800 border-red-300' :
-                            selectedEvent.status === 'Provisórios' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : ''
-                          ) : ''
-                        }`}
-                      >
-                        {selectedEvent.status === 'concluida' ? 'Concluída' :
-                         selectedEvent.status === 'concluido' || selectedEvent.status === 'Concluído' ? 'Concluído' :
-                         selectedEvent.status === 'em_curso' ? 'Em Curso' :
-                         selectedEvent.status === 'pendente' ? 'Pendente' :
-                         selectedEvent.status === 'Desistência' ? 'Desistência' :
-                         selectedEvent.status === 'Recusado' ? 'Recusado' :
-                         selectedEvent.status === 'Provisórios' ? 'Provisórios' : selectedEvent.status}
-                      </Badge>
-                    )}
-                    {selectedEvent.priority && (
-                      <Badge
-                        variant={
-                          selectedEvent.priority === 'alta' ? 'destructive' :
-                          selectedEvent.priority === 'media' ? 'default' : 'secondary'
-                        }
-                        className="text-xs"
-                      >
-                        {selectedEvent.priority === 'alta' ? 'Alta' :
-                         selectedEvent.priority === 'media' ? 'Média' : 'Baixa'}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           )}

@@ -9,6 +9,7 @@ export interface Employee {
   telefone?: string;
   cargo?: string;
   departamento?: string;
+  cor?: string;
   criado_em: string;
 }
 

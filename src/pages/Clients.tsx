@@ -14,6 +14,10 @@ export const Clients: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterTipo, setFilterTipo] = useState<'all' | 'singular' | 'coletivo'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [sortBy, setSortBy] = useState<'id' | 'createdAt' | 'nome' | 'email' | 'nif' | 'status'>('id');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
@@ -34,14 +38,54 @@ export const Clients: React.FC = () => {
     return client.telefone;
   };
 
-  const filteredClients = clients.filter((client: Client) => {
-    console.log(client)
-    const nome = getClientName(client)?.toLowerCase() || '';
-    const email = client.email?.toLowerCase() || '';
-    const searchLower = searchTerm.toLowerCase();
-    
-    return nome.includes(searchLower) || email.includes(searchLower);
-  });
+  const filteredClients = clients
+    .filter((client: Client) => {
+      const nome = getClientName(client)?.toLowerCase() || '';
+      const email = client.email?.toLowerCase() || '';
+      const nifVal = ((client.tipo || 'singular') === 'singular' ? (client as any).nif : (client as any).nif_empresa) || '';
+      const searchLower = searchTerm.toLowerCase();
+
+      const matchesSearch = nome.includes(searchLower) || email.includes(searchLower) || String(nifVal).toLowerCase().includes(searchLower);
+      const matchesTipo = filterTipo === 'all' || (client.tipo || 'singular') === filterTipo;
+      const matchesStatus = filterStatus === 'all' || (client.status || 'active') === filterStatus;
+      return matchesSearch && matchesTipo && matchesStatus;
+    })
+    .sort((a: Client, b: Client) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      const valA = (() => {
+        if (sortBy === 'id') {
+          const v = (a as any).id;
+          return typeof v === 'string' ? parseInt(v, 10) || 0 : (v || 0);
+        }
+        if (sortBy === 'createdAt') {
+          const d = (a as any).criado_em || (a as any).createdAt || '';
+          return new Date(d).getTime() || 0;
+        }
+        if (sortBy === 'nome') return (getClientName(a) || '').toLowerCase();
+        if (sortBy === 'email') return (a.email || '').toLowerCase();
+        if (sortBy === 'nif') return String(((a.tipo || 'singular') === 'singular' ? (a as any).nif : (a as any).nif_empresa) || '').toLowerCase();
+        if (sortBy === 'status') return (a.status || 'active');
+        return '';
+      })();
+      const valB = (() => {
+        if (sortBy === 'id') {
+          const v = (b as any).id;
+          return typeof v === 'string' ? parseInt(v, 10) || 0 : (v || 0);
+        }
+        if (sortBy === 'createdAt') {
+          const d = (b as any).criado_em || (b as any).createdAt || '';
+          return new Date(d).getTime() || 0;
+        }
+        if (sortBy === 'nome') return (getClientName(b) || '').toLowerCase();
+        if (sortBy === 'email') return (b.email || '').toLowerCase();
+        if (sortBy === 'nif') return String(((b.tipo || 'singular') === 'singular' ? (b as any).nif : (b as any).nif_empresa) || '').toLowerCase();
+        if (sortBy === 'status') return (b.status || 'active');
+        return '';
+      })();
+      if (valA < valB) return -1 * dir;
+      if (valA > valB) return 1 * dir;
+      return 0;
+    });
 
   const handleView = (client: Client) => {
     setSelectedClientDetails(client);
@@ -117,13 +161,37 @@ export const Clients: React.FC = () => {
                 className="pl-10"
               />
             </div>
+
+            <div className="flex items-center space-x-2">
+              <select className="border rounded px-2 py-1" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value as any)}>
+                <option value="all">Todos os tipos</option>
+                <option value="singular">Particulares</option>
+                <option value="coletivo">Empresas</option>
+              </select>
+              <select className="border rounded px-2 py-1" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}>
+                <option value="all">Todos os status</option>
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+              </select>
+              <select className="border rounded px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+                <option value="id">Ordenar por ID</option>
+                <option value="nome">Ordenar por Nome</option>
+                <option value="email">Ordenar por Email</option>
+                <option value="nif">Ordenar por NIF</option>
+                <option value="status">Ordenar por Status</option>
+              </select>
+              <select className="border rounded px-2 py-1" value={sortDir} onChange={(e) => setSortDir(e.target.value as any)}>
+                <option value="asc">Asc</option>
+                <option value="desc">Desc</option>
+              </select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tipo</TableHead>
+                <TableHead>ID</TableHead>
                 <TableHead>Nome/Empresa</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Telefone</TableHead>
@@ -135,21 +203,7 @@ export const Clients: React.FC = () => {
             <TableBody>
               {filteredClients.map((client: Client) => (
                 <TableRow key={client.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {(client.tipo || 'singular') === 'singular' ? (
-                        <>
-                          <User className="h-4 w-4 text-blue-600" />
-                          <span className="text-xs text-muted-foreground">Particular</span>
-                        </>
-                      ) : (
-                        <>
-                          <Building className="h-4 w-4 text-green-600" />
-                          <span className="text-xs text-muted-foreground">Empresa</span>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
+                  <TableCell className="font-mono text-sm">{client.id}</TableCell>
                   <TableCell className="font-medium">{getClientName(client)}</TableCell>
                   <TableCell>{client.email}</TableCell>
                   <TableCell>{getClientPhone(client)}</TableCell>

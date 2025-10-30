@@ -30,6 +30,7 @@ const employeeSchema = z.object({
   telefone: z.string().optional().transform(val => val || undefined),
   cargo: z.string().optional().transform(val => val || undefined),
   departamento: z.string().optional().transform(val => val || undefined),
+  cor: z.string().optional().transform(val => val || undefined),
 });
 
 type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -63,6 +64,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       telefone: '',
       cargo: '',
       departamento: '',
+      cor: '#3b82f6',
     },
   });
 
@@ -74,6 +76,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         telefone: employee.telefone || '',
         cargo: employee.cargo || '',
         departamento: employee.departamento || '',
+        cor: employee.cor || '#3b82f6',
       });
     } else {
       reset({
@@ -82,6 +85,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         telefone: '',
         cargo: '',
         departamento: '',
+        cor: '#3b82f6',
       });
     }
   }, [employee, reset]);
@@ -94,6 +98,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         telefone: data.telefone,
         cargo: data.cargo,
         departamento: data.departamento,
+        cor: (data as any).cor,
       };
       
       if (isEditing && employee) {
@@ -181,6 +186,15 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <p className="text-sm text-red-600">{errors.departamento.message}</p>
             )}
           </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="cor">Cor (Calendário)</Label>
+        <Input
+          id="cor"
+          type="color"
+          {...register('cor')}
+        />
+      </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

@@ -7,8 +7,8 @@ import api from '@/services/api';
 export interface BaseClient {
   id: string;
   tipo?: 'singular' | 'coletivo';
-  internalNumber: string;
-  responsibleEmployee: string;
+  internalNumber?: string;
+  responsibleEmployee?: string;
   status?: 'active' | 'inactive';
   createdAt: string;
   internalNotes: string;
@@ -45,6 +45,8 @@ export interface IndividualClient extends BaseClient {
   // Documentos e outros
   iban?: string;
   observacoes?: string;
+  senha_financas?: string;
+  senha_ss?: string;
 }
 
 // Corporate client (Pessoa Coletiva)
@@ -82,6 +84,8 @@ export interface CorporateClient extends BaseClient {
   iban?: string;
   certidao_permanente?: string;
   observacoes?: string;
+  senha_financas?: string;
+  senha_ss?: string;
 }
 
 export type Client = IndividualClient | CorporateClient;

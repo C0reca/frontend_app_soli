@@ -300,6 +300,27 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                 rows={4}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="senha_financas">Senha Finanças</Label>
+                <Input
+                  id="senha_financas"
+                  type="password"
+                  {...register('senha_financas')}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="senha_ss">Senha Segurança Social</Label>
+                <Input
+                  id="senha_ss"
+                  type="password"
+                  {...register('senha_ss')}
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>

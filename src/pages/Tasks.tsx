@@ -172,7 +172,7 @@ export const Tasks: React.FC = () => {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-                {!task.concluida && (
+                {!task.concluida ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -180,6 +180,15 @@ export const Tasks: React.FC = () => {
                     className="text-green-600 hover:text-green-700"
                   >
                     <CheckSquare className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleStatusChange(task.id, false)}
+                    className="text-yellow-600 hover:text-yellow-700"
+                  >
+                    <Clock className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -317,7 +326,7 @@ export const Tasks: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {filteredTasks.filter(t => !t.concluida).length}
+              {tasks.filter((t: Task) => !t.concluida).length}
             </div>
           </CardContent>
         </Card>
@@ -331,7 +340,7 @@ export const Tasks: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {filteredTasks.filter(t => isOverdue(t.data_fim, t.concluida)).length}
+              {tasks.filter((t: Task) => isOverdue(t.data_fim, t.concluida)).length}
             </div>
           </CardContent>
         </Card>
@@ -345,7 +354,7 @@ export const Tasks: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {filteredTasks.filter(t => t.concluida).length}
+              {tasks.filter((t: Task) => t.concluida).length}
             </div>
           </CardContent>
         </Card>

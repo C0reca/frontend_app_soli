@@ -106,7 +106,7 @@ export const useTasks = () => {
 
   const updateTaskStatus = useMutation({
     mutationFn: async ({ id, concluida }: { id: string; concluida: boolean }) => {
-      const response = await api.patch(`/tarefas/concluir/${id}`);
+      const response = await api.patch(`/tarefas/status/${id}`, { concluida });
       return response.data;
     },
     onSuccess: () => {

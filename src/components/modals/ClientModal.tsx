@@ -13,16 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Building, Loader2 } from 'lucide-react';
 import { useClients, Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
-import { useEmployees } from '@/hooks/useEmployees';
 import { IndividualClientForm } from './IndividualClientForm';
 import { CorporateClientForm } from './CorporateClientForm';
 import { useToast } from '@/hooks/use-toast';
 
 // Schema base para campos comuns
 const baseClientSchema = z.object({
-  internalNumber: z.string().min(1, 'Número interno é obrigatório'),
-  responsibleEmployee: z.string().min(1, 'Responsável é obrigatório'),
-  status: z.enum(['active', 'inactive']),
+  internalNumber: z.string().optional(),
+  // Campo removido: responsável não se aplica a clientes
+  status: z.enum(['active', 'inactive']).optional(),
   internalNotes: z.string().optional(),
 });
 
@@ -117,7 +116,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 }) => {
   const { minimize } = useMinimize();
   const { createClient, updateClient } = useClients();
-  const { employees } = useEmployees();
   const { toast } = useToast();
   const isEditing = !!client;
   const [tipo, setTipo] = useState<'singular' | 'coletivo'>(
@@ -144,8 +142,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     }
     
     const baseDefaults = {
-      internalNumber: '',
-      responsibleEmployee: '',
       status: 'active' as const,
       internalNotes: '',
     };
@@ -305,39 +301,19 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="internalNumber">Nº Cliente Interno</Label>
-                  <Input
-                    id="internalNumber"
-                    {...form.register('internalNumber')}
-                    placeholder="CLI-001"
-                  />
-                  {errors.internalNumber && (
-                    <p className="text-sm text-red-600">{errors.internalNumber.message?.toString()}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="responsibleEmployee">Responsável</Label>
-                  <Select
-                    value={watch('responsibleEmployee')}
-                    onValueChange={(value) => setValue('responsibleEmployee', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.responsibleEmployee && (
-                    <p className="text-sm text-red-600">{errors.responsibleEmployee.message?.toString()}</p>
-                  )}
-                </div>
+                {isEditing && (
+                  <div className="space-y-2">
+                    <Label htmlFor="internalNumber">Nº Cliente Interno</Label>
+                    <Input
+                      id="internalNumber"
+                      {...form.register('internalNumber')}
+                      placeholder="CLI-001"
+                    />
+                    {errors.internalNumber && (
+                      <p className="text-sm text-red-600">{errors.internalNumber.message?.toString()}</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
