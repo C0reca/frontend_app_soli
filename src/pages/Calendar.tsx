@@ -84,6 +84,9 @@ export const Calendar: React.FC = () => {
     processes?.forEach(process => {
       if (process.criado_em) {
         const isUserResponsible = user && process.funcionario_id === parseInt(user.id);
+        const respName = process.funcionario_id
+          ? (employees.find(e => e.id === process.funcionario_id)?.nome || 'Não atribuído')
+          : 'Não atribuído';
         calendarEvents.push({
           id: `process-${process.id}`,
           title: process.titulo,
@@ -92,7 +95,7 @@ export const Calendar: React.FC = () => {
           type: 'process',
           status: process.estado,
           responsibleId: process.funcionario_id,
-          responsibleName: process.funcionario?.nome || 'Não atribuído',
+          responsibleName: respName,
           isUserResponsible,
         });
       }
