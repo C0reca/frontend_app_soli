@@ -27,8 +27,18 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
   const handleCitizenCardScan = async () => {
     try {
-      const response = await fetch('http://localhost:8081/cc');
-      if (!response.ok) throw new Error("Erro ao obter dados do Cartão de Cidadão.");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const response = await fetch('http://127.0.0.1:8081/cc', { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        let msg = "Erro ao obter dados do Cartão de Cidadão.";
+        try {
+          const body = await response.json();
+          if (body?.error) msg = body.error;
+        } catch (_) {}
+        throw new Error(msg);
+      }
 
       const data = await response.json();
 
@@ -70,7 +80,9 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
     } catch (err: any) {
       toast({
         title: "Erro ao ler Cartão de Cidadão",
-        description: err.message || "Verifica se o cartão está inserido.",
+        description: err?.name === 'AbortError'
+          ? 'Tempo esgotado. Certifique-se que o leitor está a correr e o cartão inserido.'
+          : (err?.message || 'Certifique-se que instalou o middleware Autenticação.gov e iniciou o leitor.'),
         variant: "destructive"
       });
     }
