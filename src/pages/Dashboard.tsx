@@ -3,9 +3,11 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDashboard } from '@/hooks/useDashboard';
 import { FolderOpen, CheckSquare, Clock, TrendingUp, Users } from 'lucide-react';
+import { useTasks } from '@/hooks/useTasks';
 
 export const Dashboard: React.FC = () => {
   const { kpis, isLoading } = useDashboard();
+  const { tasks } = useTasks();
 
   if (isLoading) {
     return (
@@ -141,16 +143,34 @@ export const Dashboard: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Tarefas Urgentes</CardTitle>
-            <CardDescription>Tarefas que precisam de atenção imediata</CardDescription>
+            <CardDescription>A vencer hoje ou em atraso</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 text-sm text-gray-700">
-              {kpis?.por_funcionario && Object.entries(kpis.por_funcionario).map(([nome, count]) => (
-                <div key={nome} className="flex items-center justify-between">
-                  <span>{nome}</span>
-                  <span className="font-semibold">{count}</span>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {(() => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const urgent = (tasks || []).filter((t: any) => {
+                  if (!t?.data_fim || t?.concluida) return false;
+                  const due = new Date(t.data_fim);
+                  due.setHours(0,0,0,0);
+                  return due <= today; // hoje ou passado
+                }).sort((a: any, b: any) => new Date(a.data_fim).getTime() - new Date(b.data_fim).getTime()).slice(0, 8);
+                if (urgent.length === 0) {
+                  return <div className="text-sm text-muted-foreground">Sem tarefas urgentes.</div>;
+                }
+                return urgent.map((t: any) => (
+                  <div key={t.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
+                    <div>
+                      <p className="font-medium text-sm">{t.titulo}</p>
+                      <p className="text-xs text-gray-500">Prazo: {new Date(t.data_fim).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${new Date(t.data_fim) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {new Date(t.data_fim) < new Date() ? 'Atrasada' : 'Hoje'}
+                    </span>
+                  </div>
+                ));
+              })()}
             </div>
           </CardContent>
         </Card>
