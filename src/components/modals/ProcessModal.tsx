@@ -163,7 +163,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 name="titulo"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Título do Processo</FormLabel>
+                                        <FormLabel>Título do Processo *</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Digite o título do processo" {...field} />
                                         </FormControl>
@@ -205,7 +205,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 name="onde_estao"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Onde estão</FormLabel>
+                                        <FormLabel>Localização</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value ?? ""}
@@ -243,7 +243,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     name="cliente_id"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Cliente</FormLabel>
+                                            <FormLabel>Cliente *</FormLabel>
                                             <ClientCombobox
                                                 clients={clients ?? []}
                                                 value={field.value}

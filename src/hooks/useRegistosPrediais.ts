@@ -49,6 +49,7 @@ export const useRegistosPrediais = () => {
         if (e.includes('desistencia')) return 'desistencia';
         if (e.includes('recusado')) return 'recusado';
         if (e.includes('provisorio')) return 'provisorios';
+        if (e.includes('registo')) return 'registo';
         return 'desconhecido';
       };
       return (response.data || []).map((r: any) => ({

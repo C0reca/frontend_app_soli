@@ -7,7 +7,7 @@ export interface Task {
   id: string;
   titulo: string;
   descricao: string;
-  processo_id: number;
+  processo_id: number | null;
   responsavel_id: number | null;
   autor_id?: number | null;
   prioridade: 'baixa' | 'media' | 'alta' | null;

@@ -18,7 +18,7 @@ import { useMinimize } from '@/contexts/MinimizeContext';
 const taskSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
-  processo_id: z.number().min(1, 'Processo é obrigatório'),
+  processo_id: z.number().nullable().optional(),
   responsavel_id: z.number().nullable().optional(),
   prioridade: z.enum(['baixa', 'media', 'alta']).nullable().optional(),
   concluida: z.boolean(),
@@ -50,7 +50,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
     defaultValues: {
       titulo: initialData?.titulo ?? '',
       descricao: initialData?.descricao ?? '',
-      processo_id: initialData?.processo_id ?? (processoId ?? 0),
+      processo_id: initialData?.processo_id ?? (processoId ?? null),
       responsavel_id: initialData?.responsavel_id ?? null,
       prioridade: (initialData?.prioridade as any) ?? 'media',
       concluida: initialData?.concluida ?? false,
@@ -66,7 +66,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
       form.reset({
         titulo: task.titulo,
         descricao: task.descricao,
-        processo_id: task.processo_id,
+        processo_id: task.processo_id ?? null,
         responsavel_id: task.responsavel_id,
         prioridade: task.prioridade,
         concluida: task.concluida,
@@ -79,7 +79,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
       form.reset({
         titulo: initialData?.titulo ?? '',
         descricao: initialData?.descricao ?? '',
-        processo_id: initialData?.processo_id ?? (processoId ?? 0),
+        processo_id: initialData?.processo_id ?? (processoId ?? null),
         responsavel_id: initialData?.responsavel_id ?? null,
         prioridade: (initialData?.prioridade as any) ?? 'media',
         concluida: initialData?.concluida ?? false,
@@ -140,7 +140,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
               name="titulo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Título</FormLabel>
+                  <FormLabel>Título *</FormLabel>
                   <FormControl>
                     <Input placeholder="Digite o título da tarefa" {...field} />
                   </FormControl>
@@ -154,7 +154,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>Descrição *</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Digite a descrição da tarefa" {...field} />
                   </FormControl>
@@ -169,13 +169,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Processo</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                  <Select onValueChange={(value) => field.onChange(value === 'none' ? null : Number(value))} value={field.value == null ? 'none' : field.value?.toString()}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um processo" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="none">Sem processo</SelectItem>
                       {processes.map((process) => (
                         <SelectItem key={process.id} value={process.id.toString()}>
                           {process.titulo}
@@ -219,7 +220,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                 name="prioridade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prioridade</FormLabel>
+                  <FormLabel>Prioridade *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>

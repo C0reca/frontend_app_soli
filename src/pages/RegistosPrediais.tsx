@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye } from 'lucide-react';
 import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
+import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
 import { RegistoPredialDetailsModal } from '@/components/modals/RegistoPredialDetailsModal';
 
 export const RegistosPrediais: React.FC = () => {
   const { registos, isLoading, deleteRegisto } = useRegistosPrediais();
+  const { clients } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegisto, setSelectedRegisto] = useState<RegistoPredial | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,6 +20,11 @@ export const RegistosPrediais: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const safe = (v: any) => (v ? v.toString().toLowerCase() : '');
+  const clientNameById = (id: any) => {
+    if (!id) return '';
+    const match = clients.find((c: any) => c.id?.toString() === id.toString());
+    return match?.nome || match?.nome_empresa || '';
+  };
   const filteredRegistos = registos.filter((registo: any) =>
     safe(registo.numero_processo).includes(searchTerm.toLowerCase()) ||
     safe(registo.predio).includes(searchTerm.toLowerCase()) ||
@@ -34,6 +42,8 @@ export const RegistosPrediais: React.FC = () => {
         return 'bg-red-100 text-red-800';
       case 'provisorios':
         return 'bg-yellow-100 text-yellow-800';
+      case 'registo':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -49,6 +59,8 @@ export const RegistosPrediais: React.FC = () => {
         return 'Recusado';
       case 'provisorios':
         return 'Provisórios';
+      case 'registo':
+        return 'Registo';
       default:
         return 'Desconhecido';
     }
@@ -64,6 +76,8 @@ export const RegistosPrediais: React.FC = () => {
         return <XCircle className="h-4 w-4 text-red-600" />;
       case 'provisorios':
         return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'registo':
+        return <Building className="h-4 w-4 text-blue-600" />;
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-600" />;
     }
@@ -125,7 +139,7 @@ export const RegistosPrediais: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
@@ -136,6 +150,20 @@ export const RegistosPrediais: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {registos.filter((r: any) => r.estado_key === 'concluido').length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              <Clock className="mr-2 h-5 w-5 text-blue-600" />
+              Registos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {registos.filter((r: any) => r.estado_key === 'registo').length}
             </div>
           </CardContent>
         </Card>
@@ -214,14 +242,15 @@ export const RegistosPrediais: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         {getStatusIcon(registo.estado_key)}
-                        <h3 className="font-semibold">{registo.numero_processo}</h3>
+                        <h3 className="font-semibold">
+                          {registo.numero_processo} - {registo.cliente?.nome || clientNameById(registo.cliente_id) || 'N/A'}
+                        </h3>
                         <Badge className={getStatusColor(registo.estado_key)}>
                           {getStatusLabel(registo.estado_key)}
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">{registo.predio} - {registo.freguesia}</p>
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span><strong>Cliente:</strong> {registo.cliente?.nome || 'N/A'}</span>
                         <span><strong>Registo:</strong> {registo.registo}</span>
                         <span><strong>Data:</strong> {new Date(registo.data).toLocaleDateString('pt-BR')}</span>
                       </div>

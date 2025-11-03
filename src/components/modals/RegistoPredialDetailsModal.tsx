@@ -85,7 +85,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
           {/* Header com status */}
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">{registo.numero_processo}</h3>
+              <h3 className="text-lg font-semibold">{registo.numero_processo} - {clienteNome || 'N/A'}</h3>
               <p className="text-sm text-gray-600">{registo.predio}</p>
             </div>
             <Badge className={getStatusColor(registo.estado)}>
@@ -132,7 +132,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Registo</label>
+                <label className="text-sm font-medium text-gray-600">Registo de Facto</label>
                 <p className="text-sm">{registo.registo}</p>
               </div>
               <div>

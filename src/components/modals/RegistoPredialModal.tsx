@@ -43,7 +43,7 @@ const formSchema = z.object({
   data: z.string().min(1, 'Data é obrigatória'),
   apresentacao_complementar: z.string().optional(),
   outras_observacoes: z.string().optional(),
-  estado: z.enum(['Concluído', 'Desistência', 'Recusado', 'Provisórios']),
+  estado: z.enum(['Concluído', 'Desistência', 'Recusado', 'Provisórios', 'Registo']),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -189,7 +189,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="numero_processo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Número do Processo</FormLabel>
+                    <FormLabel>Número do Processo *</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: 2024/001" {...field} />
                     </FormControl>
@@ -203,7 +203,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="cliente_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cliente</FormLabel>
+                    <FormLabel>Cliente *</FormLabel>
                     <ClientCombobox
                       clients={clients}
                       value={field.value}
@@ -222,7 +222,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="predio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prédio</FormLabel>
+                    <FormLabel>Prédio *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome/Localização do prédio" {...field} />
                     </FormControl>
@@ -236,7 +236,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="freguesia"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Freguesia</FormLabel>
+                    <FormLabel>Freguesia *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome da freguesia" {...field} />
                     </FormControl>
@@ -252,7 +252,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="registo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Registo</FormLabel>
+                    <FormLabel>Registo *</FormLabel>
                     <FormControl>
                       <Input placeholder="Número do registo" {...field} />
                     </FormControl>
@@ -266,7 +266,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="conservatoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Conservatória</FormLabel>
+                    <FormLabel>Conservatória *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome da conservatória" {...field} />
                     </FormControl>
@@ -282,7 +282,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="requisicao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Requerimento</FormLabel>
+                    <FormLabel>Requerimento *</FormLabel>
                     <FormControl>
                       <Input placeholder="Número do requerimento" {...field} />
                     </FormControl>
@@ -296,7 +296,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="apresentacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Apresentação</FormLabel>
+                    <FormLabel>Apresentação *</FormLabel>
                     <FormControl>
                       <Input placeholder="Detalhes da apresentação" {...field} />
                     </FormControl>
@@ -312,7 +312,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="data"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data</FormLabel>
+                    <FormLabel>Data *</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -326,7 +326,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="estado"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estado</FormLabel>
+                    <FormLabel>Estado *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -335,6 +335,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Provisórios">Provisórios</SelectItem>
+                        <SelectItem value="Registo">Registo</SelectItem>
                         <SelectItem value="Concluído">Concluído</SelectItem>
                         <SelectItem value="Desistência">Desistência</SelectItem>
                         <SelectItem value="Recusado">Recusado</SelectItem>

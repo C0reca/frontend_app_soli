@@ -180,7 +180,7 @@ export const Processes: React.FC = () => {
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
                         </div>
                         <div className="col-span-2">
-                          <span className="font-medium">Onde estão:</span> {(process as any).onde_estao || '-'}
+                          <span className="font-medium">Localização:</span> {(process as any).onde_estao || '-'}
                         </div>
                         <div>
                           <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
