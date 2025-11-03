@@ -35,7 +35,26 @@ export const useRegistosPrediais = () => {
     queryKey: ['registos-prediais'],
     queryFn: async () => {
       const response = await api.get('/registos/');
-      return response.data;
+      const normalize = (v: string | null | undefined) => {
+        if (!v) return '';
+        const s = v.toString().trim().toLowerCase();
+        return s
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .replace(/\s+/g, ' ');
+      };
+      const mapEstadoKey = (estado: any) => {
+        const e = normalize(estado);
+        if (e.includes('concluido')) return 'concluido';
+        if (e.includes('desistencia')) return 'desistencia';
+        if (e.includes('recusado')) return 'recusado';
+        if (e.includes('provisorio')) return 'provisorios';
+        return 'desconhecido';
+      };
+      return (response.data || []).map((r: any) => ({
+        ...r,
+        estado_key: mapEstadoKey(r?.estado),
+      }));
     },
   });
 

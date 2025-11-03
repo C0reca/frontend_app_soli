@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
@@ -13,7 +13,7 @@ import { useEmployees } from '@/hooks/useEmployees';
 
 
 export const Processes: React.FC = () => {
-  const { processes, isLoading, deleteProcess } = useProcesses();
+  const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess } = useProcesses();
   const { clients } = useClients();
   const { employees } = useEmployees();
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,6 +21,14 @@ export const Processes: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProcessDetails, setSelectedProcessDetails] = useState<Process | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archived, setArchived] = useState<Process[]>([]);
+
+  React.useEffect(() => {
+    if (showArchived) {
+      getArchived().then(setArchived).catch(() => setArchived([]));
+    }
+  }, [showArchived]);
 
   const getClientNameById = (id?: number) => {
     if (!id) return '';
@@ -34,7 +42,8 @@ export const Processes: React.FC = () => {
     return employee?.nome || '';
   };
 
-  const filteredProcesses = processes.filter((process) => {
+  const source = showArchived ? archived : processes;
+  const filteredProcesses = source.filter((process) => {
     const term = searchTerm.toLowerCase();
     const clienteNome = process.cliente?.nome || getClientNameById(process.cliente_id) || '';
     const funcionarioNome = process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || '';
@@ -129,9 +138,9 @@ export const Processes: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Processos</CardTitle>
+          <CardTitle>Lista de Processos {showArchived ? '(Arquivados)' : ''}</CardTitle>
           <CardDescription>
-            Total de {processes.length} processos cadastrados
+            Total de {source.length} processos {showArchived ? 'arquivados' : 'ativos'}
           </CardDescription>
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 max-w-sm">
@@ -143,6 +152,9 @@ export const Processes: React.FC = () => {
                 className="pl-10"
               />
             </div>
+            <Button variant={showArchived ? 'default' : 'outline'} onClick={() => setShowArchived(!showArchived)}>
+              {showArchived ? 'Ver Ativos' : 'Ver Arquivados'}
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -167,6 +179,9 @@ export const Processes: React.FC = () => {
                         <div>
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
                         </div>
+                        <div className="col-span-2">
+                          <span className="font-medium">Onde estão:</span> {(process as any).onde_estao || '-'}
+                        </div>
                         <div>
                           <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
                         </div>
@@ -188,9 +203,15 @@ export const Processes: React.FC = () => {
                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(process); }}>
                            <Edit className="h-4 w-4" />
                          </Button>
-                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); handleDelete(process.id); }}>
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
+                      {showArchived ? (
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); unarchiveProcess.mutate(process.id); }}>
+                          <ArchiveRestore className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); handleDelete(process.id); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                        </div>
                     </div>
                   </div>

@@ -59,11 +59,12 @@ export const Caixa: React.FC = () => {
     return matchTipo && matchDataInicio && matchDataFim;
   });
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: any) => {
+    const n = typeof value === 'number' ? value : Number(value) || 0;
     return new Intl.NumberFormat('pt-PT', {
       style: 'currency',
       currency: 'EUR'
-    }).format(value);
+    }).format(n);
   };
 
   return (

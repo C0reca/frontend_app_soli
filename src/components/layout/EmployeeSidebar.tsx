@@ -7,17 +7,19 @@ import {
   CheckSquare,
   FileText,
   LogOut,
-  Calendar, Building
+  Calendar, Building, Wallet, Truck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
-  { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
-  { icon: Calendar, label: 'Calendário', path: '/calendario' },
+  { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
+  { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
 ];
 
 export const EmployeeSidebar: React.FC = () => {

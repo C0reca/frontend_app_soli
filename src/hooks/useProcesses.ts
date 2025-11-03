@@ -7,10 +7,12 @@ export interface Process {
   titulo: string;
   descricao?: string;
   tipo?: string;
+  onde_estao?: string;
   estado: 'pendente' | 'em_curso' | 'concluido';
   criado_em: string;
   cliente_id: number;
   funcionario_id?: number;
+  arquivado?: boolean;
   cliente?: {
     id: number;
     nome: string;
@@ -81,22 +83,41 @@ export const useProcesses = () => {
 
   const deleteProcess = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/processos/${id}`);
+      await api.patch(`/processos/${id}/arquivar`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
       toast({
         title: "Sucesso",
-        description: "Processo excluído com sucesso.",
+        description: "Processo arquivado com sucesso.",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao excluir processo.",
+        description: "Erro ao arquivar processo.",
         variant: "destructive",
       });
     },
+  });
+
+  const getArchived = async (): Promise<Process[]> => {
+    const res = await api.get('/processos/arquivados');
+    return res.data;
+  };
+
+  const unarchiveProcess = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.patch(`/processos/${id}/desarquivar`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['processes'] });
+      toast({ title: 'Sucesso', description: 'Processo desarquivado.' });
+    },
+    onError: () => {
+      toast({ title: 'Erro', description: 'Erro ao desarquivar processo.', variant: 'destructive' });
+    }
   });
 
   return {
@@ -106,5 +127,7 @@ export const useProcesses = () => {
     createProcess,
     updateProcess,
     deleteProcess,
+    getArchived,
+    unarchiveProcess,
   };
 };

@@ -12,7 +12,9 @@ import {
   LogOut,
   Calendar,
   Building,
-  Wallet
+  Wallet,
+  Upload,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -21,14 +23,16 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: Users, label: 'Clientes', path: '/clientes' },
-  { icon: UserCog, label: 'Funcionários', path: '/funcionarios' },
+  { icon: UserCog, label: 'Funcionários', path: '/funcionarios', adminOnly: true },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
+  { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
   { icon: Wallet, label: 'Caixa', path: '/caixa' },
-  { icon: FileTemplate, label: 'Templates', path: '/templates' },
-  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
+  { icon: FileTemplate, label: 'Templates', path: '/templates', adminOnly: true },
+  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates', adminOnly: true },
   { icon: FileText, label: 'Documentos', path: '/documentos' },
+  { icon: Upload, label: 'Importação CSV', path: '/admin-import', adminOnly: true },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -44,7 +48,7 @@ export const Sidebar: React.FC = () => {
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.adminOnly || user?.role === 'admin').map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           

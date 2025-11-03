@@ -22,6 +22,8 @@ import NotFound from "./pages/NotFound";
 import { MinimizeProvider } from "@/contexts/MinimizeContext";
 import { MinimizeDock } from "@/components/MinimizeDock";
 import { MinimizeRenderer } from "@/components/MinimizeRenderer";
+import { AdminImport } from "@/pages/AdminImport";
+import { ServicosExternos } from "@/pages/ServicosExternos";
 
 const queryClient = new QueryClient();
 
@@ -70,7 +72,9 @@ const AppRoutes = () => {
         <Route path="document-templates" element={<AdminRoute><DocumentTemplates /></AdminRoute>} />
         <Route path="documentos" element={<Documents />} />
         <Route path="calendario" element={<Calendar />} />
-        <Route path="caixa" element={<AdminRoute><Caixa /></AdminRoute>} />
+        <Route path="caixa" element={<Caixa />} />
+        <Route path="admin-import" element={<AdminRoute><AdminImport /></AdminRoute>} />
+        <Route path="servicos-externos" element={<ServicosExternos />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

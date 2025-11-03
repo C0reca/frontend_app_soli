@@ -17,6 +17,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
+import ptLocale from '@fullcalendar/core/locales/pt';
 
 interface CalendarEvent {
   id: string;
@@ -216,7 +217,7 @@ export const Calendar: React.FC = () => {
               plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listYear' }}
-              locale='pt'
+              locale={ptLocale}
               height="100%"
               events={fcEvents}
               navLinks={true}

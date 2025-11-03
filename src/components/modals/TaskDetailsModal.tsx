@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Minimize2 } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { TaskModal } from './TaskModal';
+import { Input } from '@/components/ui/input';
 
 interface TaskDetailsModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(task);
   const { minimize } = useMinimize();
+  const [docs, setDocs] = useState<{id:number; nome_original:string}[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     setCurrentTask(task ?? null);
@@ -41,6 +44,58 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     };
     fetchSubtasks();
   }, [currentTask]);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      if (!currentTask) return;
+      try {
+        const res = await api.get(`/documentos/tarefa/${currentTask.id}`);
+        setDocs(res.data);
+      } catch {}
+    };
+    fetchDocs();
+  }, [currentTask]);
+
+  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!currentTask) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const form = new FormData();
+      form.append('file', file);
+      await api.post(`/documentos/upload-tarefa/${currentTask.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.get(`/documentos/tarefa/${currentTask.id}`);
+      setDocs(res.data);
+    } catch {}
+    finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const onDeleteDoc = async (id: number) => {
+    try {
+      await api.delete(`/documentos/${id}`);
+      if (currentTask) {
+        const res = await api.get(`/documentos/tarefa/${currentTask.id}`);
+        setDocs(res.data);
+      }
+    } catch {}
+  };
+
+  const onRenameDoc = async (id: number) => {
+    const doc = docs.find(d => d.id === id);
+    const novo = window.prompt('Novo nome do ficheiro', doc?.nome_original || '');
+    if (!novo || !novo.trim()) return;
+    try {
+      await api.patch(`/documentos/${id}`, { nome_original: novo.trim() });
+      if (currentTask) {
+        const res = await api.get(`/documentos/tarefa/${currentTask.id}`);
+        setDocs(res.data);
+      }
+    } catch {}
+  };
 
   const getStatusColor = (concluida: boolean) => {
     return concluida 
@@ -212,6 +267,45 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-500">Anexos</label>
+              <div className="flex items-center gap-2">
+                <Input type="file" onChange={onUpload} disabled={uploading} />
+              </div>
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                {docs.map(d => (
+                  <li key={d.id} className="flex items-center gap-2">
+                    <a href={`/api/documentos/download/${d.id}`} className="text-blue-600 hover:underline flex-1">{d.nome_original}</a>
+                    <label className="text-xs">
+                      <span className="sr-only">Atualizar</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const form = new FormData();
+                          form.append('file', f);
+                          try {
+                            await api.post(`/documentos/replace/${d.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+                            if (currentTask) {
+                              const res = await api.get(`/documentos/tarefa/${currentTask.id}`);
+                              setDocs(res.data);
+                            }
+                          } catch {}
+                          e.currentTarget.value = '';
+                        }}
+                        id={`doc-replace-${d.id}`}
+                      />
+                      <Button size="xs" variant="ghost" onClick={() => document.getElementById(`doc-replace-${d.id}`)?.click()}>Atualizar</Button>
+                    </label>
+                    <Button size="xs" variant="ghost" onClick={() => onRenameDoc(d.id)}>Renomear</Button>
+                    <Button size="xs" variant="ghost" className="text-red-600" onClick={() => onDeleteDoc(d.id)}>Apagar</Button>
+                  </li>
+                ))}
+                {docs.length === 0 && <li className="text-gray-500">Sem anexos</li>}
+              </ul>
             </div>
           </div>
           <div className="space-y-2">

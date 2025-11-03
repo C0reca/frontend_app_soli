@@ -29,10 +29,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
 import { useClients } from '@/hooks/useClients';
+import { ClientCombobox } from '@/components/ui/clientcombobox';
 
 const formSchema = z.object({
   numero_processo: z.string().min(1, 'Número do processo é obrigatório'),
-  cliente_id: z.string().min(1, 'Cliente é obrigatório'),
+  cliente_id: z.number({ invalid_type_error: 'Cliente é obrigatório' }).min(1, 'Cliente é obrigatório'),
   predio: z.string().min(1, 'Prédio é obrigatório'),
   freguesia: z.string().min(1, 'Freguesia é obrigatória'),
   registo: z.string().min(1, 'Registo é obrigatório'),
@@ -62,11 +63,30 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
   const { clients } = useClients();
   const isEditing = !!registo;
 
+  const toDateInputValue = (value: any): string => {
+    if (!value) return '';
+    // if already 'YYYY-MM-DD'
+    if (typeof value === 'string') {
+      const s = value.slice(0, 10);
+      return /\d{4}-\d{2}-\d{2}/.test(s) ? s : '';
+    }
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return '';
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    } catch {
+      return '';
+    }
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       numero_processo: '',
-      cliente_id: '',
+      cliente_id: undefined as unknown as number,
       predio: '',
       freguesia: '',
       registo: '',
@@ -83,23 +103,23 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
   React.useEffect(() => {
     if (registo) {
       form.reset({
-        numero_processo: registo.numero_processo,
-        cliente_id: registo.cliente_id.toString(),
-        predio: registo.predio,
-        freguesia: registo.freguesia,
-        registo: registo.registo,
-        conservatoria: registo.conservatoria,
-        requisicao: registo.requisicao,
-        apresentacao: registo.apresentacao,
-        data: registo.data,
+        numero_processo: registo.numero_processo || '',
+        cliente_id: registo.cliente_id != null ? Number(registo.cliente_id) : (undefined as unknown as number),
+        predio: registo.predio || '',
+        freguesia: registo.freguesia || '',
+        registo: registo.registo || '',
+        conservatoria: registo.conservatoria || '',
+        requisicao: registo.requisicao || '',
+        apresentacao: registo.apresentacao || '',
+        data: toDateInputValue(registo.data),
         apresentacao_complementar: registo.apresentacao_complementar || '',
         outras_observacoes: registo.outras_observacoes || '',
-        estado: registo.estado,
+        estado: registo.estado || 'Provisórios',
       });
     } else {
       form.reset({
         numero_processo: '',
-        cliente_id: '',
+        cliente_id: undefined as unknown as number,
         predio: '',
         freguesia: '',
         registo: '',
@@ -184,20 +204,12 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um cliente" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id.toString()}>
-                            {client.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ClientCombobox
+                      clients={clients}
+                      value={field.value}
+                      onChange={field.onChange}
+                      isLoading={false}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}

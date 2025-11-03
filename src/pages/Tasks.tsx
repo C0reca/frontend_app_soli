@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X } from 'lucide-react';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2 } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
 import { TaskModal } from '@/components/modals/TaskModal';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 
 export const Tasks: React.FC = () => {
-  const { tasks, isLoading, deleteTask, updateTaskStatus } = useTasks();
+  const { tasks, isLoading, deleteTask, updateTaskStatus, setExternal } = useTasks();
   const { employees } = useEmployees();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -96,7 +96,7 @@ export const Tasks: React.FC = () => {
     const subtasks = childrenByParent[task.id.toString()] || [];
     return (
       <div key={`${task.id}-${level}`}>
-        <Card className={`hover:shadow-md transition-shadow ${isOverdue(task.data_fim, task.concluida) ? 'border-red-200 bg-red-50' : ''}`}>
+        <Card className={`hover:shadow-md transition-shadow cursor-pointer ${isOverdue(task.data_fim, task.concluida) ? 'border-red-200 bg-red-50' : ''}`} onClick={() => handleView(task)}>
           <CardContent className={`p-4 ${indentClass}`}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -148,35 +148,59 @@ export const Tasks: React.FC = () => {
                 <Badge className={getPriorityColor(task.prioridade)}>
                   {getPriorityLabel(task.prioridade)}
                 </Badge>
+                {task.servico_externo && (
+                  <Badge variant="outline" className="text-xs border-purple-500 text-purple-700">
+                    Serviço Externo
+                  </Badge>
+                )}
               </div>
               <div className="flex space-x-2 mt-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleView(task)}
+                  onClick={(e) => { e.stopPropagation(); handleView(task); }}
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleEdit(task)}
+                  onClick={(e) => { e.stopPropagation(); handleEdit(task); }}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(task.id)}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                {!task.servico_externo ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); setExternal.mutate({ id: task.id, servico_externo: true }); }}
+                    title="Mover para Serviço Externo"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); setExternal.mutate({ id: task.id, servico_externo: false }); }}
+                    title="Remover de Serviço Externo"
+                  >
+                    <Share2 className="h-4 w-4 rotate-180" />
+                  </Button>
+                )}
                 {!task.concluida ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStatusChange(task.id, true)}
+                    onClick={(e) => { e.stopPropagation(); handleStatusChange(task.id, true); }}
                     className="text-green-600 hover:text-green-700"
                   >
                     <CheckSquare className="h-4 w-4" />
@@ -185,7 +209,7 @@ export const Tasks: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStatusChange(task.id, false)}
+                    onClick={(e) => { e.stopPropagation(); handleStatusChange(task.id, false); }}
                     className="text-yellow-600 hover:text-yellow-700"
                   >
                     <Clock className="h-4 w-4" />

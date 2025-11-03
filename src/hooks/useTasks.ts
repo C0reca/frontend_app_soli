@@ -12,6 +12,7 @@ export interface Task {
   autor_id?: number | null;
   prioridade: 'baixa' | 'media' | 'alta' | null;
   concluida: boolean;
+  servico_externo?: boolean;
   data_fim: string | null;
   criado_em: string;
   tipo?: 'reuniao' | 'telefonema' | 'tarefa' | null;
@@ -116,6 +117,32 @@ export const useTasks = () => {
         description: "Status da tarefa atualizado.",
       });
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || "Erro ao atualizar status da tarefa.";
+      toast({
+        title: "Não foi possível concluir",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setExternal = useMutation({
+    mutationFn: async ({ id, servico_externo }: { id: string; servico_externo: boolean }) => {
+      const response = await api.patch(`/tarefas/externo/${id}`, { servico_externo });
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast({
+        title: 'Sucesso',
+        description: variables.servico_externo ? 'Movido para Serviço Externo.' : 'Removido de Serviço Externo.',
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 'Erro ao mover para Serviço Externo.';
+      toast({ title: 'Erro', description: errorMessage, variant: 'destructive' });
+    }
   });
 
   const getTasksByProcess = useCallback(async (processoId: number) => {
@@ -131,6 +158,7 @@ export const useTasks = () => {
     updateTask,
     deleteTask,
     updateTaskStatus,
+    setExternal,
     getTasksByProcess,
   };
 };

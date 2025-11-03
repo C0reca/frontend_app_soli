@@ -39,6 +39,7 @@ const processSchema = z.object({
     titulo: z.string().min(1, "Título é obrigatório"),
     descricao: z.string().optional(),
     tipo: z.string().optional(),
+    onde_estao: z.string().optional(),
     cliente_id: z.number().min(1, "Cliente é obrigatório"),
     funcionario_id: z.number().optional(),
     estado: z.enum(["pendente", "em_curso", "concluido"]).default("pendente"),
@@ -71,6 +72,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
             titulo: initialData?.titulo ?? "",
             descricao: initialData?.descricao ?? "",
             tipo: initialData?.tipo ?? "",
+            onde_estao: undefined,
             cliente_id: initialData?.cliente_id ?? undefined,
             funcionario_id: initialData?.funcionario_id ?? undefined,
             estado: initialData?.estado ?? "pendente",
@@ -83,6 +85,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 titulo: process.titulo,
                 descricao: process.descricao || "",
                 tipo: process.tipo || "",
+                onde_estao: (process as any).onde_estao || undefined,
                 cliente_id: process.cliente_id || undefined,
                 funcionario_id: process.funcionario_id || undefined,
                 estado: process.estado,
@@ -92,6 +95,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 titulo: initialData?.titulo ?? "",
                 descricao: initialData?.descricao ?? "",
                 tipo: initialData?.tipo ?? "",
+                onde_estao: undefined,
                 cliente_id: initialData?.cliente_id ?? undefined,
                 funcionario_id: initialData?.funcionario_id ?? undefined,
                 estado: initialData?.estado ?? "pendente",
@@ -191,6 +195,43 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         <FormControl>
                                             <Input placeholder="Digite o tipo do processo" {...field} />
                                         </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="onde_estao"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Onde estão</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? ""}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione a localização" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Cartorio">Cartorio</SelectItem>
+                                                <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
+                                                <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
+                                                <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
+                                                <SelectItem value="Reuniões">Reuniões</SelectItem>
+                                                <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>
+                                                <SelectItem value="Serviço Finanças">Serviço Finanças</SelectItem>
+                                                <SelectItem value="Imposto Selo / Participações">Imposto Selo / Participações</SelectItem>
+                                                <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
+                                                <SelectItem value="Aguarda Doc Cliente">Aguarda Doc Cliente</SelectItem>
+                                                <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
+                                                <SelectItem value="Tarefas">Tarefas</SelectItem>
+                                                <SelectItem value="Injunções">Injunções</SelectItem>
+                                                <SelectItem value="Execuções">Execuções</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

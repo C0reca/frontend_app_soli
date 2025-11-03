@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDashboard } from '@/hooks/useDashboard';
-import { Users, FolderOpen, CheckSquare, Clock, DollarSign, TrendingUp } from 'lucide-react';
+import { FolderOpen, CheckSquare, Clock, TrendingUp, Users } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { kpis, isLoading } = useDashboard();
@@ -27,48 +27,59 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  const completionRate = kpis && kpis.total_processos > 0
+    ? Math.round((kpis.concluidos / kpis.total_processos) * 100)
+    : 0;
+
   const kpiCards = [
     {
       title: 'Total de Clientes',
-      value: kpis?.totalClients || 45,
+      value: kpis?.total_clientes ?? 0,
       icon: Users,
-      description: 'Clientes ativos no sistema',
-      trend: '+12%'
+      description: 'Clientes registados no sistema',
+      trend: ''
+    },
+    {
+      title: 'Total de Processos',
+      value: kpis?.total_processos ?? 0,
+      icon: FolderOpen,
+      description: 'Processos registados no sistema',
+      trend: ''
     },
     {
       title: 'Processos Ativos',
-      value: kpis?.activeProcesses || 23,
-      icon: FolderOpen,
-      description: 'Processos em andamento',
-      trend: '+8%'
+      value: kpis?.ativos ?? 0,
+      icon: Clock,
+      description: 'Pendente ou Em curso',
+      trend: ''
+    },
+    {
+      title: 'Processos Concluídos',
+      value: kpis?.concluidos ?? 0,
+      icon: CheckSquare,
+      description: 'Estado concluído',
+      trend: ''
     },
     {
       title: 'Tarefas Concluídas',
-      value: kpis?.completedTasks || 156,
+      value: kpis?.tarefas_concluidas ?? 0,
       icon: CheckSquare,
-      description: 'Tarefas finalizadas este mês',
-      trend: '+15%'
+      description: 'Tarefas finalizadas',
+      trend: ''
     },
     {
       title: 'Tarefas Pendentes',
-      value: kpis?.pendingTasks || 34,
+      value: kpis?.tarefas_pendentes ?? 0,
       icon: Clock,
       description: 'Tarefas aguardando execução',
-      trend: '-5%'
-    },
-    {
-      title: 'Templates Ativos',
-      value: kpis?.activeTemplates || 8,
-      icon: DollarSign,
-      description: 'Templates de processos disponíveis',
-      trend: '+2%'
+      trend: ''
     },
     {
       title: 'Taxa de Conclusão',
-      value: `${kpis?.processCompletionRate || 87}%`,
+      value: `${completionRate}%`,
       icon: TrendingUp,
-      description: 'Processos concluídos com sucesso',
-      trend: '+3%'
+      description: 'Concluídos / Total',
+      trend: ''
     }
   ];
 
@@ -93,14 +104,16 @@ export const Dashboard: React.FC = () => {
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900">{kpi.value}</div>
                 <p className="text-xs text-gray-600 mt-1">{kpi.description}</p>
-                <div className="flex items-center mt-2">
-                  <span className={`text-xs font-medium ${
-                    kpi.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {kpi.trend}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-1">vs mês anterior</span>
-                </div>
+                {kpi.trend && (
+                  <div className="flex items-center mt-2">
+                    <span className={`text-xs font-medium ${
+                      kpi.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {kpi.trend}
+                    </span>
+                    <span className="text-xs text-gray-500 ml-1">vs mês anterior</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
@@ -114,26 +127,11 @@ export const Dashboard: React.FC = () => {
             <CardDescription>Últimos processos criados no sistema</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: 'Processo de Onboarding - João Silva', status: 'Em andamento', date: '2 dias' },
-                { name: 'Análise Financeira - Empresa ABC', status: 'Pendente', date: '1 dia' },
-                { name: 'Auditoria Interna - Q4 2024', status: 'Concluído', date: '3 dias' }
-              ].map((process, index) => (
-                <div key={index} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium text-sm">{process.name}</p>
-                    <p className="text-xs text-gray-500">há {process.date}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    process.status === 'Concluído' 
-                      ? 'bg-green-100 text-green-800'
-                      : process.status === 'Em andamento'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {process.status}
-                  </span>
+            <div className="space-y-2 text-sm text-gray-700">
+              {kpis?.por_estado && Object.entries(kpis.por_estado).map(([estado, count]) => (
+                <div key={estado} className="flex items-center justify-between">
+                  <span className="capitalize">{estado.replace('_',' ')}</span>
+                  <span className="font-semibold">{count}</span>
                 </div>
               ))}
             </div>
@@ -146,24 +144,11 @@ export const Dashboard: React.FC = () => {
             <CardDescription>Tarefas que precisam de atenção imediata</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: 'Revisar contrato Cliente XYZ', priority: 'Alta', due: 'Hoje' },
-                { name: 'Aprovar proposta comercial', priority: 'Média', due: 'Amanhã' },
-                { name: 'Enviar relatório mensal', priority: 'Alta', due: '2 dias' }
-              ].map((task, index) => (
-                <div key={index} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium text-sm">{task.name}</p>
-                    <p className="text-xs text-gray-500">Vence em {task.due}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    task.priority === 'Alta' 
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-orange-100 text-orange-800'
-                  }`}>
-                    {task.priority}
-                  </span>
+            <div className="space-y-2 text-sm text-gray-700">
+              {kpis?.por_funcionario && Object.entries(kpis.por_funcionario).map(([nome, count]) => (
+                <div key={nome} className="flex items-center justify-between">
+                  <span>{nome}</span>
+                  <span className="font-semibold">{count}</span>
                 </div>
               ))}
             </div>

@@ -76,16 +76,26 @@ export const useCaixa = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const response = await api.get(`/caixa/resumo/${today}`);
-      setResumoDia(response.data);
+      const entradas = Number((response.data?.total_entradas ?? 0)) || 0;
+      const saidas = Number((response.data?.total_saidas ?? 0)) || 0;
+      const saldoInicial = 10000; // saldo inicial fixo
+      const saldoFinal = saldoInicial + entradas - saidas;
+      setResumoDia({
+        data: today,
+        saldo_inicial: saldoInicial,
+        total_entradas: entradas,
+        total_saidas: saidas,
+        saldo_final: saldoFinal,
+      });
     } catch (error) {
       console.error('Erro ao carregar resumo do dia:', error);
       // Se não existir resumo para hoje, criar um vazio
       setResumoDia({
         data: new Date().toISOString().split('T')[0],
-        saldo_inicial: 0,
+        saldo_inicial: 10000,
         total_entradas: 0,
         total_saidas: 0,
-        saldo_final: 0,
+        saldo_final: 10000,
       });
     }
   };

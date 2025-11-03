@@ -2,31 +2,30 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 
-export interface DashboardKPIs {
-  totalClients: number;
-  activeProcesses: number;
-  completedTasks: number;
-  pendingTasks: number;
-  activeTemplates: number;
-  processCompletionRate: number;
+export interface DashboardResponse {
+  total_processos: number;
+  ativos: number;
+  concluidos: number;
+  total_clientes: number;
+  tarefas_concluidas: number;
+  tarefas_pendentes: number;
+  por_tipo: Record<string, number>;
+  por_estado: Record<string, number>;
+  por_funcionario: Record<string, number>;
+  evolucao_mensal: { ano: number; mes: number; total: number; label: string }[];
 }
 
 export const useDashboard = () => {
-  const {
-    data: kpis,
-    isLoading,
-    error
-  } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-kpis'],
-    queryFn: async () => {
-      // Mock data for development
-      const { mockDashboardKPIs } = await import('@/data/mockData');
-      return mockDashboardKPIs;
+    queryFn: async (): Promise<DashboardResponse> => {
+      const res = await api.get('/dashboard/kpis');
+      return res.data;
     },
   });
 
   return {
-    kpis,
+    kpis: data,
     isLoading,
     error,
   };

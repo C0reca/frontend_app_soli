@@ -16,11 +16,12 @@ export const RegistosPrediais: React.FC = () => {
   const [selectedRegistoDetails, setSelectedRegistoDetails] = useState<RegistoPredial | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  const filteredRegistos = registos.filter((registo) =>
-    registo.numero_processo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    registo.predio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    registo.freguesia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    registo.cliente?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  const safe = (v: any) => (v ? v.toString().toLowerCase() : '');
+  const filteredRegistos = registos.filter((registo: any) =>
+    safe(registo.numero_processo).includes(searchTerm.toLowerCase()) ||
+    safe(registo.predio).includes(searchTerm.toLowerCase()) ||
+    safe(registo.freguesia).includes(searchTerm.toLowerCase()) ||
+    safe(registo.cliente?.nome).includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (estado: string) => {
@@ -134,7 +135,7 @@ export const RegistosPrediais: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {registos.filter(r => r.estado === 'concluido').length}
+              {registos.filter((r: any) => r.estado_key === 'concluido').length}
             </div>
           </CardContent>
         </Card>
@@ -148,7 +149,7 @@ export const RegistosPrediais: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {registos.filter(r => r.estado === 'provisorios').length}
+              {registos.filter((r: any) => r.estado_key === 'provisorios').length}
             </div>
           </CardContent>
         </Card>
@@ -162,7 +163,7 @@ export const RegistosPrediais: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {registos.filter(r => r.estado === 'recusado').length}
+              {registos.filter((r: any) => r.estado_key === 'recusado').length}
             </div>
           </CardContent>
         </Card>
@@ -176,7 +177,7 @@ export const RegistosPrediais: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
-              {registos.filter(r => r.estado === 'desistencia').length}
+              {registos.filter((r: any) => r.estado_key === 'desistencia').length}
             </div>
           </CardContent>
         </Card>
@@ -202,7 +203,7 @@ export const RegistosPrediais: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredRegistos.map((registo) => (
+            {filteredRegistos.map((registo: any) => (
               <Card 
                 key={registo.id} 
                 className="hover:shadow-md transition-shadow cursor-pointer"
@@ -212,10 +213,10 @@ export const RegistosPrediais: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        {getStatusIcon(registo.estado)}
+                        {getStatusIcon(registo.estado_key)}
                         <h3 className="font-semibold">{registo.numero_processo}</h3>
-                        <Badge className={getStatusColor(registo.estado)}>
-                          {getStatusLabel(registo.estado)}
+                        <Badge className={getStatusColor(registo.estado_key)}>
+                          {getStatusLabel(registo.estado_key)}
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">{registo.predio} - {registo.freguesia}</p>
