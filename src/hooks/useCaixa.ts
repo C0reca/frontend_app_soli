@@ -78,7 +78,7 @@ export const useCaixa = () => {
       const response = await api.get(`/caixa/resumo/${today}`);
       const entradas = Number((response.data?.total_entradas ?? 0)) || 0;
       const saidas = Number((response.data?.total_saidas ?? 0)) || 0;
-      const saldoInicial = 10000; // saldo inicial fixo
+      const saldoInicial = 0; // saldo inicial padrão
       const saldoFinal = saldoInicial + entradas - saidas;
       setResumoDia({
         data: today,
@@ -92,10 +92,10 @@ export const useCaixa = () => {
       // Se não existir resumo para hoje, criar um vazio
       setResumoDia({
         data: new Date().toISOString().split('T')[0],
-        saldo_inicial: 10000,
+        saldo_inicial: 0,
         total_entradas: 0,
         total_saidas: 0,
-        saldo_final: 10000,
+        saldo_final: 0,
       });
     }
   };
