@@ -216,6 +216,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
+                                                <SelectItem value="--------">--------</SelectItem>
                                                 <SelectItem value="Cartorio">Cartorio</SelectItem>
                                                 <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
                                                 <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>

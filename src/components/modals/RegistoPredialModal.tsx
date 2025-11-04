@@ -38,7 +38,7 @@ const formSchema = z.object({
   freguesia: z.string().min(1, 'Freguesia é obrigatória'),
   registo: z.string().min(1, 'Registo é obrigatório'),
   conservatoria: z.string().min(1, 'Conservatória é obrigatória'),
-  requisicao: z.string().min(1, 'Requerimento é obrigatório'),
+  requisicao: z.string().min(1, 'Facto de Registo é obrigatório'),
   apresentacao: z.string().min(1, 'Apresentação é obrigatória'),
   data: z.string().min(1, 'Data é obrigatória'),
   apresentacao_complementar: z.string().optional(),
@@ -282,9 +282,9 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 name="requisicao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Requerimento *</FormLabel>
+                    <FormLabel>Facto de Registo *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Número do requerimento" {...field} />
+                      <Input placeholder="Número do facto de registo" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

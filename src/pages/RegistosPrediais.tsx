@@ -32,6 +32,13 @@ export const RegistosPrediais: React.FC = () => {
     safe(registo.cliente?.nome).includes(searchTerm.toLowerCase())
   );
 
+  // ordenar por data (mais recente primeiro)
+  const sortedRegistos = [...filteredRegistos].sort((a: any, b: any) => {
+    const da = a?.data ? new Date(a.data).getTime() : 0;
+    const db = b?.data ? new Date(b.data).getTime() : 0;
+    return db - da;
+  });
+
   const getStatusColor = (estado: string) => {
     switch (estado) {
       case 'concluido':
@@ -231,7 +238,7 @@ export const RegistosPrediais: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredRegistos.map((registo: any) => (
+            {sortedRegistos.map((registo: any) => (
               <Card 
                 key={registo.id} 
                 className="hover:shadow-md transition-shadow cursor-pointer"

@@ -140,7 +140,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
                 <p className="text-sm">{registo.conservatoria}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Requerimento</label>
+                <label className="text-sm font-medium text-gray-600">Facto de Registo</label>
                 <p className="text-sm">{registo.requisicao}</p>
               </div>
               <div>
@@ -161,10 +161,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
                 <label className="text-sm font-medium text-gray-600">Data</label>
                 <p className="text-sm">{new Date(registo.data).toLocaleDateString('pt-BR')}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Data de Criação</label>
-                <p className="text-sm">{new Date(registo.data_criacao).toLocaleDateString('pt-BR')}</p>
-              </div>
+              {/* Data de Criação ocultada conforme pedido */}
             </div>
           </div>
 
