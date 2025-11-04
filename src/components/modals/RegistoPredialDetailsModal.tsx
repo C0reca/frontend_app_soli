@@ -132,7 +132,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Registo de Facto</label>
+                <label className="text-sm font-medium text-gray-600">Registo</label>
                 <p className="text-sm">{registo.registo}</p>
               </div>
               <div>
