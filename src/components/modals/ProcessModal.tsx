@@ -207,7 +207,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     <FormItem>
                                         <FormLabel>Localização</FormLabel>
                                         <Select
-                                            onValueChange={field.onChange}
+                                            onValueChange={(v) => field.onChange(v === "--------" ? undefined : v)}
                                             value={field.value ?? ""}
                                         >
                                             <FormControl>
