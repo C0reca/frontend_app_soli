@@ -146,7 +146,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Funcionário' : 'Novo Funcionário'}
@@ -157,7 +157,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               : 'Preencha os dados do novo funcionário'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 overflow-y-auto flex-1 pr-2">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
             <Input
