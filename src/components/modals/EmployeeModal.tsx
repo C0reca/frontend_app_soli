@@ -38,7 +38,14 @@ const employeeSchema = z.object({
   cargo: z.string().optional().transform((val) => val || undefined),
   departamento: z.string().optional().transform((val) => val || undefined),
   cor: z.string().optional().transform((val) => val || undefined),
-  role: z.enum(['admin', 'manager', 'funcionario']).default('funcionario'),
+  role: z.preprocess(
+    (val) => {
+      // Mapear 'employee' para 'funcionario' se necessário
+      if (val === 'employee') return 'funcionario';
+      return val;
+    },
+    z.enum(['admin', 'manager', 'funcionario']).default('funcionario')
+  ),
   is_active: z.boolean().default(true),
   senha: z.string().optional(),
 });
@@ -83,6 +90,14 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   React.useEffect(() => {
     if (employee) {
+      // Garantir que o role está no formato correto
+      let roleValue: 'admin' | 'manager' | 'funcionario' = 'funcionario';
+      if (employee.role === 'admin' || employee.role === 'manager' || employee.role === 'funcionario') {
+        roleValue = employee.role;
+      } else if (employee.role === 'employee') {
+        roleValue = 'funcionario'; // Mapear 'employee' para 'funcionario'
+      }
+      
       reset({
         nome: employee.nome,
         email: employee.email,
@@ -90,7 +105,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         cargo: employee.cargo || '',
         departamento: employee.departamento || '',
         cor: employee.cor || '#3b82f6',
-        role: employee.role || 'funcionario',
+        role: roleValue,
         is_active: employee.is_active,
         senha: '',
       });
