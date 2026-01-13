@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Clock, AlertCircle, Calendar, User, Building } from 'lucide-react';
-import { Task } from '@/hooks/useTasks';
+import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download } from 'lucide-react';
+import { Task, useTasks } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   task,
 }) => {
   const { employees } = useEmployees();
+  const { generateTaskPDF } = useTasks();
   const [subtasks, setSubtasks] = useState<Task[]>([]);
   const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(task);
@@ -75,13 +76,19 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   };
 
   const onDeleteDoc = async (id: number) => {
+    if (!confirm('Tem certeza que deseja apagar este ficheiro?')) {
+      return;
+    }
     try {
       await api.delete(`/documentos/${id}`);
       if (currentTask) {
         const res = await api.get(`/documentos/tarefa/${currentTask.id}`);
         setDocs(res.data);
       }
-    } catch {}
+    } catch (error: any) {
+      console.error('Erro ao apagar documento:', error);
+      alert(error?.response?.data?.detail || 'Erro ao apagar o ficheiro. Por favor, tente novamente.');
+    }
   };
 
   const onRenameDoc = async (id: number) => {
@@ -161,7 +168,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-12">
             <DialogTitle className="flex items-center space-x-2">
               {getStatusIcon(currentTask.concluida)}
               <span>{currentTask.titulo}</span>
@@ -170,18 +177,27 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               )}
             </DialogTitle>
             <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-12 top-4"
-              onClick={() => {
-                minimize({ type: 'task', title: currentTask.titulo, payload: { task: currentTask } });
-                onClose();
-              }}
-              aria-label={'Minimizar'}
+              variant="outline"
+              size="sm"
+              onClick={() => generateTaskPDF(currentTask.id)}
+              className="flex items-center gap-2"
             >
-              <Minimize2 className="h-4 w-4" />
+              <Download className="h-4 w-4" />
+              Exportar PDF
             </Button>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-12 top-4"
+            onClick={() => {
+              minimize({ type: 'task', title: currentTask.titulo, payload: { task: currentTask } });
+              onClose();
+            }}
+            aria-label={'Minimizar'}
+          >
+            <Minimize2 className="h-4 w-4" />
+          </Button>
         </DialogHeader>
         
         <div className="space-y-6">

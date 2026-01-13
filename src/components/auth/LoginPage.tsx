@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +26,8 @@ export const LoginPage: React.FC = () => {
       const success = await login(email, password);
       if (!success) {
         setError('Credenciais inválidas. Tente novamente.');
+      } else {
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       setError('Erro ao fazer login. Tente novamente.');

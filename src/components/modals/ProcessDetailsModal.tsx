@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +12,11 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { useLogsProcesso, LogProcesso } from '@/hooks/useLogsProcesso';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
+import { ProcessLocationModal } from './ProcessLocationModal';
+import { useProcesses } from '@/hooks/useProcesses';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
@@ -54,7 +57,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = React.useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = React.useState(false);
   const [selectedLog, setSelectedLog] = React.useState<LogProcesso | null>(null);
+  const [isLocationModalOpen, setIsLocationModalOpen] = React.useState(false);
   const { minimize } = useMinimize();
+  const { updateProcess } = useProcesses();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   React.useEffect(() => {
     if (process && isOpen) {
@@ -120,6 +127,24 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     }
     setSelectedLog(log);
     setIsLogModalOpen(true);
+  };
+
+  const handleEditLocation = () => {
+    setIsLocationModalOpen(true);
+  };
+
+  const handleUpdateLocation = async (processId: number, localizacao: string) => {
+    await updateProcess.mutateAsync({
+      id: processId,
+      onde_estao: localizacao,
+    });
+    // Invalidar queries para atualizar os dados
+    queryClient.invalidateQueries({ queryKey: ['processes'] });
+    queryClient.invalidateQueries({ queryKey: ['processo', processId] });
+    toast({
+      title: "Sucesso",
+      description: "Localização atualizada com sucesso.",
+    });
   };
 
   const handleViewTask = (tarefaId: number) => {
@@ -315,7 +340,22 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Localização</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
+                        <MapPin className="h-4 w-4" />
+                        <span>Localização</span>
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleEditLocation}
+                        className="h-7 px-2"
+                        title="Alterar localização"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Alterar
+                      </Button>
+                    </div>
                     <p className="text-sm">{(process as any).onde_estao || 'Não definido'}</p>
                   </div>
                 </div>
@@ -469,6 +509,13 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         onClose={() => setIsLogModalOpen(false)} 
         processoId={process?.id || 0}
         log={selectedLog}
+      />
+      <ProcessLocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        process={process}
+        onSave={handleUpdateLocation}
+        isSubmitting={updateProcess.isPending}
       />
     </Dialog>
   );

@@ -1,11 +1,15 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import api from '@/services/api';
 
 interface User {
-  id: string;
+  id: number;
+  nome: string;
   email: string;
-  name: string;
+  cargo?: string;
+  departamento?: string;
   role: string;
+  is_active: boolean;
 }
 
 interface AuthContextType {
@@ -36,53 +40,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
       try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        localStorage.removeItem('token');
+        setUser(JSON.parse(storedUser));
+      } catch {
         localStorage.removeItem('user');
       }
     }
-    setLoading(false);
+    if (!token) {
+      if (storedUser) {
+        localStorage.removeItem('user');
+        setUser(null);
+      }
+      setLoading(false);
+      return;
+    }
+
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await api.get('/auth/me');
+        setUser(response.data);
+      } catch (error) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Simulate API call - replace with actual API integration
-      if (email === 'admin@empresa.com' && password === 'admin123') {
-        const mockUser = {
-          id: '1',
-          email: 'admin@empresa.com',
-          name: 'Administrador',
-          role: 'admin'
-        };
-        const mockToken = 'mock-jwt-token';
-        
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        return true;
-      }
-      
-      if (email === 'helenamelosolicitadora@gmail.com' && password === 'helena123') {
-        const mockUser = {
-          id: '2',
-          email: 'funcionario@empresa.com',
-          name: 'Helena Melo',
-          role: 'employee'
-        };
-        const mockToken = 'mock-jwt-token-employee';
-        
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        return true;
-      }
-      
-      return false;
+      const response = await api.post('/auth/login', { email, password });
+      const { access_token, user: userData } = response.data;
+
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;

@@ -37,7 +37,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nome_empresa">Nome da empresa</Label>
+                <Label htmlFor="nome_empresa">Nome da empresa *</Label>
                 <Input
                   id="nome_empresa"
                   {...register('nome_empresa')}
@@ -49,7 +49,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nif_empresa">NIF</Label>
+                <Label htmlFor="nif_empresa">NIF *</Label>
                 <Input
                   id="nif_empresa"
                   {...register('nif_empresa')}
@@ -187,7 +187,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email geral</Label>
+                <Label htmlFor="email">Email geral *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -200,12 +200,15 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
+                <Label htmlFor="telefone">Telefone *</Label>
                 <Input
                   id="telefone"
                   {...register('telefone')}
                   placeholder="+351 123 456 789"
                 />
+                {errors.telefone && (
+                  <p className="text-sm text-red-600">{errors.telefone.message?.toString()}</p>
+                )}
               </div>
             </div>
 
@@ -289,6 +292,28 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                   placeholder="PT50 0000 0000 0000 0000 0000 0"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="incapacidade">Incapacidade (%)</Label>
+              <Input
+                id="incapacidade"
+                type="number"
+                min="0"
+                max="100"
+                {...register('incapacidade', {
+                  valueAsNumber: true,
+                  validate: (value) => {
+                    if (value === undefined || value === null || value === '') return true;
+                    const num = Number(value);
+                    return (num >= 0 && num <= 100) || 'Incapacidade deve estar entre 0 e 100%';
+                  }
+                })}
+                placeholder="0-100"
+              />
+              {errors.incapacidade && (
+                <p className="text-sm text-red-500">{errors.incapacidade.message as string}</p>
+              )}
             </div>
 
             <div className="space-y-2">

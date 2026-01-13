@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useEmployees, Employee } from '@/hooks/useEmployees';
@@ -103,9 +104,11 @@ export const Employees: React.FC = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead>Departamento</TableHead>
-                <TableHead>Telefone</TableHead>
+              <TableHead>Cargo</TableHead>
+              <TableHead>Departamento</TableHead>
+              <TableHead>Perfil</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Telefone</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -116,6 +119,20 @@ export const Employees: React.FC = () => {
                   <TableCell>{employee.email}</TableCell>
                   <TableCell>{employee.cargo || '-'}</TableCell>
                   <TableCell>{employee.departamento || '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {employee.role === 'admin'
+                        ? 'Admin'
+                        : employee.role === 'manager'
+                          ? 'Manager'
+                          : 'Funcionario'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={employee.is_active ? 'default' : 'destructive'}>
+                      {employee.is_active ? 'Ativo' : 'Desativado'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{employee.telefone || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">

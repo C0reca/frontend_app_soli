@@ -61,9 +61,6 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
       setValue('num_sns', data.healthNumber ?? '');
       setValue('num_ident_civil', data.civilianIdNumber ?? '');
 
-      console.log("Validade formatada:", formatDate(data.validityEndDate));
-      console.log("Nascimento formatada:", formatDate(data.dateOfBirth));
-
       // Morada
       const address = data.address ?? {};
       setValue('morada', address.street ?? '');
@@ -117,7 +114,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome completo</Label>
+                <Label htmlFor="nome">Nome completo *</Label>
                 <Input
                   id="nome"
                   {...register('nome')}
@@ -129,7 +126,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nif">NIF</Label>
+                <Label htmlFor="nif">NIF *</Label>
                 <Input
                   id="nif"
                   {...register('nif')}
@@ -179,6 +176,28 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                   placeholder="Portuguesa"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="incapacidade">Incapacidade (%)</Label>
+              <Input
+                id="incapacidade"
+                type="number"
+                min="0"
+                max="100"
+                {...register('incapacidade', {
+                  valueAsNumber: true,
+                  validate: (value) => {
+                    if (value === undefined || value === null || value === '') return true;
+                    const num = Number(value);
+                    return (num >= 0 && num <= 100) || 'Incapacidade deve estar entre 0 e 100%';
+                  }
+                })}
+                placeholder="0-100"
+              />
+              {errors.incapacidade && (
+                <p className="text-sm text-red-500">{errors.incapacidade.message as string}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -251,7 +270,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -264,12 +283,15 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
+                <Label htmlFor="telefone">Telefone *</Label>
                 <Input
                   id="telefone"
                   {...register('telefone')}
                   placeholder="+351 123 456 789"
                 />
+                {errors.telefone && (
+                  <p className="text-sm text-red-600">{errors.telefone.message?.toString()}</p>
+                )}
               </div>
             </div>
           </CardContent>

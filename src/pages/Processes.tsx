@@ -4,16 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
+import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
 
 
 export const Processes: React.FC = () => {
-  const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess } = useProcesses();
+  const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess } = useProcesses();
   const { clients } = useClients();
   const { employees } = useEmployees();
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,6 +22,8 @@ export const Processes: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProcessDetails, setSelectedProcessDetails] = useState<Process | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedProcessLocation, setSelectedProcessLocation] = useState<Process | null>(null);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archived, setArchived] = useState<Process[]>([]);
 
@@ -106,6 +109,23 @@ export const Processes: React.FC = () => {
     setIsDetailsModalOpen(false);
   };
 
+  const handleEditLocation = (process: Process) => {
+    setSelectedProcessLocation(process);
+    setIsLocationModalOpen(true);
+  };
+
+  const handleCloseLocationModal = () => {
+    setSelectedProcessLocation(null);
+    setIsLocationModalOpen(false);
+  };
+
+  const handleUpdateLocation = async (processId: number, localizacao: string) => {
+    await updateProcess.mutateAsync({
+      id: processId,
+      onde_estao: localizacao,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -173,9 +193,16 @@ export const Processes: React.FC = () => {
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                        {process.dossie_id ? (
+                          <div>
+                            <span className="font-medium">Dossiê:</span> {process.dossie?.nome || `ID: ${process.dossie_id}`}
+                            {process.dossie?.numero && <span className="text-muted-foreground"> ({process.dossie.numero})</span>}
+                          </div>
+                        ) : (
                         <div>
-                          <span className="font-medium">Cliente:</span> {process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
+                            <span className="font-medium">Entidade:</span> {process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
                         </div>
+                        )}
                         <div>
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
                         </div>
@@ -202,6 +229,9 @@ export const Processes: React.FC = () => {
                          </Button>
                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(process); }}>
                            <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditLocation(process); }} title="Alterar localização">
+                           <MapPin className="h-4 w-4" />
                          </Button>
                       {showArchived ? (
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); unarchiveProcess.mutate(process.id); }}>
@@ -232,6 +262,14 @@ export const Processes: React.FC = () => {
          isOpen={isDetailsModalOpen}
          onClose={handleCloseDetailsModal}
          process={selectedProcessDetails}
+       />
+
+       <ProcessLocationModal
+         isOpen={isLocationModalOpen}
+         onClose={handleCloseLocationModal}
+         process={selectedProcessLocation}
+         onSave={handleUpdateLocation}
+         isSubmitting={updateProcess.isPending}
        />
      </div>
    );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -27,15 +27,21 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
+import { Plus, Trash2 } from 'lucide-react';
+import { useRegistosPrediais, RegistoPredial, Predio } from '@/hooks/useRegistosPrediais';
 import { useClients } from '@/hooks/useClients';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
+import { Card, CardContent } from '@/components/ui/card';
+
+const predioSchema = z.object({
+  predio: z.string().min(1, 'Prédio é obrigatório'),
+  freguesia: z.string().optional(),
+});
 
 const formSchema = z.object({
   numero_processo: z.string().min(1, 'Número do processo é obrigatório'),
   cliente_id: z.number({ invalid_type_error: 'Cliente é obrigatório' }).min(1, 'Cliente é obrigatório'),
-  predio: z.string().min(1, 'Prédio é obrigatório'),
-  freguesia: z.string().min(1, 'Freguesia é obrigatória'),
+  predios: z.array(predioSchema).min(1, 'Pelo menos um prédio é obrigatório'),
   registo: z.string().min(1, 'Registo é obrigatório'),
   conservatoria: z.string().min(1, 'Conservatória é obrigatória'),
   requisicao: z.string().min(1, 'Facto de Registo é obrigatório'),
@@ -87,8 +93,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
     defaultValues: {
       numero_processo: '',
       cliente_id: undefined as unknown as number,
-      predio: '',
-      freguesia: '',
+      predios: [{ predio: '', freguesia: '' }],
       registo: '',
       conservatoria: '',
       requisicao: '',
@@ -100,13 +105,22 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
     },
   });
 
+  const { fields: predioFields, append: appendPredio, remove: removePredio } = useFieldArray({
+    control: form.control,
+    name: 'predios',
+  });
+
   React.useEffect(() => {
     if (registo) {
+      // Se tiver prédios na lista, usar; senão, usar o campo antigo para compatibilidade
+      const predios = registo.predios && registo.predios.length > 0
+        ? registo.predios.map(p => ({ predio: p.predio || '', freguesia: p.freguesia || '' }))
+        : [{ predio: registo.predio || '', freguesia: registo.freguesia || '' }];
+      
       form.reset({
         numero_processo: registo.numero_processo || '',
         cliente_id: registo.cliente_id != null ? Number(registo.cliente_id) : (undefined as unknown as number),
-        predio: registo.predio || '',
-        freguesia: registo.freguesia || '',
+        predios: predios.length > 0 ? predios : [{ predio: '', freguesia: '' }],
         registo: registo.registo || '',
         conservatoria: registo.conservatoria || '',
         requisicao: registo.requisicao || '',
@@ -120,8 +134,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
       form.reset({
         numero_processo: '',
         cliente_id: undefined as unknown as number,
-        predio: '',
-        freguesia: '',
+        predios: [{ predio: '', freguesia: '' }],
         registo: '',
         conservatoria: '',
         requisicao: '',
@@ -139,8 +152,10 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
       const registoData = {
         numero_processo: data.numero_processo,
         cliente_id: data.cliente_id,
-        predio: data.predio,
-        freguesia: data.freguesia,
+        predios: data.predios.map(p => ({
+          predio: p.predio,
+          freguesia: p.freguesia || undefined,
+        })),
         registo: data.registo,
         conservatoria: data.conservatoria,
         requisicao: data.requisicao,
@@ -216,10 +231,28 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-base font-semibold">Prédios *</FormLabel>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendPredio({ predio: '', freguesia: '' })}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Prédio
+                </Button>
+              </div>
+              
+              {predioFields.map((field, index) => (
+                <Card key={field.id} className="p-4">
+                  <CardContent className="p-0">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1 grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="predio"
+                          name={`predios.${index}.predio`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Prédio *</FormLabel>
@@ -233,10 +266,10 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
 
               <FormField
                 control={form.control}
-                name="freguesia"
+                          name={`predios.${index}.freguesia`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Freguesia *</FormLabel>
+                              <FormLabel>Freguesia</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome da freguesia" {...field} />
                     </FormControl>
@@ -244,6 +277,22 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                   </FormItem>
                 )}
               />
+                      </div>
+                      {predioFields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePredio(index)}
+                          className="mt-8"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

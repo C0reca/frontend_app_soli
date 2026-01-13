@@ -1,7 +1,8 @@
 import React from 'react';
 import { Employee } from '@/hooks/useEmployees';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Mail, Phone, Briefcase, Building, Calendar } from 'lucide-react';
+import { Mail, Phone, Briefcase, Building, Calendar, Shield, Power } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface EmployeeDetailsModalProps {
   isOpen: boolean;
@@ -30,6 +31,20 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
           <div className="text-center border-b pb-4">
             <h2 className="text-xl font-semibold text-gray-900">{employee.nome}</h2>
             <p className="text-gray-600">{employee.email}</p>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                {employee.role === 'admin'
+                  ? 'Admin'
+                  : employee.role === 'manager'
+                    ? 'Manager'
+                    : 'Funcionario'}
+              </Badge>
+              <Badge variant={employee.is_active ? 'default' : 'destructive'} className="flex items-center gap-1">
+                <Power className="h-3 w-3" />
+                {employee.is_active ? 'Ativo' : 'Desativado'}
+              </Badge>
+            </div>
           </div>
 
           {/* Contact Information */}
@@ -77,7 +92,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
               <div>
                 <p className="text-sm font-medium text-gray-700">Data de Criação</p>
                 <p className="text-gray-900">
-                  {new Date(employee.criado_em).toLocaleDateString('pt-BR')}
+                  {new Date(employee.criado_em).toLocaleDateString('pt-PT')}
                 </p>
               </div>
             </div>

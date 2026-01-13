@@ -2,6 +2,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 
+export type EmployeeRole = 'admin' | 'manager' | 'funcionario';
+
 export interface Employee {
   id: number;
   nome: string;
@@ -10,7 +12,26 @@ export interface Employee {
   cargo?: string;
   departamento?: string;
   cor?: string;
+  role: EmployeeRole;
+  is_active: boolean;
   criado_em: string;
+}
+
+interface CreateEmployeePayload {
+  nome: string;
+  email: string;
+  telefone?: string;
+  cargo?: string;
+  departamento?: string;
+  cor?: string;
+  role: EmployeeRole;
+  is_active: boolean;
+  senha: string;
+}
+
+interface UpdateEmployeePayload extends Partial<CreateEmployeePayload> {
+  id: number;
+  senha?: string;
 }
 
 export const useEmployees = () => {
@@ -29,7 +50,7 @@ export const useEmployees = () => {
   });
 
   const createEmployee = useMutation({
-    mutationFn: async (employee: Omit<Employee, 'id' | 'criado_em'>) => {
+    mutationFn: async (employee: CreateEmployeePayload) => {
       const response = await api.post('/funcionarios', employee);
       return response.data;
     },
@@ -39,7 +60,7 @@ export const useEmployees = () => {
   });
 
   const updateEmployee = useMutation({
-    mutationFn: async ({ id, ...employee }: Partial<Employee> & { id: number }) => {
+    mutationFn: async ({ id, ...employee }: UpdateEmployeePayload) => {
       const response = await api.put(`/funcionarios/${id}`, employee);
       return response.data;
     },

@@ -2,12 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
+export interface Predio {
+  id?: number;
+  predio: string;
+  freguesia?: string;
+}
+
 export interface RegistoPredial {
   id: string;
   numero_processo: string;
   cliente_id: number;
-  predio: string;
-  freguesia: string;
+  predio: string; // Mantido para compatibilidade
+  freguesia: string; // Mantido para compatibilidade
+  predios?: Predio[]; // Nova lista de prédios
   registo: string;
   conservatoria: string;
   requisicao: string;

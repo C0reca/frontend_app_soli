@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
+import type { MovimentoCaixa, CreateMovimentoData } from '@/hooks/useCaixa';
 
 const formSchema = z.object({
   tipo: z.enum(['entrada', 'saida'], {
@@ -41,8 +41,15 @@ const formSchema = z.object({
   }).positive("Valor deve ser positivo"),
   descricao: z.string().min(1, "Descrição é obrigatória"),
   data: z.string().min(1, "Data é obrigatória"),
+  hora: z.string().refine(
+    (val) => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
+    {
+      message: "Hora inválida. Utilize o formato HH:MM",
+    }
+  ).optional().nullable(),
   associado_a_processo: z.boolean().default(false),
   processo_id: z.string().optional(),
+  tipo_transferencia: z.enum(['mb', 'dinheiro', 'transferencia']).default('dinheiro'),
 }).refine((data) => {
   if (data.associado_a_processo && !data.processo_id) {
     return false;
@@ -58,8 +65,10 @@ type FormData = z.infer<typeof formSchema>;
 interface MovimentoCaixaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: FormData) => Promise<void>;
+  onSave: (data: CreateMovimentoData) => Promise<void>;
   onSuccess?: () => void;
+  initialData?: MovimentoCaixa | null;
+  mode?: 'create' | 'edit';
 }
 
 export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
@@ -67,51 +76,72 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
   onClose,
   onSave,
   onSuccess,
+  initialData = null,
+  mode = 'create',
 }) => {
-  const { toast } = useToast();
-  
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+  const defaultValues = useMemo<FormData>(() => {
+    const agora = new Date();
+    const dataHoje = agora.toISOString().split('T')[0];
+    return {
       tipo: undefined,
       valor: undefined,
       descricao: '',
-      data: new Date().toISOString().split('T')[0],
+      data: dataHoje,
+      hora: '',
       associado_a_processo: false,
       processo_id: '',
-    },
+      tipo_transferencia: 'dinheiro',
+    };
+  }, []);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues,
   });
 
   const isAssociadoAProcesso = form.watch('associado_a_processo');
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (initialData) {
+      const dataIso = initialData.data
+        ? new Date(initialData.data).toISOString().split('T')[0]
+        : defaultValues.data;
+      const hora = initialData.hora ?? (initialData.data ? new Date(initialData.data).toTimeString().slice(0, 5) : '');
+      form.reset({
+        tipo: initialData.tipo,
+        valor: initialData.valor,
+        descricao: initialData.descricao,
+        data: dataIso,
+        hora,
+        associado_a_processo: Boolean(initialData.processo_id),
+        processo_id: initialData.processo_id ? String(initialData.processo_id) : '',
+        tipo_transferencia: initialData.tipo_transferencia ?? 'dinheiro',
+      });
+    } else {
+      form.reset(defaultValues);
+    }
+  }, [isOpen, initialData, form, defaultValues]);
+
   const handleSubmit = async (data: FormData) => {
-    try {
       // Remove processo_id se não estiver associado a processo
-      const submitData = {
+    const submitData: CreateMovimentoData = {
         ...data,
+      hora: data.hora ? data.hora : undefined,
         processo_id: data.associado_a_processo ? data.processo_id : undefined,
       };
       
       await onSave(submitData);
       
-      toast({
-        title: "Movimento registado",
-        description: "O movimento de caixa foi registado com sucesso.",
-      });
-      
       form.reset();
       onSuccess?.();
-    } catch (error) {
-      toast({
-        title: "Erro ao registar movimento",
-        description: "Ocorreu um erro ao registar o movimento de caixa.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleClose = () => {
-    form.reset();
+    form.reset(defaultValues);
     onClose();
   };
 
@@ -119,9 +149,13 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Novo Movimento de Caixa</DialogTitle>
+          <DialogTitle>
+            {mode === 'edit' ? 'Editar Movimento de Caixa' : 'Novo Movimento de Caixa'}
+          </DialogTitle>
           <DialogDescription>
-            Registe uma entrada ou saída de dinheiro na caixa.
+            {mode === 'edit'
+              ? 'Atualize os detalhes do movimento selecionado.'
+              : 'Registe uma entrada ou saída de dinheiro na caixa.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,6 +215,47 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {mode === 'edit' && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="hora"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            <FormField
+              control={form.control}
+              name="tipo_transferencia"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Transferência *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo de transferência" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="mb">Mb</SelectItem>
+                      <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                      <SelectItem value="transferencia">Transferência</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

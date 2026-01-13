@@ -29,12 +29,12 @@ export const Header: React.FC = () => {
         
         <div className="flex items-center space-x-3">
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+            <p className="text-sm font-medium text-gray-900">{user?.nome}</p>
             <p className="text-xs text-gray-500">{user?.role}</p>
           </div>
           <Avatar>
             <AvatarFallback>
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.nome?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </div>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,17 +9,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MovimentoCaixaModal } from '@/components/modals/MovimentoCaixaModal';
-import { useCaixa } from '@/hooks/useCaixa';
+import { FecharCaixaModal } from '@/components/modals/FecharCaixaModal';
+import { useCaixa, MovimentoCaixa } from '@/hooks/useCaixa';
+import api from '@/services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export const Caixa: React.FC = () => {
   const [isMovimentoModalOpen, setIsMovimentoModalOpen] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<string>('');
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>('');
   const [filtroDataFim, setFiltroDataFim] = useState<string>('');
-  
+  const [selectedFechoId, setSelectedFechoId] = useState<number | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [movimentoSelecionado, setMovimentoSelecionado] = useState<MovimentoCaixa | null>(null);
+  const [isFecharModalOpen, setIsFecharModalOpen] = useState(false);
+  const [isFecharLoading, setIsFecharLoading] = useState(false);
+  const [isExportingExtrato, setIsExportingExtrato] = useState(false);
   const { toast } = useToast();
   const {
     movimentos,
@@ -27,28 +35,170 @@ export const Caixa: React.FC = () => {
     resumoDia,
     isLoading,
     createMovimento,
+    updateMovimento,
+    deleteMovimento,
     fecharCaixa,
     refetch
   } = useCaixa();
 
-  const handleFecharCaixa = async () => {
+  const selectedFecho = useMemo(() => {
+    if (!selectedFechoId) return null;
+    return fechos.find((fecho) => fecho.id === selectedFechoId) ?? null;
+  }, [fechos, selectedFechoId]);
+
+  useEffect(() => {
+    if (!fechos.length) {
+      setSelectedFechoId(null);
+      return;
+    }
+
+    const exists = selectedFechoId ? fechos.some((fecho) => fecho.id === selectedFechoId) : false;
+    if (!exists) {
+      setSelectedFechoId(fechos[0].id);
+    }
+  }, [fechos, selectedFechoId]);
+
+  const handleFecharCaixaClick = () => {
+    setIsFecharModalOpen(true);
+  };
+
+  const handleConfirmFecharCaixa = async (saldoMoedas: number) => {
+    setIsFecharLoading(true);
     try {
-      await fecharCaixa();
+      const extrato = await fecharCaixa(saldoMoedas);
+      setSelectedFechoId(extrato.id);
       toast({
         title: "Caixa fechada com sucesso",
         description: "O fecho do dia foi registado.",
       });
+      setIsFecharModalOpen(false);
     } catch (error) {
       toast({
         title: "Erro ao fechar caixa",
         description: "Ocorreu um erro ao fechar a caixa do dia.",
         variant: "destructive",
       });
+    } finally {
+      setIsFecharLoading(false);
+    }
+  };
+
+  const handleExportFecho = async () => {
+    if (!selectedFechoId) {
+      toast({
+        title: 'Nenhum fecho selecionado',
+        description: 'Selecione um fecho para exportar o extrato.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      setIsExportingExtrato(true);
+      const response = await api.get(`/caixa/fechos/${selectedFechoId}/export`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dataLabel = selectedFecho?.data ?? 'fecho';
+      link.href = url;
+      link.setAttribute('download', `fecho_${dataLabel}.txt`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast({
+        title: 'Exportação concluída',
+        description: 'O extrato foi exportado com sucesso.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro ao exportar',
+        description: 'Não foi possível exportar o extrato.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExportingExtrato(false);
+    }
+  };
+
+  const handleGuardarMovimento = async (data: Parameters<typeof createMovimento>[0]) => {
+    const processoId =
+      data.associado_a_processo && data.processo_id
+        ? Number(data.processo_id)
+        : null;
+
+    const basePayload = {
+      tipo: data.tipo,
+      valor: data.valor,
+      descricao: data.descricao,
+      data: data.data,
+      hora: data.hora ? data.hora : undefined,
+      processo_id: processoId,
+      tipo_transferencia: data.tipo_transferencia,
+    };
+
+    try {
+      if (modalMode === 'edit' && movimentoSelecionado) {
+        await updateMovimento(movimentoSelecionado.id, basePayload);
+        toast({
+          title: "Movimento atualizado",
+          description: "O movimento foi atualizado com sucesso.",
+        });
+      } else {
+        await createMovimento({
+          ...basePayload,
+          associado_a_processo: data.associado_a_processo,
+          processo_id: processoId,
+        });
+        toast({
+          title: "Movimento registado",
+          description: "O movimento foi registado com sucesso.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: modalMode === 'edit' ? "Erro ao atualizar movimento" : "Erro ao registar movimento",
+        description: "Ocorreu um erro. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleEditarMovimento = (movimento: MovimentoCaixa) => {
+    setMovimentoSelecionado(movimento);
+    setModalMode('edit');
+    setIsMovimentoModalOpen(true);
+  };
+
+  const handleApagarMovimento = async (movimento: MovimentoCaixa) => {
+    const confirmar = window.confirm("Tem a certeza que pretende apagar este movimento?");
+    if (!confirmar) return;
+
+    try {
+      await deleteMovimento(movimento.id);
+      toast({
+        title: "Movimento removido",
+        description: "O movimento de caixa foi eliminado.",
+      });
+      if (movimentoSelecionado?.id === movimento.id) {
+        setMovimentoSelecionado(null);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao apagar movimento",
+        description: "Não foi possível eliminar o movimento. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
   const movimentosFiltrados = movimentos.filter(movimento => {
-    const dataMovimento = new Date(movimento.data);
+    const dataMovimento = movimento.data ? new Date(movimento.data) : null;
+    if (!dataMovimento || Number.isNaN(dataMovimento.getTime())) {
+      return false;
+    }
     const dataInicio = filtroDataInicio ? new Date(filtroDataInicio) : null;
     const dataFim = filtroDataFim ? new Date(filtroDataFim) : null;
     
@@ -67,6 +217,24 @@ export const Caixa: React.FC = () => {
     }).format(n);
   };
 
+  const formatDate = (value?: string, pattern = "dd/MM/yyyy") => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '-';
+    return format(parsed, pattern, { locale: ptBR });
+  };
+
+const formatTransferType = (value?: string | null) => {
+  switch (value) {
+    case 'mb':
+      return 'Mb';
+    case 'transferencia':
+      return 'Transferência';
+    default:
+      return 'Dinheiro';
+  }
+};
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -78,17 +246,26 @@ export const Caixa: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => setIsMovimentoModalOpen(true)}
+            onClick={() => {
+              setModalMode('create');
+              setMovimentoSelecionado(null);
+              setIsMovimentoModalOpen(true);
+            }}
             className="gap-2"
           >
             <Plus className="h-4 w-4" />
             Novo Movimento
           </Button>
           <Button
-            onClick={handleFecharCaixa}
+            onClick={handleFecharCaixaClick}
             variant="outline"
             className="gap-2"
-            disabled={!resumoDia || resumoDia.total_entradas === 0 && resumoDia.total_saidas === 0}
+            disabled={
+              isLoading ||
+              isFecharLoading ||
+              !resumoDia ||
+              (resumoDia.total_entradas === 0 && resumoDia.total_saidas === 0)
+            }
           >
             <DollarSign className="h-4 w-4" />
             Fechar Caixa do Dia
@@ -98,7 +275,7 @@ export const Caixa: React.FC = () => {
 
       {/* Resumo do Dia */}
       {resumoDia && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Saldo Inicial</CardTitle>
@@ -138,6 +315,17 @@ export const Caixa: React.FC = () => {
             <CardContent>
               <div className="text-2xl font-bold">
                 {formatCurrency(resumoDia.saldo_final)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Dinheiro Físico Estimado</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(resumoDia.saldo_dinheiro_estimado)}
               </div>
             </CardContent>
           </Card>
@@ -218,16 +406,19 @@ export const Caixa: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Data</TableHead>
+                      <TableHead>Hora</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead>Processo Associado</TableHead>
+                      <TableHead>Tipo de Transferência</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {movimentosFiltrados.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground">
                           Nenhum movimento encontrado
                         </TableCell>
                       </TableRow>
@@ -235,7 +426,10 @@ export const Caixa: React.FC = () => {
                       movimentosFiltrados.map((movimento) => (
                         <TableRow key={movimento.id}>
                           <TableCell>
-                            {format(new Date(movimento.data), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            {formatDate(movimento.data, "dd/MM/yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            {movimento.hora ?? formatDate(movimento.data, "HH:mm")}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -257,6 +451,27 @@ export const Caixa: React.FC = () => {
                             ) : (
                               '-'
                             )}
+                          </TableCell>
+                          <TableCell>{formatTransferType(movimento.tipo_transferencia)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditarMovimento(movimento)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Editar movimento</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleApagarMovimento(movimento)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Apagar movimento</span>
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -297,9 +512,16 @@ export const Caixa: React.FC = () => {
                       </TableRow>
                     ) : (
                       fechos.map((fecho) => (
-                        <TableRow key={fecho.id}>
+                        <TableRow
+                          key={fecho.id}
+                          onClick={() => setSelectedFechoId(fecho.id)}
+                          className={cn(
+                            "cursor-pointer",
+                            selectedFechoId === fecho.id ? "bg-muted" : "hover:bg-muted/60"
+                          )}
+                        >
                           <TableCell>
-                            {format(new Date(fecho.data), "dd/MM/yyyy", { locale: ptBR })}
+                            {formatDate(fecho.data, "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell className="font-medium">
                             {formatCurrency(fecho.saldo_inicial)}
@@ -321,17 +543,154 @@ export const Caixa: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {selectedFecho && (
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle>Movimentos do Fecho</CardTitle>
+                    <CardDescription>
+                      Detalhes do fecho de {formatDate(selectedFecho.data, "dd 'de' MMMM 'de' yyyy")}
+                    </CardDescription>
+                  </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-sm">
+                        Saldo final: {formatCurrency(selectedFecho.saldo_final)}
+                      </Badge>
+                      <Badge variant="outline" className="text-sm">
+                        Saldo moedas: {formatCurrency(selectedFecho.saldo_moedas)}
+                      </Badge>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleExportFecho}
+                        disabled={isExportingExtrato}
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Exportar extrato
+                      </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 md:grid-cols-3 mb-4">
+                  {[
+                    {
+                      label: 'Dinheiro',
+                      entradas: selectedFecho.total_entradas_dinheiro,
+                      saidas: selectedFecho.total_saidas_dinheiro,
+                    },
+                    {
+                      label: 'MB',
+                      entradas: selectedFecho.total_entradas_mb,
+                      saidas: selectedFecho.total_saidas_mb,
+                    },
+                    {
+                      label: 'Transferência',
+                      entradas: selectedFecho.total_entradas_transferencia,
+                      saidas: selectedFecho.total_saidas_transferencia,
+                    },
+                  ].map((item) => {
+                    const saldo = item.entradas - item.saidas;
+                    return (
+                      <div key={item.label} className="rounded-md border p-3 text-sm space-y-1">
+                        <p className="font-medium">{item.label}</p>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Entradas</span>
+                          <span className="font-semibold">{formatCurrency(item.entradas)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Saídas</span>
+                          <span className="font-semibold">{formatCurrency(item.saidas)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Saldo</span>
+                          <span className="font-semibold">{formatCurrency(saldo)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Hora</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Saldo Antes</TableHead>
+                      <TableHead>Saldo Depois</TableHead>
+                      <TableHead>Tipo de Transferência</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedFecho.movimentos.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground">
+                            Nenhum movimento registado neste fecho.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        selectedFecho.movimentos.map((mov) => (
+                          <TableRow key={mov.id}>
+                            <TableCell>{formatDate(mov.data, "dd/MM/yyyy")}</TableCell>
+                            <TableCell>{mov.hora ?? formatDate(mov.data, "HH:mm")}</TableCell>
+                            <TableCell>{mov.descricao}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={mov.tipo === 'entrada' ? 'default' : 'destructive'}
+                                className={mov.tipo === 'entrada' ? 'bg-green-100 text-green-800' : ''}
+                              >
+                                {mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">{formatCurrency(mov.valor)}</TableCell>
+                            <TableCell>{formatCurrency(mov.saldo_antes)}</TableCell>
+                            <TableCell>{formatCurrency(mov.saldo_apos)}</TableCell>
+                            <TableCell>{formatTransferType(mov.tipo_transferencia)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
       <MovimentoCaixaModal
         isOpen={isMovimentoModalOpen}
-        onClose={() => setIsMovimentoModalOpen(false)}
-        onSave={createMovimento}
+        onClose={() => {
+          setIsMovimentoModalOpen(false);
+          setMovimentoSelecionado(null);
+          setModalMode('create');
+        }}
+        onSave={handleGuardarMovimento}
         onSuccess={() => {
           setIsMovimentoModalOpen(false);
+          setMovimentoSelecionado(null);
+          setModalMode('create');
           refetch();
         }}
+        initialData={movimentoSelecionado}
+        mode={modalMode}
+      />
+      <FecharCaixaModal
+        isOpen={isFecharModalOpen}
+        onClose={() => {
+          if (isFecharLoading) return;
+          setIsFecharModalOpen(false);
+        }}
+        expectedCash={resumoDia?.saldo_dinheiro_estimado ?? 0}
+        defaultSaldoMoedas={resumoDia?.saldo_dinheiro_estimado ?? 0}
+        onConfirm={handleConfirmFecharCaixa}
+        isSubmitting={isFecharLoading}
       />
     </div>
   );

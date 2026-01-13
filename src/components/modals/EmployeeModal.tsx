@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -21,16 +21,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useEmployees, Employee } from '@/hooks/useEmployees';
+import { Switch } from '@/components/ui/switch';
+import { useEmployees, Employee, EmployeeRole } from '@/hooks/useEmployees';
 import { Loader2 } from 'lucide-react';
+
+const ROLE_OPTIONS: { value: EmployeeRole; label: string }[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'funcionario', label: 'Funcionario' },
+];
 
 const employeeSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
-  telefone: z.string().optional().transform(val => val || undefined),
-  cargo: z.string().optional().transform(val => val || undefined),
-  departamento: z.string().optional().transform(val => val || undefined),
-  cor: z.string().optional().transform(val => val || undefined),
+  telefone: z.string().optional().transform((val) => val || undefined),
+  cargo: z.string().optional().transform((val) => val || undefined),
+  departamento: z.string().optional().transform((val) => val || undefined),
+  cor: z.string().optional().transform((val) => val || undefined),
+  role: z.enum(['admin', 'manager', 'employee']).default('employee'),
+  is_active: z.boolean().default(true),
+  senha: z.string().optional(),
 });
 
 type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -48,23 +58,26 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 }) => {
   const { createEmployee, updateEmployee } = useEmployees();
   const isEditing = !!employee;
+  const [formError, setFormError] = useState('');
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
-    defaultValues: employee || {
+    defaultValues: {
       nome: '',
       email: '',
       telefone: '',
       cargo: '',
       departamento: '',
       cor: '#3b82f6',
+      role: 'funcionario',
+      is_active: true,
+      senha: '',
     },
   });
 
@@ -77,6 +90,9 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         cargo: employee.cargo || '',
         departamento: employee.departamento || '',
         cor: employee.cor || '#3b82f6',
+        role: employee.role || 'funcionario',
+        is_active: employee.is_active,
+        senha: '',
       });
     } else {
       reset({
@@ -86,25 +102,41 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         cargo: '',
         departamento: '',
         cor: '#3b82f6',
+        role: 'funcionario',
+        is_active: true,
+        senha: '',
       });
     }
   }, [employee, reset]);
 
   const onSubmit = async (data: EmployeeFormData) => {
     try {
-      const employeeData = {
+      setFormError('');
+      if (!isEditing && !data.senha) {
+        setFormError('A senha é obrigatória para novos utilizadores.');
+        return;
+      }
+
+      const payload = {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
         cargo: data.cargo,
         departamento: data.departamento,
         cor: (data as any).cor,
+        role: data.role as EmployeeRole,
+        is_active: data.is_active,
+        senha: data.senha || '',
       };
       
       if (isEditing && employee) {
-        await updateEmployee.mutateAsync({ id: employee.id, ...employeeData });
+        const updatePayload: any = { id: employee.id, ...payload };
+        if (!data.senha) {
+          delete updatePayload.senha;
+        }
+        await updateEmployee.mutateAsync(updatePayload);
       } else {
-        await createEmployee.mutateAsync(employeeData);
+        await createEmployee.mutateAsync(payload);
       }
       onClose();
     } catch (error) {
@@ -187,14 +219,69 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
             )}
           </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="cor">Cor (Calendário)</Label>
-        <Input
-          id="cor"
-          type="color"
-          {...register('cor')}
-        />
-      </div>
+          <div className="space-y-2">
+            <Label>Perfil de acesso</Label>
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o perfil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.role && (
+              <p className="text-sm text-red-600">{errors.role.message}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label>Conta ativa</Label>
+              <p className="text-sm text-muted-foreground">
+                Controla o acesso do funcionário ao sistema
+              </p>
+            </div>
+            <Controller
+              name="is_active"
+              control={control}
+              render={({ field }) => (
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="senha">{isEditing ? 'Nova senha (opcional)' : 'Senha inicial *'}</Label>
+            <Input
+              id="senha"
+              type="password"
+              placeholder={isEditing ? 'Deixe em branco para manter' : 'Mínimo 8 caracteres'}
+              {...register('senha')}
+            />
+            {formError && !isEditing && (
+              <p className="text-sm text-red-600">{formError}</p>
+            )}
+            {isEditing && (
+              <p className="text-xs text-muted-foreground">
+                Preencha para atualizar a senha do funcionário
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cor">Cor (Calendário)</Label>
+            <Input id="cor" type="color" {...register('cor')} />
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

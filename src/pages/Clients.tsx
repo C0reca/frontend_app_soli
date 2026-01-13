@@ -24,7 +24,6 @@ export const Clients: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const getClientName = (client: Client) => {
-    console.log(client);
     // Se tipo for null/undefined, assume como pessoa singular
     const tipo = client.tipo || 'singular';
     if (tipo === 'singular') {

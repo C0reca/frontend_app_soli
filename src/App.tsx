@@ -18,6 +18,8 @@ import { Documents } from "@/pages/Documents";
 import { Calendar } from "@/pages/Calendar";
 import { RegistosPrediais } from "@/pages/RegistosPrediais";
 import { Caixa } from "@/pages/Caixa";
+import { Dossies } from "@/pages/Dossies";
+import { IRS } from "@/pages/IRS";
 import NotFound from "./pages/NotFound";
 import { MinimizeProvider } from "@/contexts/MinimizeContext";
 import { MinimizeDock } from "@/components/MinimizeDock";
@@ -66,6 +68,8 @@ const AppRoutes = () => {
         <Route path="clientes" element={<Clients />} />
         <Route path="funcionarios" element={<AdminRoute><Employees /></AdminRoute>} />
         <Route path="processos" element={<Processes />} />
+        <Route path="dossies" element={<Dossies />} />
+        <Route path="irs" element={<IRS />} />
         <Route path="tarefas" element={<Tasks />} />
         <Route path="registos-prediais" element={<RegistosPrediais />} />
         <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />

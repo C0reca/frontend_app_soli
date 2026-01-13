@@ -4,7 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
+import { useDossies, Dossie } from '@/hooks/useDossies';
+import { DossieModal } from './DossieModal';
+import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { 
   Building, 
   Mail, 
@@ -16,7 +20,11 @@ import {
   Hash,
   Users,
   CreditCard,
-  Home
+  Home,
+  Plus,
+  Edit,
+  Trash2,
+  Folder
 } from 'lucide-react';
 
 interface ClientDetailsModalProps {
@@ -30,14 +38,20 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
   onClose,
   client,
 }) => {
+  const { dossie, isLoading: loadingDossie, createDossie, updateDossie } = useDossies(client?.id);
+  const [isDossieModalOpen, setIsDossieModalOpen] = React.useState(false);
+
   if (!client) return null;
 
   const renderIndividualClient = (client: IndividualClient) => (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
         <TabsTrigger value="contact">Contacto</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
+        <TabsTrigger value="irs">IRS</TabsTrigger>
+        <TabsTrigger value="informacao">Informação</TabsTrigger>
+        {(client as any).tem_dossies && <TabsTrigger value="dossies">Dossiês</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -91,6 +105,12 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Profissão</label>
                 <p>{client.profissao}</p>
+              </div>
+            )}
+            {client.incapacidade !== undefined && client.incapacidade !== null && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
+                <p>{client.incapacidade}%</p>
               </div>
             )}
             {client.num_ss && (
@@ -186,15 +206,122 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           </CardContent>
         </Card>
       </TabsContent>
+
+      <TabsContent value="irs" className="mt-6">
+        <AgregadoFamiliarTab clienteId={client.id} cliente={client} />
+      </TabsContent>
+
+      <TabsContent value="informacao" className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Informações de Acesso</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Password das Finanças</label>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="font-mono">
+                  {client.nif || 'N/A'}
+                </Badge>
+                <span className="text-sm">-</span>
+                <span className="font-mono text-sm">{client.senha_financas || 'Não definida'}</span>
+              </div>
+            </div>
+            <Separator />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Password da Segurança Social</label>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="font-mono">
+                  {client.nif || 'N/A'}
+                </Badge>
+                <span className="text-sm">-</span>
+                <span className="font-mono text-sm">{client.senha_ss || 'Não definida'}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {(client as any).tem_dossies && (
+        <TabsContent value="dossies" className="mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Folder className="h-5 w-5" />
+                  <span>Dossiê</span>
+                </CardTitle>
+                {dossie && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setIsDossieModalOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Dossiê
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingDossie ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando dossiê...
+                </div>
+              ) : !dossie ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>O dossiê será criado automaticamente quando necessário.</p>
+                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no dossiê.</p>
+                </div>
+              ) : (
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Nome do Dossiê</label>
+                        <p className="text-lg font-semibold">{dossie.nome}</p>
+                      </div>
+                      {dossie.numero && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Número</label>
+                          <p>{dossie.numero}</p>
+                        </div>
+                      )}
+                      {dossie.descricao && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Descrição</label>
+                          <p className="text-sm">{dossie.descricao}</p>
+                        </div>
+                      )}
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Criado em</label>
+                        <p className="text-sm">{new Date(dossie.criado_em).toLocaleDateString('pt-PT')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
     </Tabs>
   );
 
   const renderCorporateClient = (client: CorporateClient) => (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
         <TabsTrigger value="contact">Contacto</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
+        <TabsTrigger value="irs">IRS</TabsTrigger>
+        <TabsTrigger value="informacao">Informação</TabsTrigger>
+        {(client as any).tem_dossies && <TabsTrigger value="dossies">Dossiês</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -244,6 +371,12 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Capital Social</label>
                 <p>€{client.capital_social}</p>
+              </div>
+            )}
+            {client.incapacidade !== undefined && client.incapacidade !== null && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
+                <p>{client.incapacidade}%</p>
               </div>
             )}
             
@@ -367,6 +500,110 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           </CardContent>
         </Card>
       </TabsContent>
+
+      <TabsContent value="irs" className="mt-6">
+        <AgregadoFamiliarTab clienteId={client.id} cliente={client} />
+      </TabsContent>
+
+      <TabsContent value="informacao" className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Informações de Acesso</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Password das Finanças</label>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="font-mono">
+                  {client.nif || 'N/A'}
+                </Badge>
+                <span className="text-sm">-</span>
+                <span className="font-mono text-sm">{client.senha_financas || 'Não definida'}</span>
+              </div>
+            </div>
+            <Separator />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Password da Segurança Social</label>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="font-mono">
+                  {client.nif || 'N/A'}
+                </Badge>
+                <span className="text-sm">-</span>
+                <span className="font-mono text-sm">{client.senha_ss || 'Não definida'}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {(client as any).tem_dossies && (
+        <TabsContent value="dossies" className="mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Folder className="h-5 w-5" />
+                  <span>Dossiê</span>
+                </CardTitle>
+                {dossie && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setIsDossieModalOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Dossiê
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingDossie ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando dossiê...
+                </div>
+              ) : !dossie ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>O dossiê será criado automaticamente quando necessário.</p>
+                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no dossiê.</p>
+                </div>
+              ) : (
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Nome do Dossiê</label>
+                        <p className="text-lg font-semibold">{dossie.nome}</p>
+                      </div>
+                      {dossie.numero && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Número</label>
+                          <p>{dossie.numero}</p>
+                        </div>
+                      )}
+                      {dossie.descricao && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Descrição</label>
+                          <p className="text-sm">{dossie.descricao}</p>
+                        </div>
+                      )}
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Criado em</label>
+                        <p className="text-sm">{new Date(dossie.criado_em).toLocaleDateString('pt-PT')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
     </Tabs>
   );
 
@@ -444,6 +681,17 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           )}
         </div>
       </DialogContent>
+
+      {client && (client as any).tem_dossies && (
+        <DossieModal
+          isOpen={isDossieModalOpen}
+          onClose={() => {
+            setIsDossieModalOpen(false);
+          }}
+          dossie={dossie}
+          entidadeId={client.id}
+        />
+      )}
     </Dialog>
   );
 };
