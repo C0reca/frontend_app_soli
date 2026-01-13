@@ -10,12 +10,18 @@ export interface Process {
   onde_estao?: string;
   estado: 'pendente' | 'em_curso' | 'concluido';
   criado_em: string;
-  cliente_id: number;
+  cliente_id?: number; // Mantido para compatibilidade
+  dossie_id?: number; // Nova relação com dossiê
   funcionario_id?: number;
   arquivado?: boolean;
   cliente?: {
     id: number;
     nome: string;
+  };
+  dossie?: {
+    id: number;
+    nome: string;
+    numero?: string;
   };
   funcionario?: {
     id: number;
@@ -40,7 +46,7 @@ export const useProcesses = () => {
   });
 
   const createProcess = useMutation({
-    mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
+    mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
       const response = await api.post('/processos', process);
       return response.data;
     },
@@ -51,10 +57,14 @@ export const useProcesses = () => {
         description: "Processo criado com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          "Erro ao criar processo.";
       toast({
         title: "Erro",
-        description: "Erro ao criar processo.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -62,7 +72,7 @@ export const useProcesses = () => {
 
   const updateProcess = useMutation({
     mutationFn: async ({ id, ...process }: Partial<Process> & { id: number }) => {
-      const response = await api.put(`/processos/${id}`, process);
+      const response = await api.patch(`/processos/${id}`, process);
       return response.data;
     },
     onSuccess: () => {
@@ -72,10 +82,14 @@ export const useProcesses = () => {
         description: "Processo atualizado com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          "Erro ao atualizar processo.";
       toast({
         title: "Erro",
-        description: "Erro ao atualizar processo.",
+        description: errorMessage,
         variant: "destructive",
       });
     },

@@ -47,6 +47,7 @@ export interface IndividualClient extends BaseClient {
   observacoes?: string;
   senha_financas?: string;
   senha_ss?: string;
+  incapacidade?: number;
 }
 
 // Corporate client (Pessoa Coletiva)
@@ -86,6 +87,7 @@ export interface CorporateClient extends BaseClient {
   observacoes?: string;
   senha_financas?: string;
   senha_ss?: string;
+  incapacidade?: number;
 }
 
 export type Client = IndividualClient | CorporateClient;
@@ -100,9 +102,7 @@ export const useClients = () => {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      console.log('Fetching clients...');
       const response = await api.get('/clientes');
-      console.log('API response:', response.data);
       // Handle both paginated and non-paginated responses
       if (response.data && Array.isArray(response.data.data)) {
         return response.data.data; // Paginated response
@@ -113,12 +113,15 @@ export const useClients = () => {
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
-      console.log(client);
       const response = await api.post('/clientes', client);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (error: any) => {
+      // Error handling will be done in the component
+      throw error;
     },
   });
 
@@ -129,6 +132,10 @@ export const useClients = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (error: any) => {
+      // Error handling will be done in the component
+      throw error;
     },
   });
 

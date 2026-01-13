@@ -94,9 +94,21 @@ export const Tasks: React.FC = () => {
   const renderTaskRow = (task: Task, level: number = 0) => {
     const indentClass = level > 0 ? `pl-${Math.min(level * 4, 12)}` : '';
     const subtasks = childrenByParent[task.id.toString()] || [];
+    
+    // Determinar a cor de fundo baseada no estado da tarefa
+    const getBackgroundColor = () => {
+      if (task.concluida) {
+        return 'border-green-200 bg-green-50';
+      } else if (isOverdue(task.data_fim, task.concluida)) {
+        return 'border-red-200 bg-red-50';
+      } else {
+        return 'border-yellow-200 bg-yellow-50';
+      }
+    };
+    
     return (
       <div key={`${task.id}-${level}`}>
-        <Card className={`hover:shadow-md transition-shadow cursor-pointer ${isOverdue(task.data_fim, task.concluida) ? 'border-red-200 bg-red-50' : ''}`} onClick={() => handleView(task)}>
+        <Card className={`hover:shadow-md transition-shadow cursor-pointer ${getBackgroundColor()}`} onClick={() => handleView(task)}>
           <CardContent className={`p-4 ${indentClass}`}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -110,7 +122,8 @@ export const Tasks: React.FC = () => {
                 </div>
                 <p className="text-sm text-gray-600 mb-3">{task.descricao}</p>
                 <div className="flex items-center space-x-4 text-xs text-gray-500">
-                  <span><strong>Processo:</strong> {task.processo_id}</span>
+                  <span><strong>Processo:</strong> {task.processo_id || 'N/A'}</span>
+                  <span><strong>Localização:</strong> {task.onde_estao || 'Não definida'}</span>
                   <span>
                     <strong>Responsável:</strong>{' '}
                     {task.responsavel_id

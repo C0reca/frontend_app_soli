@@ -261,11 +261,15 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         onSuccess?.(created as Client);
       }
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving client:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          "Ocorreu um erro ao salvar o cliente. Tente novamente.";
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao salvar o cliente. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

@@ -18,6 +18,7 @@ export interface Task {
   tipo?: 'reuniao' | 'telefonema' | 'tarefa' | null;
   parent_id?: number | null;
   subtarefas_count?: number;
+  onde_estao?: string | null;
 }
 
 export const useTasks = () => {
@@ -150,6 +151,34 @@ export const useTasks = () => {
     return response.data;
   }, []);
 
+  const generateTaskPDF = async (taskId: string) => {
+    try {
+      const response = await api.get(`/tarefas/${taskId}/pdf`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `tarefa_${taskId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Sucesso",
+        description: "PDF gerado e download iniciado.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error?.response?.data?.detail || "Erro ao gerar PDF da tarefa.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     tasks,
     isLoading,
@@ -160,5 +189,6 @@ export const useTasks = () => {
     updateTaskStatus,
     setExternal,
     getTasksByProcess,
+    generateTaskPDF,
   };
 };

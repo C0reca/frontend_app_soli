@@ -12,6 +12,7 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ProcessCombobox } from '@/components/ui/processcombobox';
 import { Minimize2 } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 
@@ -26,6 +27,7 @@ const taskSchema = z.object({
   autor_id: z.number().nullable().optional(),
   tipo: z.enum(['reuniao','telefonema','tarefa']).nullable().optional(),
   parent_id: z.number().nullable().optional(),
+  onde_estao: z.string().optional(),
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -41,7 +43,7 @@ interface TaskModalProps {
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, parentId = null, processoId = null, initialData = null }) => {
   const { createTask, updateTask } = useTasks();
-  const { processes } = useProcesses();
+  const { processes, isLoading: isProcessesLoading } = useProcesses();
   const { employees } = useEmployees();
   const { minimize } = useMinimize();
   
@@ -58,6 +60,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
       autor_id: (initialData as any)?.autor_id ?? null,
       tipo: (initialData as any)?.tipo ?? null,
       parent_id: (initialData as any)?.parent_id ?? parentId,
+      onde_estao: (initialData as any)?.onde_estao ?? undefined,
     },
   });
 
@@ -74,6 +77,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         autor_id: task.autor_id ?? null,
         tipo: (task as any).tipo ?? null,
         parent_id: task.parent_id ?? null,
+        onde_estao: (task as any).onde_estao ?? undefined,
       });
     } else {
       form.reset({
@@ -87,19 +91,49 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         autor_id: (initialData as any)?.autor_id ?? null,
         tipo: (initialData as any)?.tipo ?? null,
         parent_id: (initialData as any)?.parent_id ?? parentId,
+        onde_estao: (initialData as any)?.onde_estao ?? undefined,
       });
     }
   }, [task, form, parentId, processoId, initialData]);
 
   const onSubmit = async (data: TaskFormData) => {
     try {
+      // Normalizar undefined para null para campos opcionais
+      // IMPORTANTE: sempre incluir onde_estao, mesmo que seja null
+      const normalizedData: any = {
+        titulo: data.titulo,
+        descricao: data.descricao,
+        prioridade: data.prioridade,
+        concluida: data.concluida,
+        tipo: data.tipo,
+        onde_estao: data.onde_estao === "" || data.onde_estao === undefined ? null : data.onde_estao,
+        processo_id: data.processo_id || null,
+        responsavel_id: data.responsavel_id || null,
+        autor_id: data.autor_id || null,
+        parent_id: data.parent_id || null,
+        data_fim: data.data_fim || null,
+      };
+      
       if (task) {
-        await updateTask.mutateAsync({
+        // Garantir que onde_estao está sempre presente no payload
+        const updatePayload: any = {
           id: task.id,
-          ...data,
-        } as Task & { id: string });
+          titulo: normalizedData.titulo,
+          descricao: normalizedData.descricao,
+          prioridade: normalizedData.prioridade,
+          concluida: normalizedData.concluida,
+          tipo: normalizedData.tipo,
+          onde_estao: normalizedData.onde_estao, // Sempre incluir, mesmo que seja null
+          processo_id: normalizedData.processo_id,
+          responsavel_id: normalizedData.responsavel_id,
+          autor_id: normalizedData.autor_id,
+          parent_id: normalizedData.parent_id,
+          data_fim: normalizedData.data_fim,
+        };
+        console.log('Update payload:', updatePayload); // Debug temporário
+        await updateTask.mutateAsync(updatePayload as Task & { id: string });
       } else {
-        await createTask.mutateAsync(data as Omit<Task, 'id' | 'criado_em'>);
+        await createTask.mutateAsync(normalizedData as Omit<Task, 'id' | 'criado_em'>);
       }
       onClose();
     } catch (error) {
@@ -169,21 +203,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Processo</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(value === 'none' ? null : Number(value))} value={field.value == null ? 'none' : field.value?.toString()}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um processo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Sem processo</SelectItem>
-                      {processes.map((process) => (
-                        <SelectItem key={process.id} value={process.id.toString()}>
-                          {process.titulo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ProcessCombobox
+                      processes={processes || []}
+                      value={field.value ?? null}
+                      onChange={(value) => field.onChange(value)}
+                      isLoading={isProcessesLoading}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -316,6 +343,48 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                           {employee.nome}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="onde_estao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Localização</FormLabel>
+                  <Select
+                    onValueChange={(v) => {
+                      const value = v === "--------" ? null : v;
+                      field.onChange(value);
+                    }}
+                    value={field.value ?? ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a localização" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="--------">--------</SelectItem>
+                      <SelectItem value="Casa">Casa</SelectItem>
+                      <SelectItem value="Cartorio">Cartorio</SelectItem>
+                      <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
+                      <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
+                      <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
+                      <SelectItem value="Reuniões">Reuniões</SelectItem>
+                      <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>
+                      <SelectItem value="Serviço Finanças">Serviço Finanças</SelectItem>
+                      <SelectItem value="Imposto Selo / Participações">Imposto Selo / Participações</SelectItem>
+                      <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
+                      <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
+                      <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
+                      <SelectItem value="Tarefas">Tarefas</SelectItem>
+                      <SelectItem value="Injunções">Injunções</SelectItem>
+                      <SelectItem value="Execuções">Execuções</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
