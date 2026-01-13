@@ -38,7 +38,7 @@ const employeeSchema = z.object({
   cargo: z.string().optional().transform((val) => val || undefined),
   departamento: z.string().optional().transform((val) => val || undefined),
   cor: z.string().optional().transform((val) => val || undefined),
-  role: z.enum(['admin', 'manager', 'employee']).default('employee'),
+  role: z.enum(['admin', 'manager', 'funcionario']).default('funcionario'),
   is_active: z.boolean().default(true),
   senha: z.string().optional(),
 });
