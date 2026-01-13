@@ -8,6 +8,7 @@ export interface IRS {
   ano: number;
   fase: 1 | 2;
   estado: 'Por Pagar' | 'Pago' | 'Isento';
+  estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';
   numero_recibo?: string;
   levantar_irs_apos_dia?: string;
   criado_em: string;
@@ -27,12 +28,14 @@ export interface IRSCreate {
   ano: number;
   fase: 1 | 2;
   estado?: 'Por Pagar' | 'Pago' | 'Isento';
+  estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';
   levantar_irs_apos_dia?: string;
 }
 
 export interface IRSUpdate {
   fase?: 1 | 2;
   estado?: 'Por Pagar' | 'Pago' | 'Isento';
+  estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';
   levantar_irs_apos_dia?: string;
 }
 

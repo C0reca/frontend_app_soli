@@ -14,6 +14,7 @@ export const RegistosPrediais: React.FC = () => {
   const { registos, isLoading, deleteRegisto } = useRegistosPrediais();
   const { clients } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string | null>(null);
   const [selectedRegisto, setSelectedRegisto] = useState<RegistoPredial | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRegistoDetails, setSelectedRegistoDetails] = useState<RegistoPredial | null>(null);
@@ -25,12 +26,16 @@ export const RegistosPrediais: React.FC = () => {
     const match = clients.find((c: any) => c.id?.toString() === id.toString());
     return match?.nome || match?.nome_empresa || '';
   };
-  const filteredRegistos = registos.filter((registo: any) =>
-    safe(registo.numero_processo).includes(searchTerm.toLowerCase()) ||
-    safe(registo.predio).includes(searchTerm.toLowerCase()) ||
-    safe(registo.freguesia).includes(searchTerm.toLowerCase()) ||
-    safe(registo.cliente?.nome).includes(searchTerm.toLowerCase())
-  );
+  const filteredRegistos = registos.filter((registo: any) => {
+    const matchesSearch = safe(registo.numero_processo).includes(searchTerm.toLowerCase()) ||
+      safe(registo.predio).includes(searchTerm.toLowerCase()) ||
+      safe(registo.freguesia).includes(searchTerm.toLowerCase()) ||
+      safe(registo.cliente?.nome).includes(searchTerm.toLowerCase());
+    
+    const matchesEstado = !filterEstado || registo.estado_key === filterEstado;
+    
+    return matchesSearch && matchesEstado;
+  });
 
   // ordenar por data (mais recente primeiro)
   const sortedRegistos = [...filteredRegistos].sort((a: any, b: any) => {
@@ -147,7 +152,10 @@ export const RegistosPrediais: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Card>
+        <Card 
+          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'concluido' ? 'ring-2 ring-green-500' : ''}`}
+          onClick={() => setFilterEstado(filterEstado === 'concluido' ? null : 'concluido')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
@@ -161,7 +169,10 @@ export const RegistosPrediais: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'registo' ? 'ring-2 ring-blue-500' : ''}`}
+          onClick={() => setFilterEstado(filterEstado === 'registo' ? null : 'registo')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <Clock className="mr-2 h-5 w-5 text-blue-600" />
@@ -175,7 +186,10 @@ export const RegistosPrediais: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'provisorios' ? 'ring-2 ring-yellow-500' : ''}`}
+          onClick={() => setFilterEstado(filterEstado === 'provisorios' ? null : 'provisorios')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <Clock className="mr-2 h-5 w-5 text-yellow-600" />
@@ -189,7 +203,10 @@ export const RegistosPrediais: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'recusado' ? 'ring-2 ring-red-500' : ''}`}
+          onClick={() => setFilterEstado(filterEstado === 'recusado' ? null : 'recusado')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <XCircle className="mr-2 h-5 w-5 text-red-600" />
@@ -203,7 +220,10 @@ export const RegistosPrediais: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'desistencia' ? 'ring-2 ring-gray-500' : ''}`}
+          onClick={() => setFilterEstado(filterEstado === 'desistencia' ? null : 'desistencia')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <XCircle className="mr-2 h-5 w-5 text-gray-600" />

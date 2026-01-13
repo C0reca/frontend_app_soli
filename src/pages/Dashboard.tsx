@@ -1,13 +1,28 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDashboard } from '@/hooks/useDashboard';
 import { FolderOpen, CheckSquare, Clock, TrendingUp, Users } from 'lucide-react';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 
 export const Dashboard: React.FC = () => {
   const { kpis, isLoading } = useDashboard();
   const { tasks } = useTasks();
+  const navigate = useNavigate();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+
+  const handleViewTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+  };
 
   if (isLoading) {
     return (
@@ -39,49 +54,56 @@ export const Dashboard: React.FC = () => {
       value: kpis?.total_clientes ?? 0,
       icon: Users,
       description: 'Clientes registados no sistema',
-      trend: ''
+      trend: '',
+      path: '/clientes'
     },
     {
       title: 'Total de Processos',
       value: kpis?.total_processos ?? 0,
       icon: FolderOpen,
       description: 'Processos registados no sistema',
-      trend: ''
+      trend: '',
+      path: '/processos'
     },
     {
       title: 'Processos Ativos',
       value: kpis?.ativos ?? 0,
       icon: Clock,
       description: 'Pendente ou Em curso',
-      trend: ''
+      trend: '',
+      path: '/processos'
     },
     {
       title: 'Processos Concluídos',
       value: kpis?.concluidos ?? 0,
       icon: CheckSquare,
       description: 'Estado concluído',
-      trend: ''
+      trend: '',
+      path: '/processos'
     },
     {
       title: 'Tarefas Concluídas',
       value: kpis?.tarefas_concluidas ?? 0,
       icon: CheckSquare,
       description: 'Tarefas finalizadas',
-      trend: ''
+      trend: '',
+      path: '/tarefas'
     },
     {
       title: 'Tarefas Pendentes',
       value: kpis?.tarefas_pendentes ?? 0,
       icon: Clock,
       description: 'Tarefas aguardando execução',
-      trend: ''
+      trend: '',
+      path: '/tarefas'
     },
     {
       title: 'Taxa de Conclusão',
       value: `${completionRate}%`,
       icon: TrendingUp,
       description: 'Concluídos / Total',
-      trend: ''
+      trend: '',
+      path: '/processos'
     }
   ];
 
@@ -96,7 +118,11 @@ export const Dashboard: React.FC = () => {
         {kpiCards.map((kpi, index) => {
           const Icon = kpi.icon;
           return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={index} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(kpi.path)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
                   {kpi.title}
@@ -123,7 +149,10 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate('/processos')}
+        >
           <CardHeader>
             <CardTitle>Processos Recentes</CardTitle>
             <CardDescription>Últimos processos criados no sistema</CardDescription>
@@ -160,8 +189,12 @@ export const Dashboard: React.FC = () => {
                   return <div className="text-sm text-muted-foreground">Sem tarefas urgentes.</div>;
                 }
                 return urgent.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between py-1 border-b last:border-b-0">
-                    <div>
+                  <div 
+                    key={t.id} 
+                    className="flex items-center justify-between py-1 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors rounded px-2 -mx-2"
+                    onClick={() => handleViewTask(t)}
+                  >
+                    <div className="flex-1">
                       <p className="font-medium text-sm">{t.titulo}</p>
                       <p className="text-xs text-gray-500">Prazo: {new Date(t.data_fim).toLocaleDateString('pt-BR')}</p>
                     </div>
@@ -175,6 +208,14 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {isTaskModalOpen && selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          isOpen={isTaskModalOpen}
+          onClose={handleCloseTaskModal}
+        />
+      )}
     </div>
   );
 };

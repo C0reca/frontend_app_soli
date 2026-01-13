@@ -27,7 +27,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
   const [selectedClienteId, setSelectedClienteId] = useState<number | undefined>();
   const [tipoRelacao, setTipoRelacao] = useState<'esposo' | 'esposa' | 'filho' | 'filha'>('esposa');
 
-  // Preparar clientes para o ClientCombobox (excluir o próprio cliente)
+  // Preparar clientes para o ClientCombobox (excluir o próprio cliente, inclui campos de NIF para pesquisa)
   const clientsForCombobox = clients
     .filter((c) => c.id !== clienteId)
     .map((client) => {
@@ -36,8 +36,12 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
         ? (client as any).nome 
         : (client as any).nome_empresa;
       return {
-        id: client.id,
+        id: parseInt(client.id.toString()),
         nome: nome || `Cliente #${client.id}`,
+        nome_empresa: tipo === 'coletivo' ? (client as any).nome_empresa : null,
+        tipo: tipo as 'singular' | 'coletivo',
+        nif: tipo === 'singular' ? (client as any).nif : null,
+        nif_empresa: tipo === 'coletivo' ? (client as any).nif_empresa : null,
       };
     });
 

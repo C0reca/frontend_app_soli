@@ -354,7 +354,19 @@ export const Tasks: React.FC = () => {
 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            setFilters({
+              status: 'pendentes',
+              responsavel: 'all',
+              prioridade: 'all',
+              tipo: 'all',
+              atrasadas: false,
+              showConcluidas: true,
+            });
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <AlertCircle className="mr-2 h-5 w-5 text-yellow-600" />
@@ -368,7 +380,19 @@ export const Tasks: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            setFilters({
+              status: 'all',
+              responsavel: 'all',
+              prioridade: 'all',
+              tipo: 'all',
+              atrasadas: true,
+              showConcluidas: true,
+            });
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <Clock className="mr-2 h-5 w-5 text-blue-600" />
@@ -382,7 +406,19 @@ export const Tasks: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            setFilters({
+              status: 'concluidas',
+              responsavel: 'all',
+              prioridade: 'all',
+              tipo: 'all',
+              atrasadas: false,
+              showConcluidas: true,
+            });
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <CheckSquare className="mr-2 h-5 w-5 text-green-600" />

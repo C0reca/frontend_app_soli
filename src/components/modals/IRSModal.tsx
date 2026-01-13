@@ -21,6 +21,7 @@ const irsSchema = z.object({
   cliente_id: z.number().min(1, 'Selecione um cliente'),
   fase: z.enum(['1', '2']).transform(val => parseInt(val)),
   estado: z.enum(['Por Pagar', 'Pago', 'Isento']).default('Por Pagar'),
+  estado_entrega: z.enum(['Enviado', 'Levantado Pelo Cliente']).optional(),
   levantar_irs_apos_dia: z.string().optional(),
 });
 
@@ -39,7 +40,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
   const isEditing = !!irs;
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
-  // Preparar clientes para o ClientCombobox (precisa ter campo 'nome')
+  // Preparar clientes para o ClientCombobox (inclui campos de NIF para pesquisa)
   // Usar allClients em vez de clients para ter sempre a lista atualizada
   const clientsForCombobox = (allClients || clients).map((client) => {
     const tipo = client.tipo || 'singular';
@@ -47,8 +48,12 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
       ? (client as any).nome 
       : (client as any).nome_empresa;
     return {
-      id: client.id,
+      id: parseInt(client.id.toString()),
       nome: nome || `Cliente #${client.id}`,
+      nome_empresa: tipo === 'coletivo' ? (client as any).nome_empresa : null,
+      tipo: tipo as 'singular' | 'coletivo',
+      nif: tipo === 'singular' ? (client as any).nif : null,
+      nif_empresa: tipo === 'coletivo' ? (client as any).nif_empresa : null,
     };
   });
 
@@ -66,12 +71,14 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           cliente_id: irs.cliente_id,
           fase: irs.fase.toString() as '1' | '2',
           estado: irs.estado,
+          estado_entrega: irs.estado_entrega,
           levantar_irs_apos_dia: irs.levantar_irs_apos_dia || '',
         }
       : {
           cliente_id: 0,
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
+          estado_entrega: undefined,
           levantar_irs_apos_dia: '',
         },
   });
@@ -84,6 +91,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           cliente_id: irs.cliente_id,
           fase: irs.fase.toString() as '1' | '2',
           estado: irs.estado,
+          estado_entrega: irs.estado_entrega,
           levantar_irs_apos_dia: irs.levantar_irs_apos_dia || '',
         });
       } else {
@@ -91,6 +99,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           cliente_id: 0,
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
+          estado_entrega: undefined,
           levantar_irs_apos_dia: '',
         });
       }
@@ -121,13 +130,14 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
       if (isEditing && irs) {
         // Validar: não permitir alterar estado de "Pago" para "Por Pagar" se já tem recibo
         if (irs.numero_recibo && irs.estado === 'Pago' && data.estado === 'Por Pagar') {
-          alert('Não é possível alterar o estado para "Por Pagar" após o recibo ter sido gerado.');
+          alert('Não é possível alterar o pagamento para "Por Pagar" após o recibo ter sido gerado.');
           return;
         }
         
         const updateData: IRSUpdate = {
           fase: data.fase,
           estado: data.estado,
+          estado_entrega: data.estado_entrega,
           levantar_irs_apos_dia: data.levantar_irs_apos_dia || undefined,
         };
         await updateIRS.mutateAsync({ id: irs.id, data: updateData });
@@ -139,6 +149,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           ano: anoAtual,
           fase: data.fase,
           estado: data.estado,
+          estado_entrega: data.estado_entrega,
         };
         await createIRS.mutateAsync(createData);
       }
@@ -322,7 +333,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="estado">Estado *</Label>
+              <Label htmlFor="estado">Pagamento *</Label>
               <Select
                 value={watch('estado')}
                 onValueChange={(value) => setValue('estado', value as 'Por Pagar' | 'Pago' | 'Isento')}
@@ -342,8 +353,27 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
               )}
               {isEditing && irs?.numero_recibo && irs.estado === 'Pago' && (
                 <p className="text-sm text-amber-600">
-                  Não é possível alterar o estado após o recibo ter sido gerado.
+                  Não é possível alterar o pagamento após o recibo ter sido gerado.
                 </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="estado_entrega">Estado</Label>
+              <Select
+                value={watch('estado_entrega') || ''}
+                onValueChange={(value) => setValue('estado_entrega', value === '' ? undefined : value as 'Enviado' | 'Levantado Pelo Cliente')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Enviado">Enviado</SelectItem>
+                  <SelectItem value="Levantado Pelo Cliente">Levantado Pelo Cliente</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.estado_entrega && (
+                <p className="text-sm text-red-500">{errors.estado_entrega.message}</p>
               )}
             </div>
           </div>

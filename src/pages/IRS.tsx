@@ -156,6 +156,7 @@ export const IRS: React.FC = () => {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Ano</TableHead>
                   <TableHead>Fase</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Nº Recibo</TableHead>
                   <TableHead>Ações</TableHead>
@@ -164,7 +165,7 @@ export const IRS: React.FC = () => {
               <TableBody>
                 {filteredIRS.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500">
+                    <TableCell colSpan={7} className="text-center text-gray-500">
                       Nenhum IRS encontrado
                     </TableCell>
                   </TableRow>
@@ -201,6 +202,13 @@ export const IRS: React.FC = () => {
                             </Button>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {irs.estado_entrega ? (
+                          <Badge variant="outline">{irs.estado_entrega}</Badge>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell>{irs.numero_recibo || '-'}</TableCell>
                       <TableCell>
