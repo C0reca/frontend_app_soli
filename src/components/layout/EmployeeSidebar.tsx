@@ -7,7 +7,8 @@ import {
   CheckSquare,
   FileText,
   LogOut,
-  Calendar, Building, Wallet, Truck
+  Calendar, Building, Wallet, Truck,
+  Receipt
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const navItems = [
   { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: Users, label: 'Entidades', path: '/clientes' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
+  { icon: Receipt, label: 'IRS', path: '/irs' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
   { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
