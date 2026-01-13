@@ -9,6 +9,7 @@ import { useMinimize } from '@/contexts/MinimizeContext';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Building, Loader2 } from 'lucide-react';
@@ -106,6 +107,7 @@ interface ClientModalProps {
   onClose: () => void;
   client?: Client | null;
   initialData?: any;
+  onSuccess?: (client: Client) => void;
 }
 
 export const ClientModal: React.FC<ClientModalProps> = ({
@@ -113,6 +115,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   onClose,
   client,
   initialData,
+  onSuccess,
 }) => {
   const { minimize } = useMinimize();
   const { createClient, updateClient } = useClients();
@@ -211,27 +214,62 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     reset(getDefaultValues());
   }, [tipo, client, initialData]);
 
+  const normalizeData = (data: any): any => {
+    const normalized: any = {};
+    
+    // Campos de data que devem ser null se vazios
+    const dateFields = ['data_nascimento', 'validade_cc', 'data_constituicao'];
+    
+    // Processar todos os campos
+    Object.keys(data).forEach(key => {
+      const value = data[key];
+      
+      // Campos de data: converter strings vazias para null ou undefined (remover do payload)
+      if (dateFields.includes(key)) {
+        if (value === '' || value === null || value === undefined) {
+          // Não incluir campos de data vazios no payload
+          return;
+        }
+        normalized[key] = value;
+      }
+      // Outros campos: manter como estão
+      else {
+        normalized[key] = value;
+      }
+    });
+    
+    return normalized;
+  };
+
   const onSubmit = async (data: any) => {
     try {
+      const normalizedData = normalizeData(data);
+      
       if (isEditing && client) {
-        await updateClient.mutateAsync({ id: client.id, ...data } as any);
+        const updated = await updateClient.mutateAsync({ id: client.id, ...normalizedData } as any);
         toast({
           title: "Cliente atualizado",
           description: "As informações do cliente foram atualizadas com sucesso.",
         });
+        onSuccess?.(updated as Client);
       } else {
-        await createClient.mutateAsync(data as Omit<Client, 'id' | 'createdAt'>);
+        const created = await createClient.mutateAsync(normalizedData as Omit<Client, 'id' | 'createdAt'>);
         toast({
           title: "Cliente criado",
           description: "O novo cliente foi criado com sucesso.",
         });
+        onSuccess?.(created as Client);
       }
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving client:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          "Ocorreu um erro ao salvar o cliente. Tente novamente.";
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao salvar o cliente. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -348,6 +386,26 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           ) : (
             <CorporateClientForm form={form} watch={watch} setValue={setValue} />
           )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado do Dossiê</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Alert>
+                <AlertDescription>
+                  {client?.tem_dossies
+                    ? 'Esta entidade já possui um dossiê associado e não é possível remover essa associação.'
+                    : 'Esta entidade ainda não tem dossiê. Para criar um, utilize a página "Dossiês".'}
+                </AlertDescription>
+              </Alert>
+              {!client?.tem_dossies && (
+                <p className="text-sm text-muted-foreground">
+                  A criação de dossiês é feita exclusivamente na página Dossiês. Depois de criado, o estado fica permanente.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

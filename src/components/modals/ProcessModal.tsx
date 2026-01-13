@@ -23,6 +23,7 @@ import { z } from "zod";
 import { useProcesses, Process } from "@/hooks/useProcesses";
 import { useClients } from "@/hooks/useClients";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useDossies } from "@/hooks/useDossies";
 import {
     Form,
     FormControl,
@@ -40,7 +41,8 @@ const processSchema = z.object({
     descricao: z.string().optional(),
     tipo: z.string().optional(),
     onde_estao: z.string().optional(),
-    cliente_id: z.number().min(1, "Cliente é obrigatório"),
+    cliente_id: z.number().optional(), // Mantido para compatibilidade
+    dossie_id: z.number().optional(), // Nova relação com dossiê (opcional)
     funcionario_id: z.number().optional(),
     estado: z.enum(["pendente", "em_curso", "concluido"]).default("pendente"),
 });
@@ -63,8 +65,18 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const { createProcess, updateProcess } = useProcesses();
     const { clients = [], isLoading: isClientsLoading } = useClients();
     const { employees = [], isLoading: isEmployeesLoading } = useEmployees();
-
     const { minimize } = useMinimize();
+
+    const [selectedClienteId, setSelectedClienteId] = React.useState<number | undefined>();
+    const selectedCliente = React.useMemo(() => {
+        if (!selectedClienteId) return null;
+        return clients.find(c => c.id === selectedClienteId) || null;
+    }, [selectedClienteId, clients]);
+
+    // Obter o dossiê único da entidade (se tiver dossiês)
+    const { dossie: dossieEntidade, isLoading: isDossieLoading } = useDossies(
+        selectedCliente?.id && (selectedCliente as any).tem_dossies ? selectedCliente.id : undefined
+    );
 
     const form = useForm<ProcessFormData>({
         resolver: zodResolver(processSchema),
@@ -74,10 +86,25 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
             tipo: initialData?.tipo ?? "",
             onde_estao: undefined,
             cliente_id: initialData?.cliente_id ?? undefined,
+            dossie_id: (initialData as any)?.dossie_id ?? undefined,
             funcionario_id: initialData?.funcionario_id ?? undefined,
             estado: initialData?.estado ?? "pendente",
         },
     });
+
+    const clienteId = form.watch("cliente_id");
+    const dossieId = form.watch("dossie_id");
+    
+    React.useEffect(() => {
+        setSelectedClienteId(clienteId);
+    }, [clienteId]);
+
+    // Quando um dossiê é selecionado, garantir que o cliente_id também está definido
+    React.useEffect(() => {
+        if (dossieId && selectedCliente && !clienteId) {
+            form.setValue("cliente_id", selectedCliente.id);
+        }
+    }, [dossieId, selectedCliente, clienteId, form]);
 
     useEffect(() => {
         if (process) {
@@ -87,9 +114,13 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 tipo: process.tipo || "",
                 onde_estao: (process as any).onde_estao || undefined,
                 cliente_id: process.cliente_id || undefined,
+                dossie_id: (process as any).dossie_id || undefined,
                 funcionario_id: process.funcionario_id || undefined,
                 estado: process.estado,
             });
+            if (process.cliente_id) {
+                setSelectedClienteId(process.cliente_id);
+            }
         } else {
             form.reset({
                 titulo: initialData?.titulo ?? "",
@@ -97,9 +128,13 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 tipo: initialData?.tipo ?? "",
                 onde_estao: undefined,
                 cliente_id: initialData?.cliente_id ?? undefined,
+                dossie_id: (initialData as any)?.dossie_id ?? undefined,
                 funcionario_id: initialData?.funcionario_id ?? undefined,
                 estado: initialData?.estado ?? "pendente",
             });
+            if (initialData?.cliente_id) {
+                setSelectedClienteId(initialData.cliente_id);
+            }
         }
     }, [process, form, initialData]);
 
@@ -217,6 +252,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="--------">--------</SelectItem>
+                                                <SelectItem value="Casa">Casa</SelectItem>
                                                 <SelectItem value="Cartorio">Cartorio</SelectItem>
                                                 <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
                                                 <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
@@ -226,7 +262,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 <SelectItem value="Serviço Finanças">Serviço Finanças</SelectItem>
                                                 <SelectItem value="Imposto Selo / Participações">Imposto Selo / Participações</SelectItem>
                                                 <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
-                                                <SelectItem value="Aguarda Doc Cliente">Aguarda Doc Cliente</SelectItem>
+                                                <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
                                                 <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
                                                 <SelectItem value="Tarefas">Tarefas</SelectItem>
                                                 <SelectItem value="Injunções">Injunções</SelectItem>
@@ -244,21 +280,70 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     name="cliente_id"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Cliente *</FormLabel>
+                                            <FormLabel>Entidade (Opcional)</FormLabel>
                                             <ClientCombobox
                                                 clients={clients ?? []}
                                                 value={field.value}
-                                                onChange={field.onChange}
+                                                onChange={(value) => {
+                                                    field.onChange(value);
+                                                    setSelectedClienteId(value);
+                                                    // Limpar dossiê se mudar de entidade
+                                                    form.setValue("dossie_id", undefined);
+                                                }}
                                                 isLoading={isClientsLoading}
                                             />
                                             <FormMessage />
+                                            <p className="text-xs text-muted-foreground">
+                                                Selecione a entidade para associar o processo
+                                            </p>
                                         </FormItem>
                                     )}
                                 />
 
-                                <FormField
-                                    control={form.control}
-                                    name="funcionario_id"
+                                {selectedCliente && (selectedCliente as any).tem_dossies ? (
+                                    <FormField
+                                        control={form.control}
+                                        name="dossie_id"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Dossiê (Opcional)</FormLabel>
+                                                <Select
+                                                    onValueChange={(value) => {
+                                                        const dossieId = value ? parseInt(value) : undefined;
+                                                        field.onChange(dossieId);
+                                                        // Se selecionar um dossiê, garantir que o cliente_id também está definido
+                                                        if (dossieId && selectedCliente) {
+                                                            form.setValue("cliente_id", selectedCliente.id);
+                                                        }
+                                                    }}
+                                                    value={field.value?.toString() ?? ""}
+                                                    disabled={isDossieLoading}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione o dossiê (opcional)" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="">Nenhum dossiê</SelectItem>
+                                                        {dossieEntidade && (
+                                                            <SelectItem key={dossieEntidade.id} value={dossieEntidade.id.toString()}>
+                                                                {dossieEntidade.nome} {dossieEntidade.numero && `(${dossieEntidade.numero})`}
+                                                            </SelectItem>
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Associar o processo ao dossiê da entidade (opcional)
+                                                </p>
+                                            </FormItem>
+                                        )}
+                                    />
+                                ) : (
+                                    <FormField
+                                        control={form.control}
+                                        name="funcionario_id"
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Responsável</FormLabel>
@@ -287,7 +372,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                             <FormMessage />
                                         </FormItem>
                                     )}
-                                />
+                                    />
+                                )}
                             </div>
 
                             <FormField
