@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Calendar, label: 'Calendário', path: '/calendario' },
-  { icon: Users, label: 'Clientes', path: '/clientes' },
+  { icon: Users, label: 'Entidades', path: '/clientes' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tarefas' },
   { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
@@ -31,7 +31,7 @@ export const EmployeeSidebar: React.FC = () => {
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-gray-900">ProcessFlow</h1>
         <p className="text-sm text-gray-500">Painel do Funcionário</p>
-        <p className="text-xs text-gray-400 mt-1">{user?.name}</p>
+        <p className="text-xs text-gray-400 mt-1">{user?.nome}</p>
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
