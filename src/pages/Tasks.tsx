@@ -48,17 +48,19 @@ export const Tasks: React.FC = () => {
     return dueDate.getTime() === today.getTime();
   };
 
-  const filteredTasks = tasks.filter((task) => {
+  // Helper function to check if a task matches filters (excluding concluida check for subtasks)
+  const taskMatchesFilters = (task: Task, checkConcluida: boolean = true) => {
     const matchesSearch = task.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.descricao.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Por padrão, esconde tarefas concluídas (arquivadas)
-    const isConcluida = task.concluida;
-    const shouldShowConcluidas = filters.showConcluidas || filters.status === 'concluidas';
-    
-    // Se não mostrar concluídas e a tarefa está concluída, esconde
-    if (isConcluida && !shouldShowConcluidas) {
-      return false;
+    if (checkConcluida) {
+      const isConcluida = task.concluida;
+      const shouldShowConcluidas = filters.showConcluidas || filters.status === 'concluidas';
+      
+      // Se não mostrar concluídas e a tarefa está concluída, esconde
+      if (isConcluida && !shouldShowConcluidas) {
+        return false;
+      }
     }
     
     const matchesStatus = filters.status === 'all' || 
@@ -79,7 +81,47 @@ export const Tasks: React.FC = () => {
     
     return matchesSearch && matchesStatus && matchesResponsavel && 
            matchesPrioridade && matchesTipo && matchesAtrasadas;
+  };
+
+  // First, filter main tasks (tasks without parent)
+  const filteredMainTasks = tasks.filter((task) => {
+    // Only process main tasks (no parent_id)
+    if (task.parent_id) return false;
+    return taskMatchesFilters(task, true);
   });
+
+  // Get IDs of visible main tasks
+  const visibleMainTaskIds = new Set(filteredMainTasks.map(t => t.id.toString()));
+
+  // Now, include subtasks:
+  // 1. Subtasks of visible main tasks (even if subtask is concluida)
+  // 2. Subtasks of concluida main tasks if showConcluidas is active
+  const shouldShowConcluidas = filters.showConcluidas || filters.status === 'concluidas';
+  const filteredSubtasks = tasks.filter((task) => {
+    // Only process subtasks (has parent_id)
+    if (!task.parent_id) return false;
+    
+    const parentId = task.parent_id.toString();
+    const parentTask = tasks.find(t => t.id.toString() === parentId);
+    
+    if (!parentTask) return false;
+    
+    // Include subtask if:
+    // 1. Parent is visible (even if subtask is concluida)
+    if (visibleMainTaskIds.has(parentId)) {
+      return taskMatchesFilters(task, false); // Don't check concluida for subtask
+    }
+    
+    // 2. Parent is concluida but being shown
+    if (parentTask.concluida && shouldShowConcluidas) {
+      return taskMatchesFilters(task, false); // Don't check concluida for subtask
+    }
+    
+    return false;
+  });
+
+  // Combine main tasks and subtasks
+  const filteredTasks = [...filteredMainTasks, ...filteredSubtasks];
 
   // Build hierarchy: parent -> children
   const childrenByParent: Record<string, Task[]> = {};

@@ -12,7 +12,8 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { useLogsProcesso, LogProcesso } from '@/hooks/useLogsProcesso';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin } from 'lucide-react';
+import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
@@ -57,7 +58,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = React.useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = React.useState(false);
   const [selectedLog, setSelectedLog] = React.useState<LogProcesso | null>(null);
+  const [isLogDetailsOpen, setIsLogDetailsOpen] = React.useState(false);
+  const [selectedLogDetails, setSelectedLogDetails] = React.useState<LogProcesso | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = React.useState(false);
+  const [logDocs, setLogDocs] = React.useState<Record<number, {id:number; nome_original:string}[]>>({});
   const { minimize } = useMinimize();
   const { updateProcess } = useProcesses();
   const { toast } = useToast();
@@ -80,6 +84,23 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         });
     }
   }, [process, isOpen, getTasksByProcess]);
+
+  React.useEffect(() => {
+    const fetchLogDocs = async () => {
+      if (!logs || logs.length === 0) return;
+      const docsMap: Record<number, {id:number; nome_original:string}[]> = {};
+      for (const log of logs) {
+        try {
+          const res = await api.get(`/documentos/log/${log.id}`);
+          docsMap[log.id] = res.data;
+        } catch {}
+      }
+      setLogDocs(docsMap);
+    };
+    if (logs && logs.length > 0) {
+      fetchLogDocs();
+    }
+  }, [logs]);
   
   if (!process) return null;
 
@@ -120,7 +141,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     if (log.is_automatico) {
       toast({
         title: "Aviso",
-        description: "Não é possível editar logs automáticos.",
+        description: "Não é possível editar registos automáticos.",
         variant: "destructive",
       });
       return;
@@ -149,10 +170,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   const handleViewTask = (tarefaId: number) => {
     // Buscar a tarefa e abrir o modal de detalhes
-    const task = tasks.find(t => t.id === tarefaId.toString());
+    const task = processTasks.find(t => t.id === tarefaId || t.id === tarefaId.toString());
     if (task) {
-      setSelectedTaskDetails(task);
-      setIsDetailsModalOpen(true);
+      setSelectedTask(task as Task);
+      setIsTaskDetailsOpen(true);
     }
   };
 
@@ -427,17 +448,17 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 <h3 className="text-lg font-semibold">Timeline do Processo</h3>
                 <Button onClick={handleAddLog} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Log
+                  Adicionar Registo
                 </Button>
               </div>
               
               {loadingLogs ? (
                 <div className="flex justify-center py-8">
-                  <div className="text-muted-foreground">Carregando logs...</div>
+                  <div className="text-muted-foreground">Carregando registos...</div>
                 </div>
               ) : logs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nenhum log registrado ainda.
+                  Nenhum registo registado ainda.
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -452,18 +473,39 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                                  <div className="flex items-center justify-between">
-                                   <h4 className="text-sm font-medium text-gray-900">
+                                   <h4 
+                                     className="text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600"
+                                     onClick={() => {
+                                       setSelectedLogDetails(log);
+                                       setIsLogDetailsOpen(true);
+                                     }}
+                                   >
                                      {log.titulo}
                                    </h4>
                                    <div className="flex items-center space-x-2">
                                      <span className="text-xs text-gray-500">
                                        {new Date(log.data_hora).toLocaleString('pt-BR')}
                                      </span>
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       onClick={() => {
+                                         setSelectedLogDetails(log);
+                                         setIsLogDetailsOpen(true);
+                                       }}
+                                       className="h-6 px-2"
+                                       title="Ver detalhes"
+                                     >
+                                       <Eye className="h-3 w-3" />
+                                     </Button>
                                      {log.tarefa_id && (
                                        <Button
                                          variant="ghost"
                                          size="sm"
-                                         onClick={() => handleViewTask(log.tarefa_id!)}
+                                         onClick={(e) => {
+                                           e.stopPropagation();
+                                           handleViewTask(log.tarefa_id!);
+                                         }}
                                          className="h-6 px-2"
                                          title="Ver tarefa"
                                        >
@@ -474,9 +516,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                        <Button
                                          variant="ghost"
                                          size="sm"
-                                         onClick={() => handleEditLog(log)}
+                                         onClick={(e) => {
+                                           e.stopPropagation();
+                                           handleEditLog(log);
+                                         }}
                                          className="h-6 px-2"
-                                         title="Editar log"
+                                         title="Editar registo"
                                        >
                                          <Edit className="h-3 w-3" />
                                        </Button>
@@ -492,6 +537,28 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                             <p className="mt-1 text-xs text-gray-500">
                               Por: {log.funcionario_nome}
                             </p>
+                          )}
+                          {logDocs[log.id] && logDocs[log.id].length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                                <Paperclip className="h-3 w-3" />
+                                <span className="font-medium">Anexos:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {logDocs[log.id].map((doc) => (
+                                  <a
+                                    key={doc.id}
+                                    href={`/api/documentos/download/${doc.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                  >
+                                    <FileIcon className="h-3 w-3" />
+                                    {doc.nome_original}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -509,6 +576,27 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         onClose={() => setIsLogModalOpen(false)} 
         processoId={process?.id || 0}
         log={selectedLog}
+      />
+      <LogProcessoDetailsModal
+        isOpen={isLogDetailsOpen}
+        onClose={() => {
+          setIsLogDetailsOpen(false);
+          setSelectedLogDetails(null);
+        }}
+        log={selectedLogDetails}
+        processoId={process?.id || 0}
+        onViewTask={(taskId) => {
+          const task = processTasks.find(t => t.id === taskId);
+          if (task) {
+            setSelectedTask(task as Task);
+            setIsTaskDetailsOpen(true);
+          }
+          setIsLogDetailsOpen(false);
+        }}
+        onViewProcess={() => {
+          // Já estamos no modal do processo, apenas fechar o modal de detalhes
+          setIsLogDetailsOpen(false);
+        }}
       />
       <ProcessLocationModal
         isOpen={isLocationModalOpen}

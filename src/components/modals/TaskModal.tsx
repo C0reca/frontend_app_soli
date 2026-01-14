@@ -13,8 +13,9 @@ import { useProcesses } from '@/hooks/useProcesses';
 import { useEmployees } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ProcessCombobox } from '@/components/ui/processcombobox';
-import { Minimize2 } from 'lucide-react';
+import { Minimize2, FileIcon, X } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
+import api from '@/services/api';
 
 const taskSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
@@ -46,6 +47,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
   const { processes, isLoading: isProcessesLoading } = useProcesses();
   const { employees } = useEmployees();
   const { minimize } = useMinimize();
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -133,7 +135,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         console.log('Update payload:', updatePayload); // Debug temporário
         await updateTask.mutateAsync(updatePayload as Task & { id: string });
       } else {
-        await createTask.mutateAsync(normalizedData as Omit<Task, 'id' | 'criado_em'>);
+        const newTask = await createTask.mutateAsync(normalizedData as Omit<Task, 'id' | 'criado_em'>);
+        // Fazer upload dos ficheiros pendentes após criar a tarefa
+        if (pendingFiles.length > 0 && newTask?.id) {
+          for (const file of pendingFiles) {
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+              await api.post(`/documentos/upload-tarefa/${newTask.id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            } catch (error) {
+              console.error('Erro ao fazer upload do ficheiro:', error);
+            }
+          }
+        }
+        setPendingFiles([]);
       }
       onClose();
     } catch (error) {
@@ -391,6 +406,41 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                 </FormItem>
               )}
             />
+
+            {!task && (
+              <div className="space-y-2">
+                <Label>Anexos</Label>
+                <Input 
+                  type="file" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPendingFiles([...pendingFiles, file]);
+                    }
+                    e.target.value = '';
+                  }}
+                  className="text-sm"
+                />
+                {pendingFiles.length > 0 && (
+                  <ul className="list-disc pl-5 text-sm space-y-1">
+                    {pendingFiles.map((file, index) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <FileIcon className="h-4 w-4 text-gray-500" />
+                        <span className="flex-1">{file.name}</span>
+                        <Button 
+                          size="xs" 
+                          variant="ghost" 
+                          className="text-red-600 h-6 px-2" 
+                          onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>

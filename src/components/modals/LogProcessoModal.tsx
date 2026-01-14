@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLogsProcesso, LogProcessoCreate } from '@/hooks/useLogsProcesso';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useMinimize } from '@/contexts/MinimizeContext';
-import { Minimize2 } from 'lucide-react';
+import { Minimize2, Upload, X, FileIcon } from 'lucide-react';
+import api from '@/services/api';
 
 const logSchema = z.object({
   tipo: z.enum(['telefone', 'reuniao', 'email', 'documento', 'observacao'], {
@@ -40,6 +41,9 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
   const { employees } = useEmployees();
   const { minimize } = useMinimize();
   const isEditing = !!log;
+  const [docs, setDocs] = useState<{id:number; nome_original:string}[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const form = useForm<LogFormData>({
     resolver: zodResolver(logSchema),
@@ -59,6 +63,7 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
         descricao: log.descricao || '',
         funcionario_id: log.funcionario_id,
       });
+      fetchDocs();
     } else {
       form.reset({
         tipo: 'observacao',
@@ -66,8 +71,58 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
         descricao: '',
         funcionario_id: undefined,
       });
+      setDocs([]);
+      setPendingFiles([]);
     }
   }, [log, form]);
+
+  const fetchDocs = async () => {
+    if (!log?.id) return;
+    try {
+      const res = await api.get(`/documentos/log/${log.id}`);
+      setDocs(res.data);
+    } catch {}
+  };
+
+  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Se estamos editando, usar o log_id existente
+    if (isEditing && log?.id) {
+      try {
+        setUploading(true);
+        const form = new FormData();
+        form.append('file', file);
+        await api.post(`/documentos/upload-log/${log.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await fetchDocs();
+      } catch {}
+      finally {
+        setUploading(false);
+        e.target.value = '';
+      }
+    } else {
+      // Para novos logs, guardar temporariamente
+      setPendingFiles([...pendingFiles, file]);
+      e.target.value = '';
+    }
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles(pendingFiles.filter((_, i) => i !== index));
+  };
+
+  const onDeleteDoc = async (id: number) => {
+    if (!confirm('Tem certeza que deseja apagar este ficheiro?')) {
+      return;
+    }
+    try {
+      await api.delete(`/documentos/${id}`);
+      await fetchDocs();
+    } catch (error: any) {
+      alert(error?.response?.data?.detail || 'Erro ao apagar o ficheiro. Por favor, tente novamente.');
+    }
+  };
 
   const onSubmit = async (data: LogFormData) => {
     try {
@@ -82,7 +137,20 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
       if (isEditing) {
         await updateLog.mutateAsync({ id: log.id, data: logData });
       } else {
-        await createLog.mutateAsync(logData);
+        const newLog = await createLog.mutateAsync(logData);
+        // Fazer upload dos ficheiros pendentes após criar o log
+        if (pendingFiles.length > 0 && newLog?.id) {
+          for (const file of pendingFiles) {
+            try {
+              const form = new FormData();
+              form.append('file', file);
+              await api.post(`/documentos/upload-log/${newLog.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+            } catch (error) {
+              console.error('Erro ao fazer upload do ficheiro:', error);
+            }
+          }
+        }
+        setPendingFiles([]);
       }
       
       onClose();
@@ -109,12 +177,12 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle>
-                {isEditing ? 'Editar Log' : 'Adicionar Log'}
+                {isEditing ? 'Editar Registo' : 'Adicionar Registo'}
               </DialogTitle>
               <DialogDescription>
                 {isEditing 
-                  ? 'Edite as informações do log do processo.'
-                  : 'Adicione um novo registro de atividade ao processo.'
+                  ? 'Edite as informações do registo do processo.'
+                  : 'Adicione um novo registo de atividade ao processo.'
                 }
               </DialogDescription>
             </div>
@@ -126,7 +194,7 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
                 const data = form.getValues();
                 minimize({ 
                   type: 'log-processo', 
-                  title: isEditing ? `Editar: ${log.titulo}` : 'Novo Log', 
+                  title: isEditing ? `Editar: ${log.titulo}` : 'Novo Registo', 
                   payload: { data, log, processoId } 
                 });
                 onClose();
@@ -202,6 +270,62 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium mb-2 block">Anexos</label>
+            <div className="flex items-center gap-2">
+              <Input 
+                type="file" 
+                onChange={onUpload} 
+                disabled={uploading}
+                className="text-sm"
+              />
+            </div>
+            {isEditing && log?.id && (
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                {docs.map(d => (
+                  <li key={d.id} className="flex items-center gap-2">
+                    <FileIcon className="h-4 w-4 text-gray-500" />
+                    <a 
+                      href={`/api/documentos/download/${d.id}`} 
+                      className="text-blue-600 hover:underline flex-1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {d.nome_original}
+                    </a>
+                    <Button 
+                      size="xs" 
+                      variant="ghost" 
+                      className="text-red-600 h-6 px-2" 
+                      onClick={() => onDeleteDoc(d.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+                {docs.length === 0 && pendingFiles.length === 0 && <li className="text-gray-500 text-xs">Sem anexos</li>}
+              </ul>
+            )}
+            {!isEditing && pendingFiles.length > 0 && (
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                {pendingFiles.map((file, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <FileIcon className="h-4 w-4 text-gray-500" />
+                    <span className="flex-1">{file.name}</span>
+                    <Button 
+                      size="xs" 
+                      variant="ghost" 
+                      className="text-red-600 h-6 px-2" 
+                      onClick={() => removePendingFile(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
