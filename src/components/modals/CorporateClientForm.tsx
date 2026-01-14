@@ -122,12 +122,12 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
             </div>
 
             {/* Representante Legal */}
-            <div className="space-y-4 border-t pt-4">
+              <div className="space-y-4 border-t pt-4">
               <h4 className="font-semibold">Representante Legal</h4>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="representante_nome">Nome</Label>
+                  <Label htmlFor="representante_nome">Nome *</Label>
                   <Input
                     id="representante_nome"
                     {...register('representante_nome')}
@@ -136,7 +136,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="representante_nif">NIF</Label>
+                  <Label htmlFor="representante_nif">NIF *</Label>
                   <Input
                     id="representante_nif"
                     {...register('representante_nif')}
@@ -147,7 +147,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="representante_email">Email</Label>
+                  <Label htmlFor="representante_email">Email *</Label>
                   <Input
                     type="email"
                     id="representante_email"

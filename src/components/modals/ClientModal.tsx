@@ -263,10 +263,31 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Error saving client:', error);
-      const errorMessage = error?.response?.data?.detail || 
-                          error?.response?.data?.message || 
-                          error?.message || 
-                          "Ocorreu um erro ao salvar o cliente. Tente novamente.";
+
+      // Extrair mensagem legível mesmo quando o backend devolve um array de erros (422)
+      const detail = error?.response?.data?.detail;
+      let errorMessage: string;
+
+      if (Array.isArray(detail)) {
+        // FastAPI 422: lista de erros de validação
+        const messages = detail.map((e: any) => {
+          if (e?.msg && e?.loc) {
+            const fieldPath = Array.isArray(e.loc) ? e.loc.join('.') : String(e.loc);
+            return `${fieldPath}: ${e.msg}`;
+          }
+          return e?.msg || JSON.stringify(e);
+        });
+        errorMessage = messages.join(' | ');
+      } else if (typeof detail === 'string') {
+        errorMessage = detail;
+      } else if (typeof error?.response?.data?.message === 'string') {
+        errorMessage = error.response.data.message;
+      } else if (typeof error?.message === 'string') {
+        errorMessage = error.message;
+      } else {
+        errorMessage = "Ocorreu um erro ao salvar o cliente. Tente novamente.";
+      }
+
       toast({
         title: "Erro",
         description: errorMessage,
