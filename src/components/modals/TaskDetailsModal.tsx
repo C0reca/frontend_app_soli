@@ -23,7 +23,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   task,
 }) => {
   const { employees } = useEmployees();
-  const { generateTaskPDF } = useTasks();
+  const { generateTaskPDF, updateTaskStatus } = useTasks();
   const [subtasks, setSubtasks] = useState<Task[]>([]);
   const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(task);
@@ -146,6 +146,17 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
       : <AlertCircle className="h-4 w-4 text-yellow-600" />;
   };
 
+  const handleStatusToggle = async () => {
+    if (!currentTask) return;
+    const newStatus = !currentTask.concluida;
+    try {
+      await updateTaskStatus.mutateAsync({ id: currentTask.id, concluida: newStatus });
+      setCurrentTask({ ...currentTask, concluida: newStatus });
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
+  };
+
   const isOverdue = (dataFim: string | null) => {
     return dataFim && new Date(dataFim) < new Date() && !(currentTask && currentTask.concluida);
   };
@@ -204,9 +215,32 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-500">Status</label>
-              <Badge className={getStatusColor(currentTask.concluida)}>
-                {getStatusLabel(currentTask.concluida)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className={getStatusColor(currentTask.concluida)}>
+                  {getStatusLabel(currentTask.concluida)}
+                </Badge>
+                {!currentTask.concluida ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStatusToggle}
+                    disabled={updateTaskStatus.isPending}
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStatusToggle}
+                    disabled={updateTaskStatus.isPending}
+                    className="text-yellow-600 hover:text-yellow-700"
+                  >
+                    <Clock className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
             
             <div className="space-y-2">

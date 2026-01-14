@@ -6,6 +6,7 @@ export interface Predio {
   id?: number;
   predio: string;
   freguesia?: string;
+  codigo_certidao_permanente?: string;
 }
 
 export interface RegistoPredial {

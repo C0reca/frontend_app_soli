@@ -110,18 +110,43 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
           <div className="space-y-3">
             <h4 className="font-medium flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
-              Localização
+              Prédios
             </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Prédio</label>
-                <p className="text-sm">{registo.predio}</p>
+            {registo.predios && registo.predios.length > 0 ? (
+              <div className="space-y-3">
+                {registo.predios.map((predio: any, index: number) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded-lg border">
+                    <div className="grid grid-cols-2 gap-4 mb-2">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Prédio</label>
+                        <p className="text-sm">{predio.predio || registo.predio}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Freguesia</label>
+                        <p className="text-sm">{predio.freguesia || registo.freguesia}</p>
+                      </div>
+                    </div>
+                    {predio.codigo_certidao_permanente && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Código Certidão Permanente</label>
+                        <p className="text-sm font-mono">{predio.codigo_certidao_permanente}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Freguesia</label>
-                <p className="text-sm">{registo.freguesia}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Prédio</label>
+                  <p className="text-sm">{registo.predio}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Freguesia</label>
+                  <p className="text-sm">{registo.freguesia}</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Informações do Registo */}

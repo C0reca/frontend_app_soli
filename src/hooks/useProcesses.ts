@@ -72,7 +72,7 @@ export const useProcesses = () => {
 
   const updateProcess = useMutation({
     mutationFn: async ({ id, ...process }: Partial<Process> & { id: number }) => {
-      const response = await api.patch(`/processos/${id}`, process);
+      const response = await api.put(`/processos/${id}`, process);
       return response.data;
     },
     onSuccess: () => {

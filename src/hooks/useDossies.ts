@@ -42,11 +42,22 @@ export const useDossies = (entidadeId?: number) => {
   } = useQuery({
     queryKey: ['dossies', entidadeId],
     queryFn: async () => {
-      const url = entidadeId ? `/dossies?entidade_id=${entidadeId}` : '/dossies';
-      const response = await api.get(url);
-      return response.data;
+      if (!entidadeId) {
+        // Se não há entidade_id, retornar array vazio (endpoint não existe)
+        return [];
+      }
+      const url = `/dossies?entidade_id=${entidadeId}`;
+      try {
+        const response = await api.get(url);
+        return response.data;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          return []; // Endpoint não existe, retornar array vazio
+        }
+        throw error;
+      }
     },
-    // Permite listar todos os dossiês mesmo sem entidade_id
+    enabled: !!entidadeId, // Só faz a chamada se houver entidadeId
   });
 
   // Hook para obter o dossiê de uma entidade específica (uma entidade tem apenas um dossiê)

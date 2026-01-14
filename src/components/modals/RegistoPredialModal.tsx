@@ -33,9 +33,64 @@ import { useClients } from '@/hooks/useClients';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { Card, CardContent } from '@/components/ui/card';
 
+// Função para formatar automaticamente o código certidão permanente
+// Formato: XX-XXXX-XXXXX-XXXXXX-XXXXXX
+const formatCodigoCertidao = (value: string): string => {
+  // Remove tudo que não é letra ou número
+  const cleaned = value.replace(/[^A-Za-z0-9]/g, '');
+  
+  // Separa letras e números
+  const letters = cleaned.match(/[A-Za-z]/g)?.join('').toUpperCase() || '';
+  const numbers = cleaned.match(/[0-9]/g)?.join('') || '';
+  
+  // Limita a 2 letras
+  const limitedLetters = letters.slice(0, 2);
+  
+  // Se não tiver 2 letras, retorna apenas as letras (até 2)
+  if (limitedLetters.length < 2) {
+    return limitedLetters;
+  }
+  
+  // Limita números a 21 dígitos (4+5+6+6)
+  const limitedNumbers = numbers.slice(0, 21);
+  
+  // Formata: XX-XXXX-XXXXX-XXXXXX-XXXXXX
+  let formatted = limitedLetters;
+  
+  if (limitedNumbers.length > 0) {
+    formatted += '-';
+    
+    // Adiciona números com travessões nos lugares corretos
+    const parts: string[] = [];
+    
+    if (limitedNumbers.length > 0) {
+      parts.push(limitedNumbers.slice(0, 4)); // 4 números
+    }
+    if (limitedNumbers.length > 4) {
+      parts.push(limitedNumbers.slice(4, 9)); // 5 números
+    }
+    if (limitedNumbers.length > 9) {
+      parts.push(limitedNumbers.slice(9, 15)); // 6 números
+    }
+    if (limitedNumbers.length > 15) {
+      parts.push(limitedNumbers.slice(15, 21)); // 6 números
+    }
+    
+    formatted += parts.join('-');
+  }
+  
+  return formatted;
+};
+
 const predioSchema = z.object({
   predio: z.string().min(1, 'Prédio é obrigatório'),
   freguesia: z.string().optional(),
+  codigo_certidao_permanente: z.string()
+    .optional()
+    .refine(
+      (val) => !val || /^[A-Z]{2}-\d{4}-\d{5}-\d{6}-\d{6}$/.test(val),
+      { message: 'Formato inválido. Use: XX-XXXX-XXXXX-XXXXXX-XXXXXX (ex: GP-0000-00000-000000-000000)' }
+    ),
 });
 
 const formSchema = z.object({
@@ -93,7 +148,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
     defaultValues: {
       numero_processo: '',
       cliente_id: undefined as unknown as number,
-      predios: [{ predio: '', freguesia: '' }],
+        predios: [{ predio: '', freguesia: '', codigo_certidao_permanente: '' }],
       registo: '',
       conservatoria: '',
       requisicao: '',
@@ -102,6 +157,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
       apresentacao_complementar: '',
       outras_observacoes: '',
       estado: 'Provisórios',
+      codigo_certidao_permanente: '',
     },
   });
 
@@ -114,13 +170,13 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
     if (registo) {
       // Se tiver prédios na lista, usar; senão, usar o campo antigo para compatibilidade
       const predios = registo.predios && registo.predios.length > 0
-        ? registo.predios.map(p => ({ predio: p.predio || '', freguesia: p.freguesia || '' }))
-        : [{ predio: registo.predio || '', freguesia: registo.freguesia || '' }];
+        ? registo.predios.map(p => ({ predio: p.predio || '', freguesia: p.freguesia || '', codigo_certidao_permanente: p.codigo_certidao_permanente || '' }))
+        : [{ predio: registo.predio || '', freguesia: registo.freguesia || '', codigo_certidao_permanente: '' }];
       
       form.reset({
         numero_processo: registo.numero_processo || '',
         cliente_id: registo.cliente_id != null ? Number(registo.cliente_id) : (undefined as unknown as number),
-        predios: predios.length > 0 ? predios : [{ predio: '', freguesia: '' }],
+        predios: predios.length > 0 ? predios : [{ predio: '', freguesia: '', codigo_certidao_permanente: '' }],
         registo: registo.registo || '',
         conservatoria: registo.conservatoria || '',
         requisicao: registo.requisicao || '',
@@ -134,7 +190,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
       form.reset({
         numero_processo: '',
         cliente_id: undefined as unknown as number,
-        predios: [{ predio: '', freguesia: '' }],
+        predios: [{ predio: '', freguesia: '', codigo_certidao_permanente: '' }],
         registo: '',
         conservatoria: '',
         requisicao: '',
@@ -155,6 +211,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
         predios: data.predios.map(p => ({
           predio: p.predio,
           freguesia: p.freguesia || undefined,
+          codigo_certidao_permanente: p.codigo_certidao_permanente || undefined,
         })),
         registo: data.registo,
         conservatoria: data.conservatoria,
@@ -238,7 +295,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => appendPredio({ predio: '', freguesia: '' })}
+                  onClick={() => appendPredio({ predio: '', freguesia: '', codigo_certidao_permanente: '' })}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Prédio
@@ -249,35 +306,60 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
                 <Card key={field.id} className="p-4">
                   <CardContent className="p-0">
                     <div className="flex items-start gap-4">
-                      <div className="flex-1 grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
+                      <div className="flex-1 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
                           name={`predios.${index}.predio`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prédio *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome/Localização do prédio" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Prédio *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Nome/Localização do prédio" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-              <FormField
-                control={form.control}
+                        <FormField
+                          control={form.control}
                           name={`predios.${index}.freguesia`}
-                render={({ field }) => (
-                  <FormItem>
+                          render={({ field }) => (
+                            <FormItem>
                               <FormLabel>Freguesia</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome da freguesia" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                              <FormControl>
+                                <Input placeholder="Nome da freguesia" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
+
+                      <FormField
+                        control={form.control}
+                        name={`predios.${index}.codigo_certidao_permanente`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Código Certidão Permanente</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="GP-0000-00000-000000-000000" 
+                                {...field}
+                                onChange={(e) => {
+                                  // Formatar automaticamente com letras, travessões e números
+                                  const formatted = formatCodigoCertidao(e.target.value);
+                                  field.onChange(formatted);
+                                }}
+                                maxLength={28} // XX-XXXX-XXXXX-XXXXXX-XXXXXX = 28 caracteres
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                       {predioFields.length > 1 && (
                         <Button
                           type="button"
@@ -355,46 +437,44 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="data"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="data"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data *</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="estado"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o estado" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Provisórios">Provisórios</SelectItem>
-                        <SelectItem value="Registo">Registo</SelectItem>
-                        <SelectItem value="Concluído">Concluído</SelectItem>
-                        <SelectItem value="Desistência">Desistência</SelectItem>
-                        <SelectItem value="Recusado">Recusado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="estado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o estado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Provisórios">Provisórios</SelectItem>
+                      <SelectItem value="Registo">Registo</SelectItem>
+                      <SelectItem value="Concluído">Concluído</SelectItem>
+                      <SelectItem value="Desistência">Desistência</SelectItem>
+                      <SelectItem value="Recusado">Recusado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

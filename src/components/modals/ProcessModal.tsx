@@ -74,8 +74,10 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     }, [selectedClienteId, clients]);
 
     // Obter o dossiê único da entidade (se tiver dossiês)
+    // Só faz a chamada se o cliente tiver dossiês para evitar 404
+    const clienteTemDossies = selectedCliente?.id && (selectedCliente as any).tem_dossies;
     const { dossie: dossieEntidade, isLoading: isDossieLoading } = useDossies(
-        selectedCliente?.id && (selectedCliente as any).tem_dossies ? selectedCliente.id : undefined
+        clienteTemDossies ? selectedCliente.id : undefined
     );
 
     const form = useForm<ProcessFormData>({

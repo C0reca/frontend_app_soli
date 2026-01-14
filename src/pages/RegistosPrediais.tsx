@@ -4,17 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye, Archive } from 'lucide-react';
 import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
 import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
 import { RegistoPredialDetailsModal } from '@/components/modals/RegistoPredialDetailsModal';
 
 export const RegistosPrediais: React.FC = () => {
-  const { registos, isLoading, deleteRegisto } = useRegistosPrediais();
+  const { registos, isLoading, deleteRegisto, updateRegisto } = useRegistosPrediais();
   const { clients } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState<string | null>(null);
+  const [showConcluidos, setShowConcluidos] = useState(false);
   const [selectedRegisto, setSelectedRegisto] = useState<RegistoPredial | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRegistoDetails, setSelectedRegistoDetails] = useState<RegistoPredial | null>(null);
@@ -33,6 +34,13 @@ export const RegistosPrediais: React.FC = () => {
       safe(registo.cliente?.nome).includes(searchTerm.toLowerCase());
     
     const matchesEstado = !filterEstado || registo.estado_key === filterEstado;
+    
+    // Por padrão, esconder concluídos (a menos que showConcluidos seja true ou filterEstado seja 'concluido')
+    const isConcluido = registo.estado_key === 'concluido';
+    const shouldShowConcluido = showConcluidos || filterEstado === 'concluido';
+    if (isConcluido && !shouldShowConcluido) {
+      return false;
+    }
     
     return matchesSearch && matchesEstado;
   });
@@ -111,6 +119,15 @@ export const RegistosPrediais: React.FC = () => {
     }
   };
 
+  const handleMarkAsConcluido = async (registo: RegistoPredial) => {
+    if (confirm('Tem certeza que deseja marcar este registo como concluído?')) {
+      await updateRegisto.mutateAsync({
+        id: registo.id,
+        estado: 'Concluído'
+      });
+    }
+  };
+
   const handleCloseModal = () => {
     setSelectedRegisto(null);
     setIsModalOpen(false);
@@ -154,7 +171,15 @@ export const RegistosPrediais: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <Card 
           className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'concluido' ? 'ring-2 ring-green-500' : ''}`}
-          onClick={() => setFilterEstado(filterEstado === 'concluido' ? null : 'concluido')}
+          onClick={() => {
+            if (filterEstado === 'concluido') {
+              setFilterEstado(null);
+              setShowConcluidos(false);
+            } else {
+              setFilterEstado('concluido');
+              setShowConcluidos(true);
+            }
+          }}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
@@ -240,11 +265,27 @@ export const RegistosPrediais: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Registos Prediais</CardTitle>
-          <CardDescription>
-            Total de {registos.length} registos cadastrados
-          </CardDescription>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Lista de Registos Prediais</CardTitle>
+              <CardDescription>
+                Total de {registos.length} registos cadastrados
+                {!showConcluidos && (
+                  <span className="ml-2">
+                    ({registos.filter((r: any) => r.estado_key !== 'concluido').length} ativos)
+                  </span>
+                )}
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowConcluidos(!showConcluidos)}
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              {showConcluidos ? 'Ocultar Concluídos' : 'Mostrar Concluídos'}
+            </Button>
+          </div>
+          <div className="flex items-center space-x-2 mt-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -280,9 +321,23 @@ export const RegistosPrediais: React.FC = () => {
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <span><strong>Registo:</strong> {registo.registo}</span>
                         <span><strong>Data:</strong> {new Date(registo.data).toLocaleDateString('pt-BR')}</span>
+                        {registo.predios && registo.predios.length > 0 && registo.predios.some((p: any) => p.codigo_certidao_permanente) && (
+                          <span><strong>Códigos Certidão:</strong> {registo.predios.filter((p: any) => p.codigo_certidao_permanente).map((p: any) => p.codigo_certidao_permanente).join(', ')}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                      {registo.estado_key !== 'concluido' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMarkAsConcluido(registo)}
+                          className="text-green-600 hover:text-green-700"
+                          title="Marcar como concluído"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
