@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
 import { useDossies, Dossie } from '@/hooks/useDossies';
 import { DossieModal } from './DossieModal';
+import { ClientModal } from './ClientModal';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
+import { ClienteContactosTab } from '@/components/ClienteContactosTab';
 import { 
   Building, 
   Mail, 
@@ -40,6 +42,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 }) => {
   const { dossie, isLoading: loadingDossie, createDossie, updateDossie } = useDossies(client?.id);
   const [isDossieModalOpen, setIsDossieModalOpen] = React.useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
   if (!client) return null;
 
@@ -51,7 +54,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         <TabsTrigger value="documents">Documentos</TabsTrigger>
         <TabsTrigger value="irs">IRS</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
-        {(client as any).tem_dossies && <TabsTrigger value="dossies">Dossiês</TabsTrigger>}
+        {(client as any).tem_dossies && <TabsTrigger value="dossies">Arquivos</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -136,36 +139,19 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
       </TabsContent>
 
       <TabsContent value="contact" className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Mail className="h-5 w-5" />
-              <span>Informações de Contacto</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {client.email && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
-                  <p>{client.email}</p>
-                </div>
-              )}
-              {client.telefone && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Telefone</label>
-                  <p>{client.telefone}</p>
-                </div>
-              )}
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
+        <div className="space-y-6">
+          <ClienteContactosTab clienteId={client.id} />
+          
+          <Separator />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MapPin className="h-5 w-5" />
                 <span>Morada</span>
-              </h4>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="bg-muted p-4 rounded-lg">
                 {client.morada && <p>{client.morada}</p>}
                 {client.codigo_postal && client.localidade && (
@@ -175,9 +161,9 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                   <p>{client.distrito}, {client.pais}</p>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </TabsContent>
 
       <TabsContent value="documents" className="mt-6">
@@ -252,7 +238,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center space-x-2">
                   <Folder className="h-5 w-5" />
-                  <span>Dossiê</span>
+                  <span>Arquivo</span>
                 </CardTitle>
                 {dossie && (
                   <Button
@@ -262,7 +248,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                     }}
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Editar Dossiê
+                    Editar Arquivo
                   </Button>
                 )}
               </div>
@@ -270,20 +256,20 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             <CardContent>
               {loadingDossie ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Carregando dossiê...
+                  Carregando arquivo...
                 </div>
               ) : !dossie ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>O dossiê será criado automaticamente quando necessário.</p>
-                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no dossiê.</p>
+                  <p>O arquivo será criado automaticamente quando necessário.</p>
+                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no arquivo.</p>
                 </div>
               ) : (
                 <Card className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Nome do Dossiê</label>
+                        <label className="text-sm font-medium text-muted-foreground">Nome do Arquivo</label>
                         <p className="text-lg font-semibold">{dossie.nome}</p>
                       </div>
                       {dossie.numero && (
@@ -321,7 +307,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         <TabsTrigger value="documents">Documentos</TabsTrigger>
         <TabsTrigger value="irs">IRS</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
-        {(client as any).tem_dossies && <TabsTrigger value="dossies">Dossiês</TabsTrigger>}
+        {(client as any).tem_dossies && <TabsTrigger value="dossies">Arquivos</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -424,36 +410,19 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
       </TabsContent>
 
       <TabsContent value="contact" className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Mail className="h-5 w-5" />
-              <span>Contacto da Empresa</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {client.email && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
-                  <p>{client.email}</p>
-                </div>
-              )}
-              {client.telefone && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Telefone</label>
-                  <p>{client.telefone}</p>
-                </div>
-              )}
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center space-x-2">
-                <Home className="h-4 w-4" />
+        <div className="space-y-6">
+          <ClienteContactosTab clienteId={client.id} />
+          
+          <Separator />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Home className="h-5 w-5" />
                 <span>Morada da Sede</span>
-              </h4>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="bg-muted p-4 rounded-lg">
                 {client.morada && <p>{client.morada}</p>}
                 {client.codigo_postal && client.localidade && (
@@ -463,9 +432,9 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                   <p>{client.distrito}, {client.pais}</p>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </TabsContent>
 
       <TabsContent value="documents" className="mt-6">
@@ -546,7 +515,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center space-x-2">
                   <Folder className="h-5 w-5" />
-                  <span>Dossiê</span>
+                  <span>Arquivo</span>
                 </CardTitle>
                 {dossie && (
                   <Button
@@ -556,7 +525,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                     }}
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Editar Dossiê
+                    Editar Arquivo
                   </Button>
                 )}
               </div>
@@ -564,20 +533,20 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             <CardContent>
               {loadingDossie ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Carregando dossiê...
+                  Carregando arquivo...
                 </div>
               ) : !dossie ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>O dossiê será criado automaticamente quando necessário.</p>
-                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no dossiê.</p>
+                  <p>O arquivo será criado automaticamente quando necessário.</p>
+                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no arquivo.</p>
                 </div>
               ) : (
                 <Card className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Nome do Dossiê</label>
+                        <label className="text-sm font-medium text-muted-foreground">Nome do Arquivo</label>
                         <p className="text-lg font-semibold">{dossie.nome}</p>
                       </div>
                       {dossie.numero && (
@@ -611,19 +580,30 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            {(client.tipo || 'singular') === 'singular' ? (
-              <>
-                <User className="h-6 w-6 text-blue-600" />
-                <span>Detalhes do Cliente - Pessoa Singular</span>
-              </>
-            ) : (
-              <>
-                <Building className="h-6 w-6 text-green-600" />
-                <span>Detalhes do Cliente - Pessoa Coletiva</span>
-              </>
-            )}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center space-x-2">
+              {(client.tipo || 'singular') === 'singular' ? (
+                <>
+                  <User className="h-6 w-6 text-blue-600" />
+                  <span>Detalhes do Cliente - Pessoa Singular</span>
+                </>
+              ) : (
+                <>
+                  <Building className="h-6 w-6 text-green-600" />
+                  <span>Detalhes do Cliente - Pessoa Coletiva</span>
+                </>
+              )}
+            </DialogTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Editar
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -692,6 +672,16 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           entidadeId={client.id}
         />
       )}
+      <ClientModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        client={client}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          // Recarregar os dados do cliente após edição
+          window.location.reload();
+        }}
+      />
     </Dialog>
   );
 };

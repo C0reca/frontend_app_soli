@@ -18,20 +18,23 @@ import {
 } from '@/components/ui/select';
 import { Process } from '@/hooks/useProcesses';
 
-// Lista de opções de localização pré-definidas
+// Lista de opções de localização pré-definidas (mesmas das tarefas)
 const OPCOES_LOCALIZACAO = [
-  'Gabinete 1',
-  'Gabinete 2',
-  'Gabinete 3',
-  'Estante A',
-  'Estante B',
-  'Estante C',
-  'Arquivo',
-  'Cliente',
-  'Em processamento',
-  'Concluído',
-  'Pendente de resposta',
-  'Aguardando documentos',
+  'Casa',
+  'Cartorio',
+  'Camara/GaiaUrb',
+  'DPA Agendado',
+  'Conservatoria Civil/Comercial',
+  'Reuniões',
+  'Conservatoria Predial',
+  'Serviço Finanças',
+  'Imposto Selo / Participações',
+  'Serviço Finanças Pendentes',
+  'Aguarda Doc Cliente/Informações',
+  'Aguarda Doc',
+  'Tarefas',
+  'Injunções',
+  'Execuções',
 ];
 
 interface ProcessLocationModalProps {
@@ -49,17 +52,20 @@ export const ProcessLocationModal: React.FC<ProcessLocationModalProps> = ({
   onSave,
   isSubmitting = false,
 }) => {
-  const [localizacao, setLocalizacao] = useState('');
+  const [localizacao, setLocalizacao] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen && process) {
-      setLocalizacao(process.onde_estao || '');
+      setLocalizacao(process.onde_estao || undefined);
+    } else if (!isOpen) {
+      setLocalizacao(undefined);
     }
   }, [isOpen, process]);
 
   const handleSave = async () => {
-    if (!process || !localizacao) return;
-    await onSave(process.id, localizacao);
+    if (!process) return;
+    // Permitir salvar mesmo se localizacao for vazia (para limpar)
+    await onSave(process.id, localizacao || null || '');
     onClose();
   };
 
@@ -76,7 +82,7 @@ export const ProcessLocationModal: React.FC<ProcessLocationModalProps> = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="localizacao">Localização</Label>
-            <Select value={localizacao} onValueChange={setLocalizacao}>
+            <Select value={localizacao || ''} onValueChange={(value) => setLocalizacao(value || undefined)}>
               <SelectTrigger id="localizacao">
                 <SelectValue placeholder="Selecione uma localização" />
               </SelectTrigger>
@@ -101,7 +107,7 @@ export const ProcessLocationModal: React.FC<ProcessLocationModalProps> = ({
           <Button
             type="button"
             onClick={handleSave}
-            disabled={isSubmitting || !localizacao}
+            disabled={isSubmitting}
           >
             {isSubmitting ? 'A guardar...' : 'Guardar'}
           </Button>

@@ -35,7 +35,7 @@ import { ClientModal } from './ClientModal';
 
 const formSchema = z.object({
   entidade_id: z.number().optional(),
-  nome: z.string().min(1, 'Nome do dossiê é obrigatório'),
+  nome: z.string().min(1, 'Nome do arquivo é obrigatório'),
   descricao: z.string().optional(),
 });
 
@@ -125,12 +125,12 @@ export const DossieModal: React.FC<DossieModalProps> = ({
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Editar Dossiê' : 'Novo Dossiê'}
+            {isEditing ? 'Editar Arquivo' : 'Novo Arquivo'}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Edite as informações do dossiê.'
-              : 'Preencha os dados para criar um novo dossiê.'}
+              ? 'Edite as informações do arquivo.'
+              : 'Preencha os dados para criar um novo arquivo.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +175,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                     </Select>
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">
-                      Apenas entidades sem dossiê podem ser selecionadas
+                      Apenas entidades sem arquivo podem ser selecionadas
                     </p>
                   </FormItem>
                 )}
@@ -187,9 +187,9 @@ export const DossieModal: React.FC<DossieModalProps> = ({
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Dossiê *</FormLabel>
+                  <FormLabel>Nome do Arquivo *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Dossiê Fiscal 2024" {...field} />
+                    <Input placeholder="Ex: Arquivo Fiscal 2024" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -198,7 +198,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
 
             {isEditing && dossie?.numero && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Número do Dossiê</label>
+                <label className="text-sm font-medium">Número do Arquivo</label>
                 <Input value={dossie.numero} disabled />
                 <p className="text-xs text-muted-foreground">
                   O número é gerado automaticamente e não pode ser alterado
@@ -214,7 +214,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descrição do dossiê..."
+                      placeholder="Descrição do arquivo..."
                       className="resize-none"
                       {...field}
                     />

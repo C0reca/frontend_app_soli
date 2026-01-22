@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Building, User, MapPin, FileText, Calendar, Edit } from 'lucide-react';
 import { RegistoPredial } from '@/hooks/useRegistosPrediais';
+import { ClickableClientName } from '@/components/ClickableClientName';
 
 interface RegistoPredialDetailsModalProps {
   isOpen: boolean;
@@ -102,7 +103,16 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
               Cliente
             </h4>
             <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium">{isLoadingCliente ? 'A carregar...' : (clienteNome || 'N/A')}</p>
+              {isLoadingCliente ? (
+                <p className="font-medium">A carregar...</p>
+              ) : (
+                <ClickableClientName 
+                  clientId={registo.cliente_id} 
+                  client={clienteData}
+                  clientName={clienteNome || 'N/A'}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                />
+              )}
             </div>
           </div>
 

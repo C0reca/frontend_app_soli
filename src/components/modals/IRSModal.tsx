@@ -13,12 +13,15 @@ import { Loader2, Plus, ExternalLink } from 'lucide-react';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClientModal } from './ClientModal';
 import { useAgregadoFamiliar } from '@/hooks/useAgregadoFamiliar';
+import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ClickableClientName } from '@/components/ClickableClientName';
 
 const irsSchema = z.object({
   cliente_id: z.number().min(1, 'Selecione um cliente'),
+  ano: z.number().min(2000).max(2100).optional(),
   fase: z.enum(['1', '2']).transform(val => parseInt(val)),
   estado: z.enum(['Por Pagar', 'Pago', 'Isento']).default('Por Pagar'),
   estado_entrega: z.enum(['Enviado', 'Levantado Pelo Cliente']).optional(),
@@ -69,6 +72,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
     defaultValues: irs
       ? {
           cliente_id: irs.cliente_id,
+          ano: irs.ano,
           fase: irs.fase.toString() as '1' | '2',
           estado: irs.estado,
           estado_entrega: irs.estado_entrega,
@@ -76,6 +80,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
         }
       : {
           cliente_id: 0,
+          ano: new Date().getFullYear(),
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
           estado_entrega: undefined,
@@ -89,6 +94,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
       if (irs) {
         reset({
           cliente_id: irs.cliente_id,
+          ano: irs.ano,
           fase: irs.fase.toString() as '1' | '2',
           estado: irs.estado,
           estado_entrega: irs.estado_entrega,
@@ -97,6 +103,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
       } else {
         reset({
           cliente_id: 0,
+          ano: new Date().getFullYear(),
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
           estado_entrega: undefined,
@@ -142,11 +149,11 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
         };
         await updateIRS.mutateAsync({ id: irs.id, data: updateData });
       } else {
-        // Ao criar, sempre usa o ano atual
-        const anoAtual = new Date().getFullYear();
+        // Ao criar, usar o ano selecionado ou o ano atual
+        const ano = data.ano || new Date().getFullYear();
         const createData: IRSCreate = {
           cliente_id: data.cliente_id,
-          ano: anoAtual,
+          ano: ano,
           fase: data.fase,
           estado: data.estado,
           estado_entrega: data.estado_entrega,
@@ -204,8 +211,8 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
             )}
           </div>
 
-          {/* Agregado Familiar - Mostrar quando cliente é selecionado e não está em edição */}
-          {!isEditing && clienteId && clienteId > 0 && (
+          {/* Agregado Familiar - Mostrar quando cliente é selecionado */}
+          {clienteId && clienteId > 0 && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -223,92 +230,39 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                 </div>
               </CardHeader>
               <CardContent>
-                {isLoadingAgregado ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>NIF</TableHead>
-                        <TableHead>Password Finanças</TableHead>
-                        <TableHead>Relação</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* Linha do Titular */}
-                      {clienteSelecionado && (
-                        <TableRow className="bg-muted/50">
-                          <TableCell className="font-medium">
-                            {(clienteSelecionado.tipo === 'singular' || !clienteSelecionado.tipo)
-                              ? (clienteSelecionado as any).nome || `Cliente #${clienteSelecionado.id}`
-                              : (clienteSelecionado as any).nome_empresa || `Cliente #${clienteSelecionado.id}`}
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-mono text-sm">
-                              {(clienteSelecionado.tipo === 'singular' || !clienteSelecionado.tipo)
-                                ? (clienteSelecionado as any).nif || '-'
-                                : (clienteSelecionado as any).nif_empresa || '-'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-mono text-sm">
-                              {(clienteSelecionado as any).senha_financas || 'Não definida'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="default" className="bg-blue-600">Titular</Badge>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      {/* Membros do Agregado */}
-                      {agregado.map((relacao) => {
-                        const tipo = relacao.cliente_relacionado?.tipo || 'singular';
-                        const nome = tipo === 'singular'
-                          ? relacao.cliente_relacionado?.nome
-                          : relacao.cliente_relacionado?.nome_empresa;
-                        const nif = tipo === 'singular'
-                          ? relacao.cliente_relacionado?.nif
-                          : relacao.cliente_relacionado?.nif_empresa;
-                        const senhaFinancas = relacao.cliente_relacionado?.senha_financas || 'Não definida';
-                        const tipoRelacaoLabels: Record<string, string> = {
-                          esposo: 'Esposo',
-                          esposa: 'Esposa',
-                          filho: 'Filho',
-                          filha: 'Filha',
-                          pai: 'Pai',
-                          mae: 'Mãe',
-                        };
-                        
-                        return (
-                          <TableRow key={relacao.id}>
-                            <TableCell className="font-medium">{nome || `Cliente #${relacao.cliente_relacionado_id}`}</TableCell>
-                            <TableCell>
-                              <span className="font-mono text-sm">{nif || '-'}</span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-mono text-sm">{senhaFinancas}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{tipoRelacaoLabels[relacao.tipo_relacao] || relacao.tipo_relacao}</Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {agregado.length === 0 && !clienteSelecionado && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            Nenhum membro no agregado familiar.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
+                <AgregadoFamiliarTab 
+                  clienteId={clienteId} 
+                  cliente={clienteSelecionado || undefined}
+                />
               </CardContent>
             </Card>
+          )}
+
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label htmlFor="ano">Ano do IRS *</Label>
+              <Select
+                value={watch('ano')?.toString() || new Date().getFullYear().toString()}
+                onValueChange={(value) => setValue('ano', parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {errors.ano && (
+                <p className="text-sm text-red-500">{errors.ano.message}</p>
+              )}
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">

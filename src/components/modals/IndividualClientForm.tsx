@@ -10,17 +10,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditCard, Scan } from 'lucide-react';
 import { IndividualClient } from '@/hooks/useClients';
 import { useToast } from '@/hooks/use-toast';
+import { ClienteContactosTab } from '@/components/ClienteContactosTab';
 
 interface IndividualClientFormProps {
   form: UseFormReturn<any>;
   watch: (name: string) => any;
   setValue: (name: string, value: any) => void;
+  clienteId?: number;
+  contactosLocais?: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>;
+  onContactosChange?: (contactos: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>) => void;
 }
 
 export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
   form,
   watch,
-  setValue
+  setValue,
+  clienteId,
+  contactosLocais,
+  onContactosChange
 }) => {
   const { register, formState: { errors } } = form;
   const { toast } = useToast();
@@ -265,35 +272,14 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
       <TabsContent value="contact" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Contacto</CardTitle>
+            <CardTitle>Contactos</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...register('email')}
-                  placeholder="email@exemplo.com"
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email.message?.toString()}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone *</Label>
-                <Input
-                  id="telefone"
-                  {...register('telefone')}
-                  placeholder="+351 123 456 789"
-                />
-                {errors.telefone && (
-                  <p className="text-sm text-red-600">{errors.telefone.message?.toString()}</p>
-                )}
-              </div>
-            </div>
+          <CardContent>
+            <ClienteContactosTab 
+              clienteId={clienteId} 
+              contactosLocais={contactosLocais}
+              onContactosChange={onContactosChange}
+            />
           </CardContent>
         </Card>
         <Card>

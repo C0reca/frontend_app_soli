@@ -12,12 +12,18 @@ interface CorporateClientFormProps {
   form: UseFormReturn<any>;
   watch: (name: string) => any;
   setValue: (name: string, value: any) => void;
+  clienteId?: number;
+  contactosLocais?: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>;
+  onContactosChange?: (contactos: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>) => void;
 }
 
 export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
   form,
   watch,
-  setValue
+  setValue,
+  clienteId,
+  contactosLocais,
+  onContactosChange
 }) => {
   const { register, formState: { errors } } = form;
 
@@ -182,86 +188,69 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
       <TabsContent value="contact" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Contacto da Empresa</CardTitle>
+            <CardTitle>Contactos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClienteContactosTab 
+              clienteId={clienteId} 
+              contactosLocais={contactosLocais}
+              onContactosChange={onContactosChange}
+            />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Morada da Sede</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="morada">Rua</Label>
+              <Input
+                id="morada"
+                {...register('morada')}
+                placeholder="Rua, nº, andar"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email geral *</Label>
+                <Label htmlFor="codigo_postal">Código postal</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  {...register('email')}
-                  placeholder="geral@empresa.com"
+                  id="codigo_postal"
+                  {...register('codigo_postal')}
+                  placeholder="1234-567"
                 />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email.message?.toString()}</p>
-                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone *</Label>
+                <Label htmlFor="localidade">Localidade</Label>
                 <Input
-                  id="telefone"
-                  {...register('telefone')}
-                  placeholder="+351 123 456 789"
+                  id="localidade"
+                  {...register('localidade')}
+                  placeholder="Lisboa"
                 />
-                {errors.telefone && (
-                  <p className="text-sm text-red-600">{errors.telefone.message?.toString()}</p>
-                )}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-semibold">Morada da Sede</h4>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="morada">Rua</Label>
+                <Label htmlFor="distrito">Distrito</Label>
                 <Input
-                  id="morada"
-                  {...register('morada')}
-                  placeholder="Rua, nº, andar"
+                  id="distrito"
+                  {...register('distrito')}
+                  placeholder="Lisboa"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="codigo_postal">Código postal</Label>
-                  <Input
-                    id="codigo_postal"
-                    {...register('codigo_postal')}
-                    placeholder="1234-567"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="localidade">Localidade</Label>
-                  <Input
-                    id="localidade"
-                    {...register('localidade')}
-                    placeholder="Lisboa"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="distrito">Distrito</Label>
-                  <Input
-                    id="distrito"
-                    {...register('distrito')}
-                    placeholder="Lisboa"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pais">País</Label>
-                  <Input
-                    id="pais"
-                    {...register('pais')}
-                    placeholder="Portugal"
-                    defaultValue="Portugal"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="pais">País</Label>
+                <Input
+                  id="pais"
+                  {...register('pais')}
+                  placeholder="Portugal"
+                  defaultValue="Portugal"
+                />
               </div>
             </div>
           </CardContent>

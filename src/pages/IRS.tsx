@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, FileText, CheckCircle, XCircle, Clock, ArrowLeftRight, Check, X, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit, FileText, CheckCircle, XCircle, Clock, ArrowLeftRight, Check, X, Trash2, Eye } from 'lucide-react';
 import { useIRS, IRS } from '@/hooks/useIRS';
 import { IRSModal } from '@/components/modals/IRSModal';
+import { IRSDetailsModal } from '@/components/modals/IRSDetailsModal';
+import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,6 +17,8 @@ export const IRS: React.FC = () => {
   const [showAll, setShowAll] = useState(false);
   const [selectedIRS, setSelectedIRS] = useState<IRS | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedIRSDetails, setSelectedIRSDetails] = useState<IRS | null>(null);
   
   const { irsList, isLoading, generateRecibo, updateIRS, deleteIRS } = useIRS(showAll ? undefined : true);
   const { clients } = useClients();
@@ -48,6 +52,11 @@ export const IRS: React.FC = () => {
   const handleEdit = (irs: IRS) => {
     setSelectedIRS(irs);
     setIsModalOpen(true);
+  };
+
+  const handleViewDetails = (irs: IRS) => {
+    setSelectedIRSDetails(irs);
+    setIsDetailsModalOpen(true);
   };
 
   const handleCreate = () => {
@@ -171,16 +180,24 @@ export const IRS: React.FC = () => {
                   </TableRow>
                 ) : (
                   filteredIRS.map((irs: IRS) => (
-                    <TableRow key={irs.id}>
+                    <TableRow 
+                      key={irs.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleViewDetails(irs)}
+                    >
                       <TableCell className="font-medium">
-                        {irs.cliente?.nome || `Cliente #${irs.cliente_id}`}
+                        <ClickableClientName 
+                          clientId={irs.cliente_id} 
+                          client={irs.cliente}
+                          clientName={irs.cliente?.nome || `Cliente #${irs.cliente_id}`}
+                        />
                       </TableCell>
                       <TableCell>{irs.ano}</TableCell>
                       <TableCell>
                         <Badge variant="outline">Fase {irs.fase}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           {getEstadoBadge(
                             irs.estado,
                             (irs.estado === 'Por Pagar' || irs.estado === 'Isento') ? () => handleToggleEstado(irs) : undefined
@@ -191,7 +208,10 @@ export const IRS: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
-                              onClick={() => handleToggleEstado(irs)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleEstado(irs);
+                              }}
                               title={irs.estado === 'Pago' ? 'Marcar como Por Pagar' : 'Marcar como Pago'}
                             >
                               {irs.estado === 'Pago' ? (
@@ -211,8 +231,16 @@ export const IRS: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>{irs.numero_recibo || '-'}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(irs)}
+                            title="Ver Detalhes"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -259,6 +287,25 @@ export const IRS: React.FC = () => {
           clients={clients}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
+        />
+      )}
+
+      {isDetailsModalOpen && selectedIRSDetails && (
+        <IRSDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedIRSDetails(null);
+          }}
+          irs={selectedIRSDetails}
+          onEdit={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedIRSDetails(null);
+            handleEdit(selectedIRSDetails);
+          }}
+          onGenerateRecibo={() => {
+            handleGenerateRecibo(selectedIRSDetails);
+          }}
         />
       )}
     </div>

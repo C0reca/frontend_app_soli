@@ -83,10 +83,24 @@ export const useProcesses = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.detail || 
-                          error?.response?.data?.message || 
-                          error?.message || 
-                          "Erro ao atualizar processo.";
+      let errorMessage = "Erro ao atualizar processo.";
+      
+      if (error?.response?.data) {
+        // Se for um array de erros de validação do Pydantic
+        if (Array.isArray(error.response.data)) {
+          const errors = error.response.data.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ');
+          errorMessage = errors || errorMessage;
+        } else if (error.response.data.detail) {
+          // Se for uma string ou objeto com detail
+          const detail = error.response.data.detail;
+          errorMessage = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro",
         description: errorMessage,

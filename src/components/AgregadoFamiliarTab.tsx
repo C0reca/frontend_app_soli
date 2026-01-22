@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Client, IndividualClient } from '@/hooks/useClients';
+import { ClickableClientName } from '@/components/ClickableClientName';
 
 interface AgregadoFamiliarTabProps {
   clienteId: number;
@@ -132,38 +133,58 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
       {/* Informações do Cliente Principal */}
       {clientePrincipal && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center space-x-2">
+              <User className="h-4 w-4" />
               <span>Dados do Titular</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Nome</label>
+                <p className="text-sm font-medium">
+                  {(clientePrincipal.tipo === 'singular' || !clientePrincipal.tipo)
+                    ? (clientePrincipal as any).nome || `Cliente #${clientePrincipal.id}`
+                    : (clientePrincipal as any).nome_empresa || `Cliente #${clientePrincipal.id}`}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">NIF</label>
+                <p className="font-mono text-sm">
+                  {(clientePrincipal.tipo === 'singular' || !clientePrincipal.tipo)
+                    ? (clientePrincipal as any).nif || '-'
+                    : (clientePrincipal as any).nif_empresa || '-'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Password Finanças</label>
+                <p className="font-mono text-sm">{(clientePrincipal as any).senha_financas || 'Não definida'}</p>
+              </div>
               {clientePrincipal.incapacidade !== undefined && clientePrincipal.incapacidade !== null && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
-                  <p className="text-lg font-semibold">{clientePrincipal.incapacidade}%</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Incapacidade</label>
+                  <p className="text-sm">{clientePrincipal.incapacidade}%</p>
                 </div>
               )}
               {clientePrincipal.iban && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">IBAN</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">IBAN</label>
                   <p className="font-mono text-sm">{clientePrincipal.iban}</p>
                 </div>
               )}
               {(clientePrincipal as IndividualClient).estado_civil && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Estado Civil</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Estado Civil</label>
                   <p className="text-sm">{(clientePrincipal as IndividualClient).estado_civil}</p>
                 </div>
               )}
             </div>
             {agregado.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Última Atualização do Agregado Familiar</label>
-                  <p className="text-sm">
+              <div className="pt-3 border-t">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Última Atualização do Agregado Familiar</label>
+                  <p className="text-xs">
                     {new Date(
                       Math.max(
                         ...agregado.map((rel) => new Date(rel.atualizado_em).getTime())
@@ -184,61 +205,67 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
+            <CardTitle className="text-sm font-semibold flex items-center space-x-2">
+              <User className="h-4 w-4" />
               <span>Agregado Familiar</span>
             </CardTitle>
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={() => setIsModalOpen(true)} size="sm" className="text-sm">
+              <Plus className="h-3 w-3 mr-1" />
               Adicionar Membro
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {agregado.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <div className="text-center py-6 text-sm text-muted-foreground">
+              <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>Nenhum membro adicionado ao agregado familiar.</p>
-              <p className="text-sm mt-2">Clique em "Adicionar Membro" para associar uma entidade.</p>
+              <p className="text-xs mt-2">Clique em "Adicionar Membro" para associar uma entidade.</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>NIF</TableHead>
-                  <TableHead>Password Finanças</TableHead>
-                  <TableHead>Relação</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="text-xs">Nome</TableHead>
+                  <TableHead className="text-xs">NIF</TableHead>
+                  <TableHead className="text-xs">Password Finanças</TableHead>
+                  <TableHead className="text-xs">Relação</TableHead>
+                  <TableHead className="text-xs">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {agregado.map((relacao) => (
                   <TableRow key={relacao.id}>
-                    <TableCell className="font-medium">
-                      {getClienteNome(relacao)}
+                    <TableCell className="text-sm">
+                      <ClickableClientName 
+                        clientId={relacao.cliente_relacionado_id} 
+                        client={relacao.cliente_relacionado}
+                        clientName={getClienteNome(relacao)}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                      />
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm">{getClienteNIF(relacao) || '-'}</span>
+                      <span className="font-mono text-xs">{getClienteNIF(relacao) || '-'}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm">{getClienteSenhaFinancas(relacao)}</span>
+                      <span className="font-mono text-xs">{getClienteSenhaFinancas(relacao)}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getTipoRelacaoBadge(relacao.tipo_relacao)}>
+                      <Badge className={`${getTipoRelacaoBadge(relacao.tipo_relacao)} text-xs px-1.5 py-0`}>
                         {getTipoRelacaoLabel(relacao.tipo_relacao)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={() => handleDelete(relacao)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
                   </TableRow>

@@ -100,7 +100,7 @@ export const Dossies: React.FC = () => {
               </h3>
               {processos.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  Nenhum processo associado a este dossiê.
+                  Nenhum processo associado a este arquivo.
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -146,10 +146,10 @@ export const Dossies: React.FC = () => {
             <div>
               <CardTitle className="flex items-center space-x-2">
                 <Folder className="h-6 w-6" />
-                <span>Dossiês</span>
+                <span>Arquivos</span>
               </CardTitle>
               <CardDescription>
-                Gerir dossiês e processos associados
+                Gerir arquivos e processos associados
               </CardDescription>
             </div>
             <Button onClick={() => {
@@ -157,7 +157,7 @@ export const Dossies: React.FC = () => {
               setIsModalOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-2" />
-              Novo Dossiê
+              Novo Arquivo
             </Button>
           </div>
         </CardHeader>
@@ -176,12 +176,12 @@ export const Dossies: React.FC = () => {
 
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              Carregando dossiês...
+              Carregando arquivos...
             </div>
           ) : filteredDossies.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Nenhum dossiê encontrado.</p>
+              <p>Nenhum arquivo encontrado.</p>
             </div>
           ) : (
             <div className="grid gap-4">

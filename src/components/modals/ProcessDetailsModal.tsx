@@ -1,11 +1,12 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Process } from '@/hooks/useProcesses';
 import { useTasks, Task } from '@/hooks/useTasks';
@@ -13,11 +14,13 @@ import { useLogsProcesso, LogProcesso } from '@/hooks/useLogsProcesso';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
 import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye } from 'lucide-react';
+import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2 } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useToast } from '@/hooks/use-toast';
+import { Client } from '@/hooks/useClients';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
@@ -62,6 +65,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [selectedLogDetails, setSelectedLogDetails] = React.useState<LogProcesso | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = React.useState(false);
   const [logDocs, setLogDocs] = React.useState<Record<number, {id:number; nome_original:string}[]>>({});
+  const [allDocuments, setAllDocuments] = React.useState<any[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = React.useState(false);
+  const [uploadingDoc, setUploadingDoc] = React.useState(false);
+  const [selectedClient, setSelectedClient] = React.useState<Client | null>(null);
+  const [isClientDetailsOpen, setIsClientDetailsOpen] = React.useState(false);
   const { minimize } = useMinimize();
   const { updateProcess } = useProcesses();
   const { toast } = useToast();
@@ -84,6 +92,116 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         });
     }
   }, [process, isOpen, getTasksByProcess]);
+
+  React.useEffect(() => {
+    const fetchAllDocuments = async () => {
+      if (!process || !isOpen) return;
+      
+      setLoadingDocuments(true);
+      try {
+        const allDocs: any[] = [];
+        
+        // Documentos do processo
+        try {
+          const processDocs = await api.get(`/documentos/${process.id}`);
+          if (processDocs.data && Array.isArray(processDocs.data)) {
+            const processDocsData = processDocs.data.map((doc: any) => ({
+              ...doc,
+              origem: 'Processo',
+              origem_id: process.id,
+              origem_nome: process.titulo,
+            }));
+            allDocs.push(...processDocsData);
+          }
+        } catch (error: any) {
+          // Se o erro for 500, pode ser que o endpoint ainda não suporte o campo log_processo_id
+          // Continuar sem quebrar a aplicação
+          if (error?.response?.status !== 500) {
+            console.error('Erro ao buscar documentos do processo:', error);
+          }
+        }
+        
+        // Função recursiva para buscar documentos de tarefas e subtarefas
+        const fetchTaskDocuments = async (taskId: number, taskTitle: string, isSubtask: boolean = false) => {
+          try {
+            const taskDocs = await api.get(`/documentos/tarefa/${taskId}`);
+            if (taskDocs.data && Array.isArray(taskDocs.data)) {
+              const taskDocsData = taskDocs.data.map((doc: any) => ({
+                ...doc,
+                origem: isSubtask ? 'Subtarefa' : 'Tarefa',
+                origem_id: taskId,
+                origem_nome: taskTitle,
+              }));
+              allDocs.push(...taskDocsData);
+            }
+            
+            // Buscar subtarefas desta tarefa
+            try {
+              const subtasksRes = await api.get(`/tarefas/${taskId}/subtarefas`);
+              const subtasks = subtasksRes.data || [];
+              for (const subtask of subtasks) {
+                await fetchTaskDocuments(subtask.id, subtask.titulo, true);
+              }
+            } catch {}
+          } catch (error) {
+            // Ignorar erros silenciosamente
+          }
+        };
+        
+        // Documentos das tarefas (incluindo subtarefas recursivamente)
+        if (processTasks.length > 0) {
+          for (const task of processTasks) {
+            await fetchTaskDocuments(task.id, task.titulo, false);
+          }
+        }
+        
+        // Documentos dos registos
+        if (logs && logs.length > 0) {
+          for (const log of logs) {
+            try {
+              const logDocs = await api.get(`/documentos/log/${log.id}`);
+              if (logDocs.data && Array.isArray(logDocs.data)) {
+                const logDocsData = logDocs.data.map((doc: any) => ({
+                  ...doc,
+                  origem: 'Registo',
+                  origem_id: log.id,
+                  origem_nome: log.titulo,
+                }));
+                allDocs.push(...logDocsData);
+              }
+            } catch (error: any) {
+              // Se o erro for 500, pode ser que o endpoint ainda não esteja funcionando
+              // ou que o campo log_processo_id não exista na base de dados
+              // Continuar sem quebrar a aplicação
+              if (error?.response?.status !== 500) {
+                console.error(`Erro ao buscar documentos do registo ${log.id}:`, error);
+              }
+            }
+          }
+        }
+        
+        // Remover documentos duplicados baseado no ID do documento
+        // Se um documento aparecer em múltiplas origens, manter apenas o primeiro
+        const seenIds = new Set<number>();
+        const uniqueDocs = allDocs.filter((doc: any) => {
+          if (seenIds.has(doc.id)) {
+            return false; // Já vimos este documento, ignorar
+          }
+          seenIds.add(doc.id);
+          return true; // Primeira vez que vemos este documento, manter
+        });
+        
+        setAllDocuments(uniqueDocs);
+      } catch (error) {
+        console.error('Erro ao buscar documentos:', error);
+        setAllDocuments([]);
+      } finally {
+        setLoadingDocuments(false);
+      }
+    };
+    
+    fetchAllDocuments();
+  }, [process, isOpen, processTasks, logs]);
 
   React.useEffect(() => {
     const fetchLogDocs = async () => {
@@ -177,6 +295,22 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     }
   };
 
+  const handleViewClient = () => {
+    if (!process?.cliente_id) return;
+    // Usar os dados do cliente já carregados pela query
+    if (clienteData) {
+      setSelectedClient(clienteData as Client);
+      setIsClientDetailsOpen(true);
+    } else if (!loadingCliente) {
+      // Se não estiver a carregar e não tiver dados, tentar buscar
+      toast({
+        title: "Aviso",
+        description: "Dados do cliente não disponíveis.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getLogIcon = (tipo: string) => {
     switch (tipo) {
       case 'criacao':
@@ -265,10 +399,15 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center space-x-2">
-              <FileText className="h-6 w-6" />
-              <span>Detalhes do Processo</span>
-            </DialogTitle>
+            <div>
+              <DialogTitle className="flex items-center space-x-2">
+                <FileText className="h-6 w-6" />
+                <span>Detalhes do Processo</span>
+              </DialogTitle>
+              <DialogDescription>
+                Informações completas do processo e atividades relacionadas
+              </DialogDescription>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -311,10 +450,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Tarefas</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              <TabsTrigger value="documents">Documentos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6 mt-6">
@@ -325,7 +465,18 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <Building className="h-4 w-4" />
                       <span>Cliente</span>
                     </label>
-                    <p className="text-lg font-semibold">{loadingCliente ? 'A carregar...' : (clienteNome || 'N/A')}</p>
+                    {loadingCliente ? (
+                      <p className="text-lg font-semibold">A carregar...</p>
+                    ) : clienteNome && clienteNome !== 'N/A' ? (
+                      <button
+                        onClick={handleViewClient}
+                        className="text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                      >
+                        {clienteNome}
+                      </button>
+                    ) : (
+                      <p className="text-lg font-semibold">N/A</p>
+                    )}
                   </div>
 
                   <div>
@@ -545,9 +696,9 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                 <span className="font-medium">Anexos:</span>
                               </div>
                               <div className="flex flex-wrap gap-2">
-                                {logDocs[log.id].map((doc) => (
+                                {logDocs[log.id].map((doc, idx) => (
                                   <a
-                                    key={doc.id}
+                                    key={`log-${log.id}-doc-${doc.id}-${idx}`}
                                     href={`/api/documentos/download/${doc.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -563,6 +714,133 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="documents" className="space-y-6 mt-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Documentos</h3>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !process) return;
+                      try {
+                        setUploadingDoc(true);
+                        const form = new FormData();
+                        form.append('file', file);
+                        await api.post(`/documentos/upload/${process.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+                        toast({
+                          title: "Sucesso",
+                          description: "Documento enviado com sucesso.",
+                        });
+                        // Recarregar documentos
+                        const processDocs = await api.get(`/documentos/${process.id}`);
+                        const processDocsData = processDocs.data.map((doc: any) => ({
+                          ...doc,
+                          origem: 'Processo',
+                          origem_id: process.id,
+                          origem_nome: process.titulo,
+                        }));
+                        setAllDocuments(prev => {
+                          const filtered = prev.filter(d => !(d.origem === 'Processo' && d.origem_id === process.id));
+                          return [...filtered, ...processDocsData];
+                        });
+                      } catch (error: any) {
+                        toast({
+                          title: "Erro",
+                          description: error?.response?.data?.detail || "Erro ao enviar documento.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setUploadingDoc(false);
+                        e.target.value = '';
+                      }
+                    }}
+                    disabled={uploadingDoc}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              
+              {loadingDocuments ? (
+                <div className="flex justify-center py-8">
+                  <div className="text-muted-foreground">Carregando documentos...</div>
+                </div>
+              ) : allDocuments.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum documento encontrado.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {allDocuments.map((doc, idx) => (
+                    <Card key={`doc-${doc.id}-${doc.origem}-${doc.origem_id}-${idx}`} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-3">
+                            <FileIcon className="h-4 w-4 text-gray-500" />
+                            <a
+                              href={`/api/documentos/download/${doc.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              {doc.nome_original}
+                            </a>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-gray-500 font-medium">Origem:</span>
+                              <Badge variant="outline" className="text-xs">
+                                {doc.origem}
+                              </Badge>
+                              <span className="text-gray-700 font-semibold">{doc.origem_nome}</span>
+                            </div>
+                            {doc.criado_em && (
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <Calendar className="h-3 w-3" />
+                                <span>Adicionado em {new Date(doc.criado_em).toLocaleDateString('pt-BR', { 
+                                  day: '2-digit', 
+                                  month: '2-digit', 
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            if (!confirm('Tem certeza que deseja apagar este ficheiro?')) {
+                              return;
+                            }
+                            try {
+                              await api.delete(`/documentos/${doc.id}`);
+                              setAllDocuments(prev => prev.filter(d => d.id !== doc.id));
+                              toast({
+                                title: "Sucesso",
+                                description: "Documento excluído com sucesso.",
+                              });
+                            } catch (error: any) {
+                              toast({
+                                title: "Erro",
+                                description: error?.response?.data?.detail || "Erro ao excluir documento.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -604,6 +882,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         process={process}
         onSave={handleUpdateLocation}
         isSubmitting={updateProcess.isPending}
+      />
+      <ClientDetailsModal
+        isOpen={isClientDetailsOpen}
+        onClose={() => setIsClientDetailsOpen(false)}
+        client={selectedClient}
       />
     </Dialog>
   );

@@ -63,7 +63,10 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
         descricao: log.descricao || '',
         funcionario_id: log.funcionario_id,
       });
-      fetchDocs();
+      // Carregar documentos quando o log mudar
+      if (log.id) {
+        fetchDocs();
+      }
     } else {
       form.reset({
         tipo: 'observacao',
@@ -74,14 +77,27 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
       setDocs([]);
       setPendingFiles([]);
     }
-  }, [log, form]);
+  }, [log, form, isOpen]);
 
   const fetchDocs = async () => {
-    if (!log?.id) return;
+    if (!log?.id) {
+      setDocs([]);
+      return;
+    }
     try {
       const res = await api.get(`/documentos/log/${log.id}`);
-      setDocs(res.data);
-    } catch {}
+      console.log('Documentos carregados:', res.data);
+      setDocs(res.data || []);
+    } catch (error: any) {
+      console.error('Erro ao buscar documentos:', error);
+      // Se o endpoint retornar 500 ou erro, pode ser que a coluna não exista
+      // Nesse caso, retornar lista vazia
+      if (error?.response?.status === 500) {
+        setDocs([]);
+      } else {
+        setDocs([]);
+      }
+    }
   };
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,12 +108,20 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
     if (isEditing && log?.id) {
       try {
         setUploading(true);
-        const form = new FormData();
-        form.append('file', file);
-        await api.post(`/documentos/upload-log/${log.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post(`/documentos/upload-log/${log.id}`, formData, { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        });
+        console.log('Upload response:', response.data);
+        // Aguardar um pouco antes de recarregar para garantir que o BD foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Recarregar documentos após upload bem-sucedido
         await fetchDocs();
-      } catch {}
-      finally {
+      } catch (error: any) {
+        console.error('Erro ao fazer upload:', error);
+        alert(error?.response?.data?.detail || 'Erro ao fazer upload do ficheiro. Por favor, tente novamente.');
+      } finally {
         setUploading(false);
         e.target.value = '';
       }
@@ -281,6 +305,7 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
                 disabled={uploading}
                 className="text-sm"
               />
+              {uploading && <span className="text-xs text-gray-500">A enviar...</span>}
             </div>
             {isEditing && log?.id && (
               <ul className="list-disc pl-5 text-sm space-y-1">

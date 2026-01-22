@@ -9,6 +9,7 @@ import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
 import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
+import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
 
@@ -195,12 +196,17 @@ export const Processes: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         {process.dossie_id ? (
                           <div>
-                            <span className="font-medium">Dossiê:</span> {process.dossie?.nome || `ID: ${process.dossie_id}`}
+                            <span className="font-medium">Arquivo:</span> {process.dossie?.nome || `ID: ${process.dossie_id}`}
                             {process.dossie?.numero && <span className="text-muted-foreground"> ({process.dossie.numero})</span>}
                           </div>
                         ) : (
                         <div>
-                            <span className="font-medium">Entidade:</span> {process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
+                            <span className="font-medium">Entidade:</span>{' '}
+                            <ClickableClientName 
+                              clientId={process.cliente_id} 
+                              client={process.cliente}
+                              clientName={process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
+                            />
                         </div>
                         )}
                         <div>

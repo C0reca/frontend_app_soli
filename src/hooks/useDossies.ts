@@ -96,13 +96,13 @@ export const useDossies = (entidadeId?: number) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
         title: "Sucesso",
-        description: "Dossiê criado com sucesso.",
+        description: "Arquivo criado com sucesso.",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao criar dossiê.",
+        description: "Erro ao criar arquivo.",
         variant: "destructive",
       });
     },
@@ -120,13 +120,13 @@ export const useDossies = (entidadeId?: number) => {
       }
       toast({
         title: "Sucesso",
-        description: "Dossiê atualizado com sucesso.",
+        description: "Arquivo atualizado com sucesso.",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao atualizar dossiê.",
+        description: "Erro ao atualizar arquivo.",
         variant: "destructive",
       });
     },
@@ -141,13 +141,13 @@ export const useDossies = (entidadeId?: number) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
         title: "Sucesso",
-        description: "Dossiê excluído com sucesso.",
+        description: "Arquivo excluído com sucesso.",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao excluir dossiê.",
+        description: "Erro ao excluir arquivo.",
         variant: "destructive",
       });
     },

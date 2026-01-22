@@ -9,6 +9,7 @@ import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais
 import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
 import { RegistoPredialDetailsModal } from '@/components/modals/RegistoPredialDetailsModal';
+import { ClickableClientName } from '@/components/ClickableClientName';
 
 export const RegistosPrediais: React.FC = () => {
   const { registos, isLoading, deleteRegisto, updateRegisto } = useRegistosPrediais();
@@ -311,7 +312,12 @@ export const RegistosPrediais: React.FC = () => {
                       <div className="flex items-center space-x-2 mb-2">
                         {getStatusIcon(registo.estado_key)}
                         <h3 className="font-semibold">
-                          {registo.numero_processo} - {registo.cliente?.nome || clientNameById(registo.cliente_id) || 'N/A'}
+                          {registo.numero_processo} -{' '}
+                          <ClickableClientName 
+                            clientId={registo.cliente_id} 
+                            client={registo.cliente}
+                            clientName={registo.cliente?.nome || clientNameById(registo.cliente_id) || 'N/A'}
+                          />
                         </h3>
                         <Badge className={getStatusColor(registo.estado_key)}>
                           {getStatusLabel(registo.estado_key)}

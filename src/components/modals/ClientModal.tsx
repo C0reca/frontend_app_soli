@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import api from '@/services/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -121,6 +122,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const { createClient, updateClient } = useClients();
   const { toast } = useToast();
   const isEditing = !!client;
+  const [contactosLocais, setContactosLocais] = useState<Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>>([]);
   const [tipo, setTipo] = useState<'singular' | 'coletivo'>(
     // Se tipo for null/undefined ou não for válido, assume como singular
     client?.tipo === 'coletivo' ? 'coletivo' : 'singular'
@@ -232,6 +234,14 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         }
         normalized[key] = value;
       }
+      // Campo incapacidade: converter strings vazias, 0 ou undefined para null
+      else if (key === 'incapacidade') {
+        if (value === '' || value === null || value === undefined || value === 0) {
+          normalized[key] = null;
+        } else {
+          normalized[key] = Number(value);
+        }
+      }
       // Outros campos: manter como estão
       else {
         normalized[key] = value;
@@ -254,12 +264,29 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         onSuccess?.(updated as Client);
       } else {
         const created = await createClient.mutateAsync(normalizedData as Omit<Client, 'id' | 'createdAt'>);
+        
+        // Criar contactos se houver contactos locais
+        if (contactosLocais.length > 0 && created.id) {
+          try {
+            for (const contacto of contactosLocais) {
+              await api.post(`/clientes/${created.id}/contactos`, {
+                ...contacto,
+                cliente_id: created.id,
+              });
+            }
+          } catch (contactoError: any) {
+            console.error('Erro ao criar contactos:', contactoError);
+            // Não falhar a criação do cliente se os contactos falharem
+          }
+        }
+        
         toast({
           title: "Cliente criado",
           description: "O novo cliente foi criado com sucesso.",
         });
         onSuccess?.(created as Client);
       }
+      setContactosLocais([]); // Limpar contactos locais
       onClose();
     } catch (error: any) {
       console.error('Error saving client:', error);
@@ -403,26 +430,40 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           </Card>
 
           {tipo === 'singular' ? (
-            <IndividualClientForm form={form} watch={watch} setValue={setValue} />
+            <IndividualClientForm 
+              form={form} 
+              watch={watch} 
+              setValue={setValue} 
+              clienteId={isEditing && client ? client.id : undefined}
+              contactosLocais={contactosLocais}
+              onContactosChange={setContactosLocais}
+            />
           ) : (
-            <CorporateClientForm form={form} watch={watch} setValue={setValue} />
+            <CorporateClientForm 
+              form={form} 
+              watch={watch} 
+              setValue={setValue} 
+              clienteId={isEditing && client ? client.id : undefined}
+              contactosLocais={contactosLocais}
+              onContactosChange={setContactosLocais}
+            />
           )}
 
           <Card>
             <CardHeader>
-              <CardTitle>Estado do Dossiê</CardTitle>
+              <CardTitle>Estado do Arquivo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Alert>
                 <AlertDescription>
                   {client?.tem_dossies
-                    ? 'Esta entidade já possui um dossiê associado e não é possível remover essa associação.'
-                    : 'Esta entidade ainda não tem dossiê. Para criar um, utilize a página "Dossiês".'}
+                    ? 'Esta entidade já possui um arquivo associado e não é possível remover essa associação.'
+                    : 'Esta entidade ainda não tem arquivo. Para criar um, utilize a página "Arquivos".'}
                 </AlertDescription>
               </Alert>
               {!client?.tem_dossies && (
                 <p className="text-sm text-muted-foreground">
-                  A criação de dossiês é feita exclusivamente na página Dossiês. Depois de criado, o estado fica permanente.
+                  A criação de arquivos é feita exclusivamente na página Arquivos. Depois de criado, o estado fica permanente.
                 </p>
               )}
             </CardContent>

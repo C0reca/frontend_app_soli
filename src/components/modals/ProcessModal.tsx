@@ -308,7 +308,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         name="dossie_id"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Dossiê (Opcional)</FormLabel>
+                                                <FormLabel>Arquivo (Opcional)</FormLabel>
                                                 <Select
                                                     onValueChange={(value) => {
                                                         const dossieId = value ? parseInt(value) : undefined;
@@ -323,11 +323,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 >
                                                     <FormControl>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione o dossiê (opcional)" />
+                                                            <SelectValue placeholder="Selecione o arquivo (opcional)" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="">Nenhum dossiê</SelectItem>
+                                                        <SelectItem value="">Nenhum arquivo</SelectItem>
                                                         {dossieEntidade && (
                                                             <SelectItem key={dossieEntidade.id} value={dossieEntidade.id.toString()}>
                                                                 {dossieEntidade.nome} {dossieEntidade.numero && `(${dossieEntidade.numero})`}
@@ -337,7 +337,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 </Select>
                                                 <FormMessage />
                                                 <p className="text-xs text-muted-foreground">
-                                                    Associar o processo ao dossiê da entidade (opcional)
+                                                    Associar o processo ao arquivo da entidade (opcional)
                                                 </p>
                                             </FormItem>
                                         )}
