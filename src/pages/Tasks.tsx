@@ -157,7 +157,7 @@ export const Tasks: React.FC = () => {
                 <div className="flex items-center space-x-2 mb-2">
                   {getStatusIcon(task.concluida)}
                   <h3 className="font-semibold">{task.titulo}</h3>
-                  {level > 0 && <Badge variant="secondary">Subtarefa</Badge>}
+                  {level > 0 && <Badge variant="secondary">Sub-compromisso</Badge>}
                   {isOverdue(task.data_fim, task.concluida) && (
                     <Badge variant="destructive">Atrasada</Badge>
                   )}
@@ -179,7 +179,7 @@ export const Tasks: React.FC = () => {
                     </span>
                   )}
                   {typeof task.subtarefas_count === 'number' && level === 0 && (
-                    <span><strong>Subtarefas:</strong> {task.subtarefas_count}</span>
+                    <span><strong>Sub-compromissos:</strong> {task.subtarefas_count}</span>
                   )}
                   {task.data_fim && (
                     <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
@@ -332,7 +332,7 @@ export const Tasks: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+    if (confirm('Tem certeza que deseja excluir este compromisso?')) {
       await deleteTask.mutateAsync(id);
     }
   };
@@ -383,12 +383,12 @@ export const Tasks: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tarefas</h1>
-          <p className="text-gray-600">Gerencie as tarefas dos processos</p>
+          <h1 className="text-3xl font-bold text-gray-900">Compromissos</h1>
+          <p className="text-gray-600">Gerencie os compromissos dos processos</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Nova Tarefa
+          Novo Compromisso
         </Button>
       </div>
 
@@ -558,7 +558,7 @@ export const Tasks: React.FC = () => {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="reuniao">Reunião</SelectItem>
                   <SelectItem value="telefonema">Telefonema</SelectItem>
-                  <SelectItem value="tarefa">Tarefa</SelectItem>
+                  <SelectItem value="tarefa">Compromisso</SelectItem>
                 </SelectContent>
               </Select>
                      </div>
@@ -582,7 +582,7 @@ export const Tasks: React.FC = () => {
               onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidas: !!checked }))}
             />
             <label htmlFor="showConcluidas" className="text-sm font-medium">
-              Mostrar tarefas concluídas (arquivadas)
+              Mostrar compromissos concluídos (arquivados)
             </label>
                    </div>
                  </CardContent>

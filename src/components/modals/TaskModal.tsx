@@ -136,7 +136,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         await updateTask.mutateAsync(updatePayload as Task & { id: string });
       } else {
         const newTask = await createTask.mutateAsync(normalizedData as Omit<Task, 'id' | 'criado_em'>);
-        // Fazer upload dos ficheiros pendentes após criar a tarefa
+        // Fazer upload dos ficheiros pendentes após criar o compromisso
         if (pendingFiles.length > 0 && newTask?.id) {
           for (const file of pendingFiles) {
             try {
@@ -162,9 +162,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+              <DialogTitle>{task ? 'Editar Compromisso' : 'Novo Compromisso'}</DialogTitle>
               <DialogDescription>
-                {task ? 'Edite os dados da tarefa.' : 'Preencha os dados para criar uma nova tarefa.'}
+                {task ? 'Edite os dados do compromisso.' : 'Preencha os dados para criar um novo compromisso.'}
               </DialogDescription>
             </div>
             <Button
@@ -173,7 +173,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
               className="absolute right-12 top-4"
               onClick={() => {
                 const data = form.getValues();
-                minimize({ type: 'task', title: task ? `Editar: ${task.titulo}` : 'Nova Tarefa', payload: { data, parentId, processoId } });
+                minimize({ type: 'task', title: task ? `Editar: ${task.titulo}` : 'Novo Compromisso', payload: { data, parentId, processoId } });
                 onClose();
               }}
               aria-label={'Minimizar'}
@@ -191,7 +191,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                 <FormItem>
                   <FormLabel>Título *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite o título da tarefa" {...field} />
+                    <Input placeholder="Digite o título do compromisso" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -205,7 +205,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                 <FormItem>
                   <FormLabel>Descrição *</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Digite a descrição da tarefa" {...field} />
+                    <Textarea placeholder="Digite a descrição do compromisso" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -295,7 +295,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                       <SelectContent>
                         <SelectItem value="reuniao">Reunião</SelectItem>
                         <SelectItem value="telefonema">Telefonema</SelectItem>
-                        <SelectItem value="tarefa">Tarefa</SelectItem>
+                        <SelectItem value="tarefa">Compromisso</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -397,7 +397,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                       <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
                       <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
                       <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
-                      <SelectItem value="Tarefas">Tarefas</SelectItem>
+                      <SelectItem value="Tarefas">Compromissos</SelectItem>
                       <SelectItem value="Injunções">Injunções</SelectItem>
                       <SelectItem value="Execuções">Execuções</SelectItem>
                     </SelectContent>

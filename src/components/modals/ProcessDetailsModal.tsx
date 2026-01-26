@@ -128,7 +128,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
             if (taskDocs.data && Array.isArray(taskDocs.data)) {
               const taskDocsData = taskDocs.data.map((doc: any) => ({
                 ...doc,
-                origem: isSubtask ? 'Subtarefa' : 'Tarefa',
+                origem: isSubtask ? 'Sub-compromisso' : 'Compromisso',
                 origem_id: taskId,
                 origem_nome: taskTitle,
               }));
@@ -452,7 +452,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           <Tabs defaultValue="general" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="general">Geral</TabsTrigger>
-              <TabsTrigger value="tasks">Tarefas</TabsTrigger>
+              <TabsTrigger value="tasks">Compromissos</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
             </TabsList>
@@ -536,10 +536,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
             <TabsContent value="tasks" className="space-y-6 mt-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Tarefas Relacionadas</h3>
+                <h3 className="text-lg font-semibold mb-4">Compromissos Relacionados</h3>
                 {loadingTasks ? (
                   <div className="text-center text-muted-foreground py-8">
-                    <p>Carregando tarefas...</p>
+                    <p>Carregando compromissos...</p>
                   </div>
                 ) : processTasks.length > 0 ? (
                   <div className="space-y-3">
@@ -586,7 +586,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 ) : (
                   <div className="text-center text-muted-foreground py-8">
                     <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhuma tarefa relacionada encontrada</p>
+                    <p>Nenhum compromisso relacionado encontrado</p>
                   </div>
                 )}
               </div>
@@ -658,7 +658,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                            handleViewTask(log.tarefa_id!);
                                          }}
                                          className="h-6 px-2"
-                                         title="Ver tarefa"
+                                         title="Ver compromisso"
                                        >
                                          <CheckSquare className="h-3 w-3" />
                                        </Button>

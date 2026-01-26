@@ -3,30 +3,53 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, User } from 'lucide-react';
+import { Plus, Trash2, Edit, User, Home, Loader2, Check } from 'lucide-react';
 import { useAgregadoFamiliar, AgregadoFamiliar } from '@/hooks/useAgregadoFamiliar';
 import { useClients } from '@/hooks/useClients';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Client, IndividualClient } from '@/hooks/useClients';
 import { ClickableClientName } from '@/components/ClickableClientName';
+import { ClientModal } from '@/components/modals/ClientModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface AgregadoFamiliarTabProps {
   clienteId: number;
   cliente?: Client;
+  irsId?: number;
+  onRegistrarHistorico?: (acao: string, campoAlterado?: string, valorAnterior?: string, valorNovo?: string, detalhes?: string) => Promise<void>;
 }
 
-export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ clienteId, cliente }) => {
+export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ clienteId, cliente, irsId, onRegistrarHistorico }) => {
   const { agregado, isLoading, createRelacao, deleteRelacao } = useAgregadoFamiliar(clienteId);
-  const { clients } = useClients();
+  const { clients, updateClient } = useClients();
+  const { toast } = useToast();
   
   // Obter dados do cliente principal se não foi passado
   const clientePrincipal = cliente || clients.find(c => Number(c.id) === clienteId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClienteId, setSelectedClienteId] = useState<number | undefined>();
-  const [tipoRelacao, setTipoRelacao] = useState<'esposo' | 'esposa' | 'filho' | 'filha'>('esposa');
+  const [tipoRelacao, setTipoRelacao] = useState<'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma'>('conjuge');
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  
+  // Estados para o modal de atualização de morada
+  const [isMoradaModalOpen, setIsMoradaModalOpen] = useState(false);
+  const [newMorada, setNewMorada] = useState({ morada: '', codigo_postal: '', localidade: '' });
+  const [updatingMoradas, setUpdatingMoradas] = useState(false);
+  
+  // Estados para o modal de atualização de password do titular
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  
+  // Estados para o modal de atualização de password dos membros
+  const [isMemberPasswordModalOpen, setIsMemberPasswordModalOpen] = useState(false);
+  const [selectedMemberForPassword, setSelectedMemberForPassword] = useState<AgregadoFamiliar | null>(null);
+  const [memberNewPassword, setMemberNewPassword] = useState('');
+  const [updatingMemberPassword, setUpdatingMemberPassword] = useState(false);
 
   // Preparar clientes para o ClientCombobox (excluir o próprio cliente, inclui campos de NIF para pesquisa)
   const clientsForCombobox = clients
@@ -52,43 +75,84 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
       return;
     }
 
+    const selectedClient = clients.find(c => Number(c.id) === selectedClienteId);
+    const nomeCliente = selectedClient 
+      ? (selectedClient.tipo === 'singular' ? (selectedClient as any).nome : (selectedClient as any).nome_empresa)
+      : `Cliente #${selectedClienteId}`;
+
     await createRelacao.mutateAsync({
       cliente_id: clienteId,
       cliente_relacionado_id: selectedClienteId,
       tipo_relacao: tipoRelacao,
     });
 
+    // Registrar no histórico do IRS se disponível
+    if (irsId && onRegistrarHistorico) {
+      await onRegistrarHistorico(
+        'alteracao',
+        'agregado_familiar',
+        '',
+        nomeCliente,
+        `Membro adicionado ao agregado familiar: ${nomeCliente} (${getTipoRelacaoLabel(tipoRelacao)})`
+      );
+    }
+
     setIsModalOpen(false);
     setSelectedClienteId(undefined);
-    setTipoRelacao('esposa');
+    setTipoRelacao('conjuge');
+  };
+
+  const handleClientCreated = (createdClient: Client) => {
+    if (createdClient?.id) {
+      const newId = typeof createdClient.id === 'string' ? parseInt(createdClient.id, 10) : createdClient.id;
+      if (!Number.isNaN(newId)) {
+        setSelectedClienteId(newId);
+      }
+    }
+    setIsClientModalOpen(false);
   };
 
   const handleDelete = async (relacao: AgregadoFamiliar) => {
     if (confirm('Tem certeza que deseja eliminar esta relação?')) {
+      const nomeCliente = getClienteNome(relacao);
+      
       await deleteRelacao.mutateAsync(relacao.id);
+
+      // Registrar no histórico do IRS se disponível
+      if (irsId && onRegistrarHistorico) {
+        await onRegistrarHistorico(
+          'alteracao',
+          'agregado_familiar',
+          nomeCliente,
+          '',
+          `Membro removido do agregado familiar: ${nomeCliente} (${getTipoRelacaoLabel(relacao.tipo_relacao)})`
+        );
+      }
     }
   };
 
   const getTipoRelacaoLabel = (tipo: string) => {
     const labels: Record<string, string> = {
-      esposo: 'Esposo',
-      esposa: 'Esposa',
+      conjuge: 'Cônjuge',
       filho: 'Filho',
       filha: 'Filha',
       pai: 'Pai',
       mae: 'Mãe',
+      irmao: 'Irmão',
+      irma: 'Irmã',
     };
     return labels[tipo] || tipo;
   };
 
   const getTipoRelacaoBadge = (tipo: string) => {
     const colors: Record<string, string> = {
-      esposo: 'bg-blue-100 text-blue-800',
-      esposa: 'bg-pink-100 text-pink-800',
+      conjuge: 'bg-blue-100 text-blue-800',
       filho: 'bg-green-100 text-green-800',
       filha: 'bg-purple-100 text-purple-800',
       pai: 'bg-orange-100 text-orange-800',
       mae: 'bg-rose-100 text-rose-800',
+      irmao: 'bg-cyan-100 text-cyan-800',
+      irma: 'bg-pink-100 text-pink-800',
     };
     return colors[tipo] || 'bg-gray-100 text-gray-800';
   };
@@ -118,6 +182,149 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
       return relacao.cliente_relacionado.senha_financas || 'Não definida';
     }
     return '-';
+  };
+
+  const handleOpenMoradaModal = () => {
+    if (clientePrincipal) {
+      setNewMorada({
+        morada: (clientePrincipal as any).morada || '',
+        codigo_postal: (clientePrincipal as any).codigo_postal || '',
+        localidade: (clientePrincipal as any).localidade || '',
+      });
+    }
+    setIsMoradaModalOpen(true);
+  };
+
+  const handleUpdateTitularMorada = async () => {
+    if (!clienteId || !clientePrincipal) {
+      toast({
+        title: 'Erro',
+        description: 'Cliente não encontrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!newMorada.morada.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'A morada não pode estar vazia.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const moradaAnterior = `${(clientePrincipal as any).morada || ''}, ${(clientePrincipal as any).codigo_postal || ''} ${(clientePrincipal as any).localidade || ''}`.trim();
+    const moradaNova = `${newMorada.morada}, ${newMorada.codigo_postal || ''} ${newMorada.localidade || ''}`.trim();
+
+    setUpdatingMoradas(true);
+    try {
+      await updateClient.mutateAsync({
+        id: clienteId.toString(),
+        morada: newMorada.morada,
+        codigo_postal: newMorada.codigo_postal,
+        localidade: newMorada.localidade,
+      });
+
+      // Registrar no histórico do IRS se disponível
+      if (irsId && onRegistrarHistorico) {
+        await onRegistrarHistorico(
+          'alteracao',
+          'morada',
+          moradaAnterior || 'Não definida',
+          moradaNova,
+          `Morada do titular atualizada`
+        );
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Morada do titular atualizada com sucesso.',
+      });
+      setIsMoradaModalOpen(false);
+      setNewMorada({ morada: '', codigo_postal: '', localidade: '' });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar morada.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingMoradas(false);
+    }
+  };
+
+  const handleUpdateAgregadoFamiliarMoradas = async () => {
+    if (!clienteId || !clientePrincipal) {
+      toast({
+        title: 'Erro',
+        description: 'Cliente não encontrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!newMorada.morada.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'A morada não pode estar vazia.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (agregado.length === 0) {
+      toast({
+        title: 'Aviso',
+        description: 'Não há membros no agregado familiar para atualizar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const moradaNova = `${newMorada.morada}, ${newMorada.codigo_postal || ''} ${newMorada.localidade || ''}`.trim();
+
+    setUpdatingMoradas(true);
+    try {
+      // Atualizar moradas de todos os membros do agregado familiar (sem o cliente principal)
+      const promises = agregado.map(async (membro) => {
+        const membroId = membro.cliente_relacionado_id;
+        return updateClient.mutateAsync({
+          id: membroId.toString(),
+          morada: newMorada.morada,
+          codigo_postal: newMorada.codigo_postal,
+          localidade: newMorada.localidade,
+        });
+      });
+
+      await Promise.all(promises);
+
+      // Registrar no histórico do IRS se disponível
+      if (irsId && onRegistrarHistorico) {
+        await onRegistrarHistorico(
+          'alteracao',
+          'morada',
+          'Várias moradas',
+          moradaNova,
+          `Moradas atualizadas para ${agregado.length} membro(s) do agregado familiar`
+        );
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: `Moradas atualizadas para ${agregado.length} membro(s) do agregado familiar.`,
+      });
+      setIsMoradaModalOpen(false);
+      setNewMorada({ morada: '', codigo_postal: '', localidade: '' });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar moradas.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingMoradas(false);
+    }
   };
 
   if (isLoading) {
@@ -158,7 +365,22 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 </p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Password Finanças</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">Password Finanças</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewPassword((clientePrincipal as any).senha_financas || '');
+                      setIsPasswordModalOpen(true);
+                    }}
+                    className="h-6 text-xs"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Atualizar
+                  </Button>
+                </div>
                 <p className="font-mono text-sm">{(clientePrincipal as any).senha_financas || 'Não definida'}</p>
               </div>
               {clientePrincipal.incapacidade !== undefined && clientePrincipal.incapacidade !== null && (
@@ -180,6 +402,43 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 </div>
               )}
             </div>
+            
+            {/* Campos de Morada */}
+            <div className="pt-3 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  <Home className="h-3 w-3" />
+                  Morada
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenMoradaModal}
+                  className="h-7 text-xs"
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  Atualizar Morada
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Morada</label>
+                  <p className="text-sm">{(clientePrincipal as any).morada || '-'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Código Postal</label>
+                    <p className="text-sm font-mono">{(clientePrincipal as any).codigo_postal || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Localidade</label>
+                    <p className="text-sm">{(clientePrincipal as any).localidade || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             {agregado.length > 0 && (
               <div className="pt-3 border-t">
                 <div className="space-y-1">
@@ -211,7 +470,16 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
               <User className="h-4 w-4" />
               <span>Agregado Familiar</span>
             </CardTitle>
-            <Button onClick={() => setIsModalOpen(true)} size="sm" className="text-sm">
+            <Button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsModalOpen(true);
+              }} 
+              size="sm" 
+              className="text-sm"
+            >
               <Plus className="h-3 w-3 mr-1" />
               Adicionar Membro
             </Button>
@@ -250,7 +518,23 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                       <span className="font-mono text-xs">{getClienteNIF(relacao) || '-'}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-xs">{getClienteSenhaFinancas(relacao)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs">{getClienteSenhaFinancas(relacao)}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => {
+                            setSelectedMemberForPassword(relacao);
+                            setMemberNewPassword(relacao.cliente_relacionado?.senha_financas || '');
+                            setIsMemberPasswordModalOpen(true);
+                          }}
+                          title="Atualizar Password Finanças"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge className={`${getTipoRelacaoBadge(relacao.tipo_relacao)} text-xs px-1.5 py-0`}>
@@ -276,14 +560,35 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
         </CardContent>
       </Card>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog 
+        open={isModalOpen} 
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adicionar Membro ao Agregado Familiar</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Cliente *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Cliente *</Label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsClientModalOpen(true);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Entidade
+                </Button>
+              </div>
               <ClientCombobox
                 clients={clientsForCombobox}
                 value={selectedClienteId}
@@ -294,27 +599,404 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
               <Label>Relação *</Label>
               <Select
                 value={tipoRelacao}
-                onValueChange={(value) => setTipoRelacao(value as 'esposo' | 'esposa' | 'filho' | 'filha')}
+                onValueChange={(value) => setTipoRelacao(value as 'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma')}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="esposo">Esposo</SelectItem>
-                  <SelectItem value="esposa">Esposa</SelectItem>
+                  <SelectItem value="conjuge">Cônjuge</SelectItem>
                   <SelectItem value="filho">Filho</SelectItem>
                   <SelectItem value="filha">Filha</SelectItem>
+                  <SelectItem value="pai">Pai</SelectItem>
+                  <SelectItem value="mae">Mãe</SelectItem>
+                  <SelectItem value="irmao">Irmão</SelectItem>
+                  <SelectItem value="irma">Irmã</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button 
+              type="button"
+              variant="outline" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsModalOpen(false);
+              }}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleAddRelacao} disabled={!selectedClienteId || createRelacao.isPending}>
+            <Button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddRelacao();
+              }} 
+              disabled={!selectedClienteId || createRelacao.isPending}
+            >
               {createRelacao.isPending ? 'A adicionar...' : 'Adicionar'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ClientModal
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        onSuccess={handleClientCreated}
+      />
+
+      {/* Modal de Atualização de Password */}
+      <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
+        <DialogContent className="sm:max-w-[600px] w-[95vw] max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Atualizar Password Finanças</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password Finanças</Label>
+              <Input
+                id="password"
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite a nova password"
+                className="w-full"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPasswordModalOpen(false)}
+              disabled={updatingPassword}
+              className="w-full sm:w-auto order-3 sm:order-1"
+            >
+              Cancelar
+            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2 sm:ml-auto">
+              <Button
+                type="button"
+                variant="default"
+                onClick={async () => {
+                  if (!clienteId || !clientePrincipal) {
+                    toast({
+                      title: 'Erro',
+                      description: 'Cliente não encontrado.',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+
+                  const passwordAnterior = (clientePrincipal as any).senha_financas || 'Não definida';
+
+                  setUpdatingPassword(true);
+                  try {
+                    await updateClient.mutateAsync({
+                      id: clienteId.toString(),
+                      senha_financas: newPassword,
+                    });
+
+                    // Registrar no histórico do IRS se disponível
+                    if (irsId && onRegistrarHistorico) {
+                      await onRegistrarHistorico(
+                        'alteracao',
+                        'senha_financas',
+                        passwordAnterior ? '***' : '',
+                        '***',
+                        `Password Finanças do titular atualizada`
+                      );
+                    }
+
+                    toast({
+                      title: 'Sucesso',
+                      description: 'Password Finanças do titular atualizada com sucesso.',
+                    });
+                    setIsPasswordModalOpen(false);
+                    setNewPassword('');
+                  } catch (error: any) {
+                    toast({
+                      title: 'Erro',
+                      description: error.response?.data?.detail || 'Erro ao atualizar password.',
+                      variant: 'destructive',
+                    });
+                  } finally {
+                    setUpdatingPassword(false);
+                  }
+                }}
+                disabled={updatingPassword}
+                className="w-full sm:w-auto"
+              >
+                {updatingPassword ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Atualizar Só Titular
+              </Button>
+              {agregado.length > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={async () => {
+                    if (!clienteId || !clientePrincipal) {
+                      toast({
+                        title: 'Erro',
+                        description: 'Cliente não encontrado.',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+
+                    if (agregado.length === 0) {
+                      toast({
+                        title: 'Aviso',
+                        description: 'Não há membros no agregado familiar para atualizar.',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+
+                    setUpdatingPassword(true);
+                    try {
+                      // Atualizar password de todos os membros do agregado familiar
+                      const promises = agregado.map(async (membro) => {
+                        const membroId = membro.cliente_relacionado_id;
+                        return updateClient.mutateAsync({
+                          id: membroId.toString(),
+                          senha_financas: newPassword,
+                        });
+                      });
+
+                      await Promise.all(promises);
+
+                      // Registrar no histórico do IRS se disponível
+                      if (irsId && onRegistrarHistorico) {
+                        await onRegistrarHistorico(
+                          'alteracao',
+                          'senha_financas',
+                          'Várias passwords',
+                          '***',
+                          `Passwords Finanças atualizadas para ${agregado.length} membro(s) do agregado familiar`
+                        );
+                      }
+
+                      toast({
+                        title: 'Sucesso',
+                        description: `Passwords Finanças atualizadas para ${agregado.length} membro(s) do agregado familiar.`,
+                      });
+                      setIsPasswordModalOpen(false);
+                      setNewPassword('');
+                    } catch (error: any) {
+                      toast({
+                        title: 'Erro',
+                        description: error.response?.data?.detail || 'Erro ao atualizar passwords.',
+                        variant: 'destructive',
+                      });
+                    } finally {
+                      setUpdatingPassword(false);
+                    }
+                  }}
+                  disabled={updatingPassword}
+                  className="w-full sm:w-auto"
+                >
+                  {updatingPassword ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 mr-2" />
+                  )}
+                  Atualizar Todos ({agregado.length + 1})
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Atualização de Password dos Membros */}
+      <Dialog open={isMemberPasswordModalOpen} onOpenChange={setIsMemberPasswordModalOpen}>
+        <DialogContent className="sm:max-w-[500px] w-[95vw] max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Atualizar Password Finanças</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedMemberForPassword && (
+              <div className="space-y-2">
+                <Label>Membro</Label>
+                <p className="text-sm font-medium">{getClienteNome(selectedMemberForPassword)}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="member-password">Password Finanças</Label>
+              <Input
+                id="member-password"
+                type="text"
+                value={memberNewPassword}
+                onChange={(e) => setMemberNewPassword(e.target.value)}
+                placeholder="Digite a nova password"
+                className="w-full"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsMemberPasswordModalOpen(false);
+                setSelectedMemberForPassword(null);
+                setMemberNewPassword('');
+              }}
+              disabled={updatingMemberPassword}
+              className="w-full sm:w-auto order-3 sm:order-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={async () => {
+                if (!selectedMemberForPassword) return;
+
+                const membroId = selectedMemberForPassword.cliente_relacionado_id;
+                const passwordAnterior = selectedMemberForPassword.cliente_relacionado?.senha_financas || 'Não definida';
+                const nomeMembro = getClienteNome(selectedMemberForPassword);
+
+                setUpdatingMemberPassword(true);
+                try {
+                  await updateClient.mutateAsync({
+                    id: membroId.toString(),
+                    senha_financas: memberNewPassword,
+                  });
+
+                  // Registrar no histórico do IRS se disponível
+                  if (irsId && onRegistrarHistorico) {
+                    await onRegistrarHistorico(
+                      'alteracao',
+                      'senha_financas',
+                      passwordAnterior ? '***' : '',
+                      '***',
+                      `Password Finanças atualizada para ${nomeMembro}`
+                    );
+                  }
+
+                  toast({
+                    title: 'Sucesso',
+                    description: `Password Finanças de ${nomeMembro} atualizada com sucesso.`,
+                  });
+                  setIsMemberPasswordModalOpen(false);
+                  setSelectedMemberForPassword(null);
+                  setMemberNewPassword('');
+                } catch (error: any) {
+                  toast({
+                    title: 'Erro',
+                    description: error.response?.data?.detail || 'Erro ao atualizar password.',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setUpdatingMemberPassword(false);
+                }
+              }}
+              disabled={updatingMemberPassword}
+              className="w-full sm:w-auto order-1 sm:order-2 sm:ml-auto"
+            >
+              {updatingMemberPassword ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4 mr-2" />
+              )}
+              Atualizar Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Atualização de Morada */}
+      <Dialog open={isMoradaModalOpen} onOpenChange={setIsMoradaModalOpen}>
+        <DialogContent className="sm:max-w-[600px] w-[95vw] max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Atualizar Morada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="morada">Morada *</Label>
+              <Input
+                id="morada"
+                value={newMorada.morada}
+                onChange={(e) => setNewMorada(prev => ({ ...prev, morada: e.target.value }))}
+                placeholder="Rua, número, andar"
+                className="w-full"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="codigo_postal">Código Postal</Label>
+                <Input
+                  id="codigo_postal"
+                  value={newMorada.codigo_postal}
+                  onChange={(e) => setNewMorada(prev => ({ ...prev, codigo_postal: e.target.value }))}
+                  placeholder="0000-000"
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="localidade">Localidade</Label>
+                <Input
+                  id="localidade"
+                  value={newMorada.localidade}
+                  onChange={(e) => setNewMorada(prev => ({ ...prev, localidade: e.target.value }))}
+                  placeholder="Cidade"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsMoradaModalOpen(false)}
+              disabled={updatingMoradas}
+              className="w-full sm:w-auto order-3 sm:order-1"
+            >
+              Cancelar
+            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2 sm:ml-auto">
+              <Button
+                type="button"
+                variant="default"
+                onClick={handleUpdateTitularMorada}
+                disabled={updatingMoradas || !newMorada.morada.trim()}
+                className="w-full sm:w-auto"
+              >
+                {updatingMoradas ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-2" />
+                )}
+                Atualizar Só Titular
+              </Button>
+              {agregado.length > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleUpdateAgregadoFamiliarMoradas}
+                  disabled={updatingMoradas || !newMorada.morada.trim()}
+                  className="w-full sm:w-auto"
+                >
+                  {updatingMoradas ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 mr-2" />
+                  )}
+                  Atualizar Todos ({agregado.length + 1})
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

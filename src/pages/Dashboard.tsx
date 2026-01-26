@@ -82,18 +82,18 @@ export const Dashboard: React.FC = () => {
       path: '/processos'
     },
     {
-      title: 'Tarefas Concluídas',
+      title: 'Compromissos Concluídos',
       value: kpis?.tarefas_concluidas ?? 0,
       icon: CheckSquare,
-      description: 'Tarefas finalizadas',
+      description: 'Compromissos finalizados',
       trend: '',
       path: '/tarefas'
     },
     {
-      title: 'Tarefas Pendentes',
+      title: 'Compromissos Pendentes',
       value: kpis?.tarefas_pendentes ?? 0,
       icon: Clock,
-      description: 'Tarefas aguardando execução',
+      description: 'Compromissos aguardando execução',
       trend: '',
       path: '/tarefas'
     },
@@ -171,7 +171,7 @@ export const Dashboard: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Tarefas Urgentes</CardTitle>
+            <CardTitle>Compromissos Urgentes</CardTitle>
             <CardDescription>A vencer hoje ou em atraso</CardDescription>
           </CardHeader>
           <CardContent>
@@ -186,7 +186,7 @@ export const Dashboard: React.FC = () => {
                   return due <= today; // hoje ou passado
                 }).sort((a: any, b: any) => new Date(a.data_fim).getTime() - new Date(b.data_fim).getTime()).slice(0, 8);
                 if (urgent.length === 0) {
-                  return <div className="text-sm text-muted-foreground">Sem tarefas urgentes.</div>;
+                  return <div className="text-sm text-muted-foreground">Sem compromissos urgentes.</div>;
                 }
                 return urgent.map((t: any) => (
                   <div 

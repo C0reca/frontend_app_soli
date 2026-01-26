@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
@@ -27,6 +29,12 @@ export const Processes: React.FC = () => {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archived, setArchived] = useState<Process[]>([]);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    responsavel: 'all',
+    tipo: 'all',
+    showArquivados: false,
+  });
 
   React.useEffect(() => {
     if (showArchived) {
@@ -47,15 +55,33 @@ export const Processes: React.FC = () => {
   };
 
   const source = showArchived ? archived : processes;
+  
+  // Calcular estatísticas
+  const pendenteCount = source.filter((p: Process) => p.estado === 'pendente').length;
+  const emCursoCount = source.filter((p: Process) => p.estado === 'em_curso').length;
+  const concluidoCount = source.filter((p: Process) => p.estado === 'concluido').length;
+
   const filteredProcesses = source.filter((process) => {
     const term = searchTerm.toLowerCase();
     const clienteNome = process.cliente?.nome || getClientNameById(process.cliente_id) || '';
     const funcionarioNome = process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || '';
-    return (
+    const matchesSearch = (
       process.titulo.toLowerCase().includes(term) ||
       clienteNome.toLowerCase().includes(term) ||
       funcionarioNome.toLowerCase().includes(term)
     );
+    
+    const matchesStatus = filters.status === 'all' || process.estado === filters.status;
+    
+    const matchesResponsavel = filters.responsavel === 'all' || 
+      process.funcionario_id?.toString() === filters.responsavel;
+    
+    const matchesTipo = filters.tipo === 'all' || 
+      (process.tipo && process.tipo === filters.tipo);
+    
+    const matchesArquivados = filters.showArquivados || !showArchived;
+    
+    return matchesSearch && matchesStatus && matchesResponsavel && matchesTipo && matchesArquivados;
   });
 
   const getStatusColor = (status: string) => {
@@ -144,6 +170,16 @@ export const Processes: React.FC = () => {
     );
   }
 
+  const clearFilters = () => {
+    setFilters({
+      status: 'all',
+      responsavel: 'all',
+      tipo: 'all',
+      showArquivados: false,
+    });
+    setSearchTerm('');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -157,26 +193,168 @@ export const Processes: React.FC = () => {
         </Button>
       </div>
 
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            setFilters({
+              status: 'pendente',
+              responsavel: 'all',
+              tipo: 'all',
+              showArquivados: false,
+            });
+          }}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              <AlertCircle className="mr-2 h-5 w-5 text-yellow-600" />
+              Pendente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">
+              {pendenteCount}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            setFilters({
+              status: 'em_curso',
+              responsavel: 'all',
+              tipo: 'all',
+              showArquivados: false,
+            });
+          }}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              <Clock className="mr-2 h-5 w-5 text-blue-600" />
+              Em Curso
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {emCursoCount}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            setFilters({
+              status: 'concluido',
+              responsavel: 'all',
+              tipo: 'all',
+              showArquivados: false,
+            });
+          }}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
+              Concluído
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {concluidoCount}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros e Pesquisa */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Processos {showArchived ? '(Arquivados)' : ''}</CardTitle>
-          <CardDescription>
-            Total de {source.length} processos {showArchived ? 'arquivados' : 'ativos'}
-          </CardDescription>
-          <div className="flex items-center space-x-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar processos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <CardTitle className="flex items-center">
+            <Filter className="mr-2 h-5 w-5" />
+            Filtros e Pesquisa
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar processos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
+            <Button variant="outline" onClick={clearFilters}>
+              <X className="mr-2 h-4 w-4" />
+              Limpar Filtros
+            </Button>
             <Button variant={showArchived ? 'default' : 'outline'} onClick={() => setShowArchived(!showArchived)}>
               {showArchived ? 'Ver Ativos' : 'Ver Arquivados'}
             </Button>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="em_curso">Em Curso</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Responsável</label>
+              <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {employees.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id.toString()}>
+                      {emp.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Tipo</label>
+              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="registo_predial">Registo Predial</SelectItem>
+                  <SelectItem value="certidao_permanente">Certidão Permanente</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Processos {showArchived ? '(Arquivados)' : ''}</CardTitle>
+          <CardDescription>
+            Total de {filteredProcesses.length} processos encontrados
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">

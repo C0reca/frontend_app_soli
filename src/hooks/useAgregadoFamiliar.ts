@@ -6,7 +6,7 @@ export interface AgregadoFamiliar {
   id: number;
   cliente_id: number;
   cliente_relacionado_id: number;
-  tipo_relacao: 'esposo' | 'esposa' | 'filho' | 'filha' | 'pai' | 'mae';
+  tipo_relacao: 'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma';
   criado_em: string;
   atualizado_em: string;
   cliente_relacionado?: {
@@ -24,11 +24,11 @@ export interface AgregadoFamiliar {
 export interface AgregadoFamiliarCreate {
   cliente_id: number;
   cliente_relacionado_id: number;
-  tipo_relacao: 'esposo' | 'esposa' | 'filho' | 'filha';
+  tipo_relacao: 'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma';
 }
 
 export interface AgregadoFamiliarUpdate {
-  tipo_relacao?: 'esposo' | 'esposa' | 'filho' | 'filha';
+  tipo_relacao?: 'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma';
 }
 
 export const useAgregadoFamiliar = (clienteId?: number) => {

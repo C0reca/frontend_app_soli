@@ -8,9 +8,10 @@ export interface IRS {
   ano: number;
   fase: 1 | 2;
   estado: 'Por Pagar' | 'Pago' | 'Isento';
-  estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';
+  estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente' | 'Aguarda Documentos' | 'Contencioso Administrativo' | 'Em Análise' | 'Verificado' | 'Concluído';
   numero_recibo?: string;
   levantar_irs_apos_dia?: string;
+  observacoes?: string;
   criado_em: string;
   atualizado_em: string;
   cliente?: {
@@ -27,16 +28,18 @@ export interface IRSCreate {
   cliente_id: number;
   ano: number;
   fase: 1 | 2;
-  estado?: 'Por Pagar' | 'Pago' | 'Isento';
+  estado?: 'Por Pagar' | 'Pago' | 'Isento' | 'Aguarda Documentos' | 'Contencioso Administrativo' | 'Em Análise' | 'Verificado' | 'Concluído';
   estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';
   levantar_irs_apos_dia?: string;
+  observacoes?: string;
 }
 
 export interface IRSUpdate {
   fase?: 1 | 2;
-  estado?: 'Por Pagar' | 'Pago' | 'Isento';
+  estado?: 'Por Pagar' | 'Pago' | 'Isento' | 'Aguarda Documentos' | 'Contencioso Administrativo' | 'Em Análise' | 'Verificado' | 'Concluído';
   estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';
   levantar_irs_apos_dia?: string;
+  observacoes?: string;
 }
 
 export const useIRS = (emAberto?: boolean) => {
@@ -151,6 +154,28 @@ export const useIRS = (emAberto?: boolean) => {
     }
   };
 
+  const registrarHistorico = async (
+    irsId: number,
+    acao: string,
+    campoAlterado?: string,
+    valorAnterior?: string,
+    valorNovo?: string,
+    detalhes?: string
+  ) => {
+    try {
+      await api.post(`/irs/${irsId}/historico`, {
+        acao,
+        campo_alterado: campoAlterado,
+        valor_anterior: valorAnterior,
+        valor_novo: valorNovo,
+        detalhes,
+      });
+    } catch (error: any) {
+      // Não mostrar erro ao usuário, apenas logar
+      console.error('Erro ao registrar histórico:', error);
+    }
+  };
+
   return {
     irsList,
     isLoading,
@@ -159,6 +184,7 @@ export const useIRS = (emAberto?: boolean) => {
     updateIRS,
     deleteIRS,
     generateRecibo,
+    registrarHistorico,
   };
 };
 

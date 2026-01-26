@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, User, Calendar, CheckCircle, Clock, XCircle, Edit, Printer, Download } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, User, Calendar, CheckCircle, Clock, XCircle, Edit, Printer, Download, AlertCircle, History, Plus } from 'lucide-react';
 import { IRS } from '@/hooks/useIRS';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { useAgregadoFamiliar } from '@/hooks/useAgregadoFamiliar';
+import { useIRSTimeline } from '@/hooks/useIRSTimeline';
 
 interface IRSDetailsModalProps {
   isOpen: boolean;
@@ -37,8 +39,44 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
   });
 
   const { agregado } = useAgregadoFamiliar(irs?.cliente_id || 0);
+  const { data: timeline, isLoading: isLoadingTimeline } = useIRSTimeline(irs?.id);
+  const [activeTab, setActiveTab] = useState('details');
 
   if (!irs) return null;
+
+  const getAcaoLabel = (acao: string) => {
+    const labels: Record<string, string> = {
+      'criacao': 'Criação',
+      'alteracao': 'Alteração',
+      'recibo_gerado': 'Recibo Gerado',
+    };
+    return labels[acao] || acao;
+  };
+
+  const getAcaoIcon = (acao: string) => {
+    switch (acao) {
+      case 'criacao':
+        return <Plus className="h-4 w-4 text-green-600" />;
+      case 'alteracao':
+        return <Edit className="h-4 w-4 text-blue-600" />;
+      case 'recibo_gerado':
+        return <FileText className="h-4 w-4 text-purple-600" />;
+      default:
+        return <History className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getCampoLabel = (campo?: string) => {
+    const labels: Record<string, string> = {
+      'estado': 'Estado de Pagamento',
+      'estado_entrega': 'Estado de Entrega',
+      'fase': 'Fase',
+      'observacoes': 'Observações',
+      'levantar_irs_apos_dia': 'Levantar IRS após',
+      'numero_recibo': 'Número do Recibo',
+    };
+    return labels[campo || ''] || campo || 'Campo';
+  };
 
   const getEstadoBadge = (estado: string) => {
     if (estado === 'Pago') {
@@ -48,6 +86,27 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
     } else {
       return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Por Pagar</Badge>;
     }
+  };
+
+  const getEstadoEntregaBadge = (estadoEntrega?: string) => {
+    if (!estadoEntrega) return null;
+    
+    if (estadoEntrega === 'Enviado') {
+      return <Badge variant="outline" className="bg-blue-100 text-blue-800"><CheckCircle className="w-3 h-3 mr-1" />Enviado</Badge>;
+    } else if (estadoEntrega === 'Levantado Pelo Cliente') {
+      return <Badge variant="outline" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Levantado Pelo Cliente</Badge>;
+    } else if (estadoEntrega === 'Concluído') {
+      return <Badge className="bg-purple-500"><CheckCircle className="w-3 h-3 mr-1" />Concluído</Badge>;
+    } else if (estadoEntrega === 'Verificado') {
+      return <Badge variant="outline" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Verificado</Badge>;
+    } else if (estadoEntrega === 'Em Análise') {
+      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Em Análise</Badge>;
+    } else if (estadoEntrega === 'Contencioso Administrativo') {
+      return <Badge variant="outline" className="bg-orange-100 text-orange-800"><XCircle className="w-3 h-3 mr-1" />Contencioso Administrativo</Badge>;
+    } else if (estadoEntrega === 'Aguarda Documentos') {
+      return <Badge variant="outline" className="bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1" />Aguarda Documentos</Badge>;
+    }
+    return <Badge variant="outline">{estadoEntrega}</Badge>;
   };
 
   const getFaseLabel = (fase: number) => {
@@ -202,6 +261,10 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
               <div class="info-value">${irs.levantar_irs_apos_dia}</div>
             </div>
             ` : ''}
+            <div class="info-item" style="grid-column: 1 / -1;">
+              <div class="info-label">Observações:</div>
+              <div class="info-value" style="white-space: pre-wrap;">${irs.observacoes || '-'}</div>
+            </div>
             <div class="info-item">
               <div class="info-label">Data de Criação:</div>
               <div class="info-value">${new Date(irs.criado_em).toLocaleString('pt-PT', {
@@ -288,12 +351,13 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                 const nifRel = clienteRel?.tipo === 'singular' 
                   ? (clienteRel.nif || '-')
                   : (clienteRel?.nif_empresa || '-');
-                const tipoRel = membro.tipo_relacao === 'esposo' ? 'Esposo' :
-                               membro.tipo_relacao === 'esposa' ? 'Esposa' :
+                const tipoRel = membro.tipo_relacao === 'conjuge' ? 'Cônjuge' :
                                membro.tipo_relacao === 'filho' ? 'Filho' :
                                membro.tipo_relacao === 'filha' ? 'Filha' :
                                membro.tipo_relacao === 'pai' ? 'Pai' :
-                               membro.tipo_relacao === 'mae' ? 'Mãe' : membro.tipo_relacao;
+                               membro.tipo_relacao === 'mae' ? 'Mãe' :
+                               membro.tipo_relacao === 'irmao' ? 'Irmão' :
+                               membro.tipo_relacao === 'irma' ? 'Irmã' : membro.tipo_relacao;
                 return `
                   <tr>
                     <td>${nomeRel}</td>
@@ -370,9 +434,15 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Informações Principais */}
-          <Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Detalhes</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-6 mt-6">
+            {/* Informações Principais */}
+            <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">Informações do IRS</CardTitle>
             </CardHeader>
@@ -392,7 +462,9 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">Estado de Entrega</label>
-                  <p className="text-sm">{irs.estado_entrega || '-'}</p>
+                  <div className="text-sm">
+                    {getEstadoEntregaBadge(irs.estado_entrega) || <span className="text-gray-400">-</span>}
+                  </div>
                 </div>
                 {irs.numero_recibo && (
                   <div className="space-y-1">
@@ -406,6 +478,11 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                     <p className="text-sm">{irs.levantar_irs_apos_dia}</p>
                   </div>
                 )}
+              </div>
+              <Separator className="my-4" />
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Observações</label>
+                <p className="text-sm whitespace-pre-wrap">{irs.observacoes || <span className="text-gray-400">-</span>}</p>
               </div>
               <Separator className="my-4" />
               <div className="grid grid-cols-2 gap-4">
@@ -491,7 +568,82 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
               </CardContent>
             </Card>
           )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="timeline" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold flex items-center space-x-2">
+                  <History className="h-4 w-4" />
+                  <span>Histórico de Alterações</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingTimeline ? (
+                  <div className="flex justify-center py-8">
+                    <div className="text-muted-foreground">A carregar histórico...</div>
+                  </div>
+                ) : !timeline || timeline.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhuma alteração registada ainda.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {timeline.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="relative pl-8 pb-4 border-l-2 border-gray-200 last:border-l-0 last:pb-0"
+                      >
+                        {index < timeline.length - 1 && (
+                          <div className="absolute left-[-5px] top-6 w-3 h-3 bg-gray-200 rounded-full" />
+                        )}
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 mt-1">
+                            {getAcaoIcon(entry.acao)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-medium text-gray-900">
+                                {getAcaoLabel(entry.acao)}
+                                {entry.campo_alterado && (
+                                  <span className="text-gray-600"> - {getCampoLabel(entry.campo_alterado)}</span>
+                                )}
+                              </h4>
+                              <span className="text-xs text-gray-500">
+                                {new Date(entry.data_hora).toLocaleString('pt-PT', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            {entry.campo_alterado && entry.valor_anterior !== null && entry.valor_novo !== null && (
+                              <div className="mt-2 text-sm text-gray-600">
+                                <span className="font-medium">De:</span> {entry.valor_anterior || '-'} → <span className="font-medium">Para:</span> {entry.valor_novo || '-'}
+                              </div>
+                            )}
+                            {entry.detalhes && (
+                              <p className="mt-1 text-sm text-gray-600">
+                                {entry.detalhes}
+                              </p>
+                            )}
+                            {entry.funcionario && (
+                              <p className="mt-1 text-xs text-gray-500">
+                                Por: {entry.funcionario.nome || entry.funcionario.email || 'Utilizador desconhecido'}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

@@ -167,9 +167,9 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Detalhes da Tarefa</DialogTitle>
+            <DialogTitle>Detalhes do Compromisso</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-gray-500">Nenhuma tarefa selecionada.</div>
+          <div className="text-sm text-gray-500">Nenhum compromisso selecionado.</div>
         </DialogContent>
       </Dialog>
     );
@@ -360,12 +360,12 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-700">Subtarefas</h3>
-              <Button size="sm" onClick={() => setIsSubtaskModalOpen(true)}>Criar Subtarefa</Button>
+              <h3 className="text-sm font-medium text-gray-700">Sub-compromissos</h3>
+              <Button size="sm" onClick={() => setIsSubtaskModalOpen(true)}>Criar Sub-compromisso</Button>
             </div>
             <div className="space-y-2">
               {subtasks.length === 0 && (
-                <p className="text-sm text-gray-500">Sem subtarefas</p>
+                <p className="text-sm text-gray-500">Sem sub-compromissos</p>
               )}
               {subtasks.map(st => (
                 <button
