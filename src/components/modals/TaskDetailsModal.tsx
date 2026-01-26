@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download } from 'lucide-react';
+import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
 import api from '@/services/api';
@@ -23,17 +23,28 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   task,
 }) => {
   const { employees } = useEmployees();
-  const { generateTaskPDF, updateTaskStatus } = useTasks();
+  const { generateTaskPDF, updateTaskStatus, tasks } = useTasks();
   const [subtasks, setSubtasks] = useState<Task[]>([]);
   const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(task);
   const { minimize } = useMinimize();
   const [docs, setDocs] = useState<{id:number; nome_original:string}[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     setCurrentTask(task ?? null);
   }, [task]);
+
+  // Atualizar currentTask quando a tarefa for atualizada na lista
+  useEffect(() => {
+    if (currentTask && tasks) {
+      const updatedTask = tasks.find((t: Task) => t.id === currentTask.id || t.id.toString() === currentTask.id.toString());
+      if (updatedTask) {
+        setCurrentTask(updatedTask);
+      }
+    }
+  }, [tasks, currentTask?.id]);
 
   useEffect(() => {
     const fetchSubtasks = async () => {
@@ -177,9 +188,9 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
-          <div className="flex items-center justify-between pr-12">
+          <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center space-x-2">
               {getStatusIcon(currentTask.concluida)}
               <span>{currentTask.titulo}</span>
@@ -187,28 +198,46 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <Badge variant="destructive">Atrasada</Badge>
               )}
             </DialogTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => generateTaskPDF(currentTask.id)}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Exportar PDF
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Editar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generateTaskPDF(currentTask.id)}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Exportar PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  minimize({ type: 'task', title: currentTask.titulo, payload: { task: currentTask } });
+                  onClose();
+                }}
+                aria-label={'Minimizar'}
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onClose}
+                aria-label={'Fechar'}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-12 top-4"
-            onClick={() => {
-              minimize({ type: 'task', title: currentTask.titulo, payload: { task: currentTask } });
-              onClose();
-            }}
-            aria-label={'Minimizar'}
-          >
-            <Minimize2 className="h-4 w-4" />
-          </Button>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -381,7 +410,19 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           </div>
         </div>
       </DialogContent>
-      <TaskModal isOpen={isSubtaskModalOpen} onClose={() => setIsSubtaskModalOpen(false)} parentId={Number(currentTask.id)} />
+      <TaskModal 
+        isOpen={isSubtaskModalOpen} 
+        onClose={() => setIsSubtaskModalOpen(false)} 
+        parentId={Number(currentTask.id)} 
+      />
+      <TaskModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => {
+          setIsEditModalOpen(false);
+        }} 
+        task={currentTask}
+        processoId={currentTask?.processo_id || null}
+      />
     </Dialog>
   );
 };

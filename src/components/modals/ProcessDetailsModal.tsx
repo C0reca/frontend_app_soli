@@ -7,15 +7,17 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Process } from '@/hooks/useProcesses';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useLogsProcesso, LogProcesso } from '@/hooks/useLogsProcesso';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
+import { TaskModal } from '@/components/modals/TaskModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
 import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2 } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
@@ -59,6 +61,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [loadingTasks, setLoadingTasks] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = React.useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
+  const [taskFilters, setTaskFilters] = React.useState({
+    searchTerm: '',
+    status: 'all',
+    prioridade: 'all',
+  });
   const [isLogModalOpen, setIsLogModalOpen] = React.useState(false);
   const [selectedLog, setSelectedLog] = React.useState<LogProcesso | null>(null);
   const [isLogDetailsOpen, setIsLogDetailsOpen] = React.useState(false);
@@ -391,6 +399,68 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     }
   };
 
+  // Funções para compromissos (tasks)
+  const isTaskOverdue = (dataFim: string | null, concluida: boolean) => {
+    if (!dataFim || concluida) return false;
+    const today = new Date();
+    const dueDate = new Date(dataFim);
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  };
+
+  const getTaskStatusColor = (concluida: boolean) => {
+    return concluida 
+      ? 'bg-green-100 text-green-800'
+      : 'bg-yellow-100 text-yellow-800';
+  };
+
+  const getTaskPriorityColor = (prioridade: string | null) => {
+    switch (prioridade) {
+      case 'alta':
+        return 'bg-red-100 text-red-800';
+      case 'media':
+        return 'bg-orange-100 text-orange-800';
+      case 'baixa':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTaskStatusLabel = (concluida: boolean) => {
+    return concluida ? 'Concluída' : 'Pendente';
+  };
+
+  const getTaskPriorityLabel = (prioridade: string | null) => {
+    switch (prioridade) {
+      case 'alta':
+        return 'Alta';
+      case 'media':
+        return 'Média';
+      case 'baixa':
+        return 'Baixa';
+      default:
+        return 'Sem prioridade';
+    }
+  };
+
+  const getTaskStatusIcon = (concluida: boolean) => {
+    return concluida 
+      ? <CheckSquare className="h-4 w-4 text-green-600" />
+      : <AlertCircle className="h-4 w-4 text-yellow-600" />;
+  };
+
+  const getTaskBackgroundColor = (task: any) => {
+    if (task.concluida) {
+      return 'border-green-200 bg-green-50';
+    } else if (isTaskOverdue(task.data_fim, task.concluida)) {
+      return 'border-red-200 bg-red-50';
+    } else {
+      return 'border-yellow-200 bg-yellow-50';
+    }
+  };
+
   // Remove dueDate e priority não existem na nova interface
   const isOverdue = false; // Temporariamente false até ser definido no backend
 
@@ -536,59 +606,301 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
             <TabsContent value="tasks" className="space-y-6 mt-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Compromissos Relacionados</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Compromissos Relacionados</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsTaskModalOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Compromisso
+                  </Button>
+                </div>
+
+                {/* Estatísticas */}
+                {(() => {
+                  const pendentesCount = processTasks.filter((t: any) => !t.concluida).length;
+                  const concluidasCount = processTasks.filter((t: any) => t.concluida).length;
+                  const totalCount = processTasks.length;
+
+                  return (
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <Card 
+                        className="cursor-pointer hover:shadow transition-shadow py-2 px-3"
+                        onClick={() => {
+                          setTaskFilters(prev => ({ ...prev, status: 'pendente' }));
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm font-medium">Pendentes</span>
+                          </div>
+                          <span className="text-lg font-bold text-yellow-600">
+                            {pendentesCount}
+                          </span>
+                        </div>
+                      </Card>
+
+                      <Card 
+                        className="cursor-pointer hover:shadow transition-shadow py-2 px-3"
+                        onClick={() => {
+                          setTaskFilters(prev => ({ ...prev, status: 'concluida' }));
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium">Concluídas</span>
+                          </div>
+                          <span className="text-lg font-bold text-green-600">
+                            {concluidasCount}
+                          </span>
+                        </div>
+                      </Card>
+
+                      <Card 
+                        className="cursor-pointer hover:shadow transition-shadow py-2 px-3"
+                        onClick={() => {
+                          setTaskFilters(prev => ({ ...prev, status: 'all' }));
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckSquare className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">Total</span>
+                          </div>
+                          <span className="text-lg font-bold text-blue-600">
+                            {totalCount}
+                          </span>
+                        </div>
+                      </Card>
+                    </div>
+                  );
+                })()}
+
+                {/* Filtros */}
+                <Card className="mb-4">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                          <Input
+                            placeholder="Pesquisar..."
+                            value={taskFilters.searchTerm}
+                            onChange={(e) => setTaskFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                            className="pl-8 h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-32">
+                        <Select 
+                          value={taskFilters.status} 
+                          onValueChange={(value) => setTaskFilters(prev => ({ ...prev, status: value }))}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            <SelectItem value="pendente">Pendentes</SelectItem>
+                            <SelectItem value="concluida">Concluídas</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-32">
+                        <Select 
+                          value={taskFilters.prioridade} 
+                          onValueChange={(value) => setTaskFilters(prev => ({ ...prev, prioridade: value }))}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Prioridade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas</SelectItem>
+                            <SelectItem value="alta">Alta</SelectItem>
+                            <SelectItem value="media">Média</SelectItem>
+                            <SelectItem value="baixa">Baixa</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-9"
+                        onClick={() => {
+                          setTaskFilters({
+                            searchTerm: '',
+                            status: 'all',
+                            prioridade: 'all',
+                          });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {loadingTasks ? (
                   <div className="text-center text-muted-foreground py-8">
                     <p>Carregando compromissos...</p>
                   </div>
-                ) : processTasks.length > 0 ? (
-                  <div className="space-y-3">
-                    {processTasks.map((task) => (
-                      <Card
-                        key={task.id}
-                        className="border-l-4 border-l-blue-500 hover:shadow cursor-pointer"
-                        onClick={() => { setSelectedTask(task as Task); setIsTaskDetailsOpen(true); }}
-                      >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base font-medium">{task.titulo}</CardTitle>
-                            <div className="flex items-center space-x-2">
-                              {task.concluida ? (
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                              )}
-                              <Badge 
-                                variant={task.concluida ? 'default' : 'outline'}
-                                className="text-xs"
-                              >
-                                {task.concluida ? 'Concluída' : 'Pendente'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          {task.descricao && (
-                            <p className="text-sm text-muted-foreground mb-2">{task.descricao}</p>
-                          )}
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            {task.prioridade && (
-                              <span>Prioridade: {task.prioridade === 'alta' ? 'Alta' : task.prioridade === 'media' ? 'Média' : 'Baixa'}</span>
+                ) : (() => {
+                  // Aplicar filtros
+                  const filteredTasks = processTasks.filter((t: any) => {
+                    const matchesSearch = taskFilters.searchTerm === '' || 
+                      t.titulo?.toLowerCase().includes(taskFilters.searchTerm.toLowerCase()) ||
+                      t.descricao?.toLowerCase().includes(taskFilters.searchTerm.toLowerCase());
+                    
+                    const matchesStatus = taskFilters.status === 'all' ||
+                      (taskFilters.status === 'pendente' && !t.concluida) ||
+                      (taskFilters.status === 'concluida' && t.concluida);
+                    
+                    const matchesPrioridade = taskFilters.prioridade === 'all' ||
+                      t.prioridade === taskFilters.prioridade;
+                    
+                    return matchesSearch && matchesStatus && matchesPrioridade;
+                  });
+
+                  if (filteredTasks.length === 0) {
+                    return (
+                      <div className="text-center text-muted-foreground py-8">
+                        <p>Nenhum compromisso encontrado com os filtros aplicados.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {(() => {
+                        // Separar compromissos principais e sub-compromissos
+                        const mainTasks = filteredTasks.filter((t: any) => !t.parent_id);
+                        const subtasks = filteredTasks.filter((t: any) => t.parent_id);
+                      
+                      // Criar um mapa de sub-compromissos por parent_id
+                      const subtasksByParent: Record<string, any[]> = {};
+                      subtasks.forEach((st: any) => {
+                        const parentId = st.parent_id?.toString() || '';
+                        if (!subtasksByParent[parentId]) {
+                          subtasksByParent[parentId] = [];
+                        }
+                        subtasksByParent[parentId].push(st);
+                      });
+                      
+                      return mainTasks.map((task: any) => {
+                        const taskSubtasks = subtasksByParent[task.id?.toString() || ''] || [];
+                        return (
+                          <div key={task.id} className="space-y-2">
+                            {/* Compromisso Principal */}
+                            <Card
+                              className={`hover:shadow-md transition-shadow cursor-pointer ${getTaskBackgroundColor(task)}`}
+                              onClick={() => { setSelectedTask(task as Task); setIsTaskDetailsOpen(true); }}
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      {getTaskStatusIcon(task.concluida)}
+                                      <h3 className="font-semibold">{task.titulo}</h3>
+                                      {isTaskOverdue(task.data_fim, task.concluida) && (
+                                        <Badge variant="destructive">Atrasada</Badge>
+                                      )}
+                                    </div>
+                                    {task.descricao && (
+                                      <p className="text-sm text-gray-600 mb-3">{task.descricao}</p>
+                                    )}
+                                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                      {task.prioridade && (
+                                        <span><strong>Prioridade:</strong> {getTaskPriorityLabel(task.prioridade)}</span>
+                                      )}
+                                      {task.data_fim && (
+                                        <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col space-y-2">
+                                    <Badge className={getTaskStatusColor(task.concluida)}>
+                                      {getTaskStatusLabel(task.concluida)}
+                                    </Badge>
+                                    {isTaskOverdue(task.data_fim, task.concluida) && (
+                                      <Badge variant="destructive" className="text-xs">
+                                        Atrasada
+                                      </Badge>
+                                    )}
+                                    {task.prioridade && (
+                                      <Badge className={getTaskPriorityColor(task.prioridade)}>
+                                        {getTaskPriorityLabel(task.prioridade)}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                            
+                            {/* Sub-compromissos */}
+                            {taskSubtasks.length > 0 && (
+                              <div className="ml-6 space-y-2">
+                                {taskSubtasks.map((subtask: any) => (
+                                  <Card
+                                    key={subtask.id}
+                                    className={`hover:shadow-md transition-shadow cursor-pointer ${getTaskBackgroundColor(subtask)}`}
+                                    onClick={() => { setSelectedTask(subtask as Task); setIsTaskDetailsOpen(true); }}
+                                  >
+                                    <CardContent className="p-4">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                          <div className="flex items-center space-x-2 mb-2">
+                                            {getTaskStatusIcon(subtask.concluida)}
+                                            <h3 className="font-semibold text-sm">{subtask.titulo}</h3>
+                                            <Badge variant="secondary">Sub-compromisso</Badge>
+                                            {isTaskOverdue(subtask.data_fim, subtask.concluida) && (
+                                              <Badge variant="destructive">Atrasada</Badge>
+                                            )}
+                                          </div>
+                                          {subtask.descricao && (
+                                            <p className="text-xs text-gray-600 mb-3">{subtask.descricao}</p>
+                                          )}
+                                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                            {subtask.prioridade && (
+                                              <span><strong>Prioridade:</strong> {getTaskPriorityLabel(subtask.prioridade)}</span>
+                                            )}
+                                            {subtask.data_fim && (
+                                              <span><strong>Prazo:</strong> {new Date(subtask.data_fim).toLocaleDateString('pt-BR')}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                          <Badge className={getTaskStatusColor(subtask.concluida)}>
+                                            {getTaskStatusLabel(subtask.concluida)}
+                                          </Badge>
+                                          {isTaskOverdue(subtask.data_fim, subtask.concluida) && (
+                                            <Badge variant="destructive" className="text-xs">
+                                              Atrasada
+                                            </Badge>
+                                          )}
+                                          {subtask.prioridade && (
+                                            <Badge className={getTaskPriorityColor(subtask.prioridade)}>
+                                              {getTaskPriorityLabel(subtask.prioridade)}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
                             )}
-                            {task.data_fim && (
-                              <span>Prazo: {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
-                            )}
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        );
+                      });
+                    })()}
                   </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum compromisso relacionado encontrado</p>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </TabsContent>
 
@@ -849,6 +1161,30 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         </div>
       </DialogContent>
       <TaskDetailsModal isOpen={isTaskDetailsOpen} onClose={() => setIsTaskDetailsOpen(false)} task={selectedTask} />
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          // Recarregar os compromissos após criar um novo
+          if (process) {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            setLoadingTasks(true);
+            getTasksByProcess(process.id)
+              .then(data => {
+                const tasks = Array.isArray(data) ? data : (data?.tarefas || []);
+                setProcessTasks(tasks);
+              })
+              .catch(error => {
+                console.error('Erro ao buscar tarefas:', error);
+                setProcessTasks([]);
+              })
+              .finally(() => {
+                setLoadingTasks(false);
+              });
+          }
+        }}
+        processoId={process?.id || null}
+      />
       <LogProcessoModal 
         isOpen={isLogModalOpen} 
         onClose={() => setIsLogModalOpen(false)} 

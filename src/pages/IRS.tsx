@@ -48,7 +48,7 @@ export const IRS: React.FC = () => {
   const filteredIRS = irsList.filter((irs: IRS) => {
     const clienteNome = irs.cliente?.nome?.toLowerCase() || '';
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = clienteNome.includes(searchLower);
+    const matchesSearch = searchTerm === '' || clienteNome.includes(searchLower);
     
     const matchesEstado = filters.estado === 'all' || irs.estado === filters.estado;
     
@@ -58,7 +58,9 @@ export const IRS: React.FC = () => {
     
     const matchesAno = filters.ano === 'all' || irs.ano.toString() === filters.ano;
     
-    const matchesConcluidos = filters.showConcluidos || irs.estado !== 'Pago' || !irs.numero_recibo;
+    // Mostra IRS concluídos (Pago com recibo) apenas se showConcluidos estiver ativo
+    const isConcluido = irs.estado === 'Pago' && irs.numero_recibo;
+    const matchesConcluidos = filters.showConcluidos || !isConcluido;
     
     return matchesSearch && matchesEstado && matchesEstadoEntrega && matchesAno && matchesConcluidos;
   });
