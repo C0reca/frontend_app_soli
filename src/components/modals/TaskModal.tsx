@@ -389,6 +389,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                       <SelectItem value="Cartorio">Cartorio</SelectItem>
                       <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
                       <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
+                      <SelectItem value="Armário DPA">Armário DPA</SelectItem>
                       <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
                       <SelectItem value="Reuniões">Reuniões</SelectItem>
                       <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>

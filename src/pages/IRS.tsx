@@ -29,10 +29,11 @@ export const IRS: React.FC = () => {
     estado: 'all',
     estadoEntrega: 'all',
     ano: 'all',
-    showConcluidos: false,
+    showConcluidos: true, // Por padrão mostrar todos os IRS, incluindo concluídos
   });
   
-  const { irsList, isLoading, generateRecibo, updateIRS, deleteIRS } = useIRS(showAll ? undefined : true);
+  // Sempre buscar todos os IRS, filtrar no frontend
+  const { irsList, isLoading, generateRecibo, updateIRS, deleteIRS } = useIRS(undefined);
   const { clients } = useClients();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -58,7 +59,8 @@ export const IRS: React.FC = () => {
     
     const matchesAno = filters.ano === 'all' || irs.ano.toString() === filters.ano;
     
-    // Mostra IRS concluídos (Pago com recibo) apenas se showConcluidos estiver ativo
+    // Por padrão mostrar todos os IRS (incluindo concluídos)
+    // O filtro showConcluidos permite esconder os concluídos se desejado
     const isConcluido = irs.estado === 'Pago' && irs.numero_recibo;
     const matchesConcluidos = filters.showConcluidos || !isConcluido;
     
@@ -227,7 +229,7 @@ export const IRS: React.FC = () => {
       estado: 'all',
       estadoEntrega: 'all',
       ano: 'all',
-      showConcluidos: false,
+      showConcluidos: true, // Por padrão mostrar todos os IRS
     });
     setSearchTerm('');
   };
@@ -254,7 +256,7 @@ export const IRS: React.FC = () => {
               estado: 'Por Pagar',
               estadoEntrega: 'all',
               ano: 'all',
-              showConcluidos: false,
+              showConcluidos: true,
             });
           }}
         >
@@ -278,7 +280,7 @@ export const IRS: React.FC = () => {
               estado: 'Pago',
               estadoEntrega: 'all',
               ano: 'all',
-              showConcluidos: false,
+              showConcluidos: true,
             });
           }}
         >
@@ -302,7 +304,7 @@ export const IRS: React.FC = () => {
               estado: 'Isento',
               estadoEntrega: 'all',
               ano: 'all',
-              showConcluidos: false,
+              showConcluidos: true,
             });
           }}
         >

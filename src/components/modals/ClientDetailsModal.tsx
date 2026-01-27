@@ -68,72 +68,60 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Nome Completo</label>
-              <p className="text-lg font-semibold">{client.nome}</p>
+              <p className="text-lg font-semibold">{client.nome || '-'}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">NIF</label>
-              <p>{client.nif}</p>
+              <p>{client.nif || '-'}</p>
             </div>
-            {client.num_cc && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Cartão de Cidadão</label>
-                <p>{client.num_cc}</p>
-              </div>
-            )}
-            {client.validade_cc && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Validade CC</label>
-                <p>{new Date(client.validade_cc).toLocaleDateString('pt-PT')}</p>
-              </div>
-            )}
-            {client.data_nascimento && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Data de Nascimento</label>
-                <p>{new Date(client.data_nascimento).toLocaleDateString('pt-PT')}</p>
-              </div>
-            )}
-            {client.nacionalidade && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nacionalidade</label>
-                <p>{client.nacionalidade}</p>
-              </div>
-            )}
-            {client.estado_civil && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Estado Civil</label>
-                <p>{client.estado_civil}</p>
-              </div>
-            )}
-            {client.profissao && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Profissão</label>
-                <p>{client.profissao}</p>
-              </div>
-            )}
-            {client.incapacidade !== undefined && client.incapacidade !== null && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
-                <p>{client.incapacidade}%</p>
-              </div>
-            )}
-            {client.num_ss && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nº Segurança Social</label>
-                <p>{client.num_ss}</p>
-              </div>
-            )}
-            {client.num_sns && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nº Utente de Saúde</label>
-                <p>{client.num_sns}</p>
-              </div>
-            )}
-            {client.num_ident_civil && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nº Identificação Civil</label>
-                <p>{client.num_ident_civil}</p>
-              </div>
-            )}
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p>{client.email || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Telefone</label>
+              <p>{client.telefone || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Cartão de Cidadão</label>
+              <p>{client.num_cc || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Validade CC</label>
+              <p>{client.validade_cc ? new Date(client.validade_cc).toLocaleDateString('pt-PT') : '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Data de Nascimento</label>
+              <p>{client.data_nascimento ? new Date(client.data_nascimento).toLocaleDateString('pt-PT') : '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nacionalidade</label>
+              <p>{client.nacionalidade || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Estado Civil</label>
+              <p>{client.estado_civil || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Profissão</label>
+              <p>{client.profissao || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
+              <p>{client.incapacidade !== undefined && client.incapacidade !== null ? `${client.incapacidade}%` : '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nº Segurança Social</label>
+              <p>{client.num_ss || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nº Utente de Saúde</label>
+              <p>{client.num_sns || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nº Identificação Civil</label>
+              <p>{client.num_ident_civil || '-'}</p>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -175,20 +163,22 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {client.iban && (
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">IBAN</span>
+              <Badge variant="outline">{client.iban || '-'}</Badge>
+            </div>
+            {(client as any).certidao_permanente && (
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span>IBAN</span>
-                <Badge variant="outline">{client.iban}</Badge>
+                <span className="text-sm font-medium text-muted-foreground">Certidão Permanente</span>
+                <Badge variant="outline">{(client as any).certidao_permanente}</Badge>
               </div>
             )}
-            {client.observacoes && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Observações</label>
-                <div className="bg-muted p-4 rounded-lg mt-2">
-                  <p className="text-sm">{client.observacoes}</p>
-                </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Observações</label>
+              <div className="bg-muted p-4 rounded-lg mt-2">
+                <p className="text-sm">{client.observacoes || '-'}</p>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -321,90 +311,70 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Nome da Empresa</label>
-              <p className="text-lg font-semibold">{client.nome_empresa}</p>
+              <p className="text-lg font-semibold">{client.nome_empresa || '-'}</p>
             </div>
-            {client.nif_empresa && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">NIF</label>
-                <p>{client.nif_empresa}</p>
-              </div>
-            )}
-            {client.registo_comercial && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nº Registo Comercial</label>
-                <p>{client.registo_comercial}</p>
-              </div>
-            )}
-            {client.forma_juridica && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Forma Jurídica</label>
-                <p>{client.forma_juridica}</p>
-              </div>
-            )}
-            {client.data_constituicao && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Data de Constituição</label>
-                <p>{new Date(client.data_constituicao).toLocaleDateString('pt-PT')}</p>
-              </div>
-            )}
-            {client.cae && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">CAE Principal</label>
-                <p>{client.cae}</p>
-              </div>
-            )}
-            {client.capital_social && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Capital Social</label>
-                <p>€{client.capital_social}</p>
-              </div>
-            )}
-            {client.incapacidade !== undefined && client.incapacidade !== null && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
-                <p>{client.incapacidade}%</p>
-              </div>
-            )}
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">NIF</label>
+              <p>{client.nif_empresa || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p>{client.email || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Telefone</label>
+              <p>{client.telefone || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nº Registo Comercial</label>
+              <p>{client.registo_comercial || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Forma Jurídica</label>
+              <p>{client.forma_juridica || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Data de Constituição</label>
+              <p>{client.data_constituicao ? new Date(client.data_constituicao).toLocaleDateString('pt-PT') : '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">CAE Principal</label>
+              <p>{client.cae || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Capital Social</label>
+              <p>{client.capital_social ? `€${client.capital_social}` : '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Incapacidade</label>
+              <p>{client.incapacidade !== undefined && client.incapacidade !== null ? `${client.incapacidade}%` : '-'}</p>
+            </div>
             
             {/* Representante Legal */}
-            {(client.representante_nome || client.representante_nif || client.representante_email) && (
-              <>
-                <div className="col-span-2">
-                  <Separator className="my-4" />
-                  <h4 className="font-semibold mb-3">Representante Legal</h4>
-                </div>
-                {client.representante_nome && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Nome</label>
-                    <p>{client.representante_nome}</p>
-                  </div>
-                )}
-                {client.representante_cargo && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Cargo</label>
-                    <p>{client.representante_cargo}</p>
-                  </div>
-                )}
-                {client.representante_email && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p>{client.representante_email}</p>
-                  </div>
-                )}
-                {client.representante_telemovel && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Telemóvel</label>
-                    <p>{client.representante_telemovel}</p>
-                  </div>
-                )}
-                {client.representante_nif && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">NIF</label>
-                    <p>{client.representante_nif}</p>
-                  </div>
-                )}
-              </>
-            )}
+            <div className="col-span-2">
+              <Separator className="my-4" />
+              <h4 className="font-semibold mb-3">Representante Legal</h4>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Nome</label>
+              <p>{client.representante_nome || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Cargo</label>
+              <p>{client.representante_cargo || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p>{client.representante_email || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Telemóvel</label>
+              <p>{client.representante_telemovel || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">NIF</label>
+              <p>{client.representante_nif || '-'}</p>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -446,26 +416,20 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {client.certidao_permanente && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span>Certidão Permanente</span>
-                <Badge variant="outline">{client.certidao_permanente}</Badge>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">Certidão Permanente</span>
+              <Badge variant="outline">{client.certidao_permanente || '-'}</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">IBAN</span>
+              <Badge variant="outline">{client.iban || '-'}</Badge>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Observações</label>
+              <div className="bg-muted p-4 rounded-lg mt-2">
+                <p className="text-sm">{client.observacoes || '-'}</p>
               </div>
-            )}
-            {client.iban && (
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span>IBAN</span>
-                <Badge variant="outline">{client.iban}</Badge>
-              </div>
-            )}
-            {client.observacoes && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Observações</label>
-                <div className="bg-muted p-4 rounded-lg mt-2">
-                  <p className="text-sm">{client.observacoes}</p>
-                </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>

@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, User, Calendar, CheckCircle, Clock, XCircle, Edit, Printer, Download, AlertCircle, History, Plus } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { FileText, User, Calendar, CheckCircle, Clock, XCircle, Edit, Printer, Download, AlertCircle, History, Plus, ExternalLink } from 'lucide-react';
 import { IRS } from '@/hooks/useIRS';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { useAgregadoFamiliar } from '@/hooks/useAgregadoFamiliar';
 import { useIRSTimeline } from '@/hooks/useIRSTimeline';
+import { useClients } from '@/hooks/useClients';
+import { useToast } from '@/hooks/use-toast';
 
 interface IRSDetailsModalProps {
   isOpen: boolean;
@@ -41,6 +46,109 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
   const { agregado } = useAgregadoFamiliar(irs?.cliente_id || 0);
   const { data: timeline, isLoading: isLoadingTimeline } = useIRSTimeline(irs?.id);
   const [activeTab, setActiveTab] = useState('details');
+  const { updateClient } = useClients();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Estados para modais de edição rápida
+  const [isEditingIncapacidade, setIsEditingIncapacidade] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [isEditingIBAN, setIsEditingIBAN] = useState(false);
+  const [isEditingMemberIncapacidade, setIsEditingMemberIncapacidade] = useState<number | null>(null);
+  const [isEditingMemberPassword, setIsEditingMemberPassword] = useState<number | null>(null);
+  const [selectedMember, setSelectedMember] = useState<{ id: number; tipoRelacao: string; nome: string } | null>(null);
+  
+  // Valores temporários para edição
+  const [tempIncapacidade, setTempIncapacidade] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+  const [tempIBAN, setTempIBAN] = useState('');
+
+  // Função para registrar histórico
+  const registrarHistorico = async (
+    acao: string,
+    campoAlterado?: string,
+    valorAnterior?: string,
+    valorNovo?: string,
+    detalhes?: string
+  ) => {
+    if (!irs?.id) return;
+    try {
+      await api.post(`/irs/${irs.id}/historico`, {
+        acao,
+        campo_alterado: campoAlterado,
+        valor_anterior: valorAnterior,
+        valor_novo: valorNovo,
+        detalhes,
+      });
+      queryClient.invalidateQueries({ queryKey: ['irs-timeline', irs.id] });
+    } catch (error: any) {
+      console.error('Erro ao registrar histórico:', error);
+    }
+  };
+
+  // Função para atualizar campo do titular
+  const handleUpdateTitularField = async (campo: string, valor: string, valorAnterior: string) => {
+    if (!clienteData || !irs) return;
+
+    try {
+      await updateClient.mutateAsync({
+        id: clienteData.id.toString(),
+        [campo]: valor,
+      });
+
+      await registrarHistorico(
+        'alteracao',
+        campo,
+        valorAnterior || 'Não definido',
+        valor || 'Não definido',
+        `${campo} do titular atualizado`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['cliente', irs.cliente_id] });
+      toast({
+        title: 'Sucesso',
+        description: `${campo} atualizado com sucesso.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || `Erro ao atualizar ${campo}.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Função para atualizar campo de membro
+  const handleUpdateMemberField = async (membroId: number, campo: string, valor: string, valorAnterior: string, nomeMembro: string) => {
+    if (!irs) return;
+
+    try {
+      await updateClient.mutateAsync({
+        id: membroId.toString(),
+        [campo]: valor,
+      });
+
+      await registrarHistorico(
+        'alteracao',
+        campo,
+        valorAnterior || 'Não definido',
+        valor || 'Não definido',
+        `${campo} de ${nomeMembro} atualizado`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['agregado-familiar', irs.cliente_id] });
+      toast({
+        title: 'Sucesso',
+        description: `${campo} atualizado com sucesso.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || `Erro ao atualizar ${campo}.`,
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (!irs) return null;
 
@@ -435,8 +543,9 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Detalhes</TabsTrigger>
+            <TabsTrigger value="dados-irs">Dados do IRS</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
 
@@ -570,6 +679,220 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
           )}
           </TabsContent>
 
+          <TabsContent value="dados-irs" className="space-y-6 mt-6">
+            {clienteData ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Dados do IRS</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* Botão de acesso ao site das finanças */}
+                  <div className="mb-4 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open('https://www.portaldasfinancas.gov.pt', '_blank')}
+                      className="flex items-center gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Acesso ao Site das Finanças
+                    </Button>
+                  </div>
+
+                  {/* Tabela com todos os membros */}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Relação</TableHead>
+                        <TableHead className="text-xs">Incapacidade</TableHead>
+                        <TableHead className="text-xs">Nome</TableHead>
+                        <TableHead className="text-xs">NIF</TableHead>
+                        <TableHead className="text-xs">Password Finanças</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* Linha do Titular */}
+                      <TableRow>
+                        <TableCell className="text-xs font-medium">Titular</TableCell>
+                        <TableCell className="text-xs">
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {clienteData.incapacidade !== undefined && clienteData.incapacidade !== null
+                                ? `${clienteData.incapacidade}%`
+                                : '0,00%'}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0"
+                              onClick={() => {
+                                setTempIncapacidade(clienteData.incapacidade?.toString() || '0');
+                                setIsEditingIncapacidade(true);
+                              }}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {clienteData?.nome || clienteData?.nome_empresa || '-'}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">
+                          {clienteData?.nif || clienteData?.nif_empresa || '-'}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">
+                          <div className="flex items-center gap-2">
+                            <span>{clienteData?.senha_financas || '-'}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0"
+                              onClick={() => {
+                                setTempPassword(clienteData?.senha_financas || '');
+                                setIsEditingPassword(true);
+                              }}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Linhas dos membros do agregado familiar */}
+                      {agregado && agregado.length > 0 && agregado.map((membro) => {
+                        const clienteRelacionado = membro.cliente_relacionado;
+                        if (!clienteRelacionado) return null;
+
+                        const getTipoRelacaoLabel = (tipo: string) => {
+                          const labels: Record<string, string> = {
+                            'conjuge': 'Cônjuge',
+                            'filho': 'Filho',
+                            'filha': 'Filha',
+                            'pai': 'Pai',
+                            'mae': 'Mãe',
+                            'irmao': 'Irmão',
+                            'irma': 'Irmã',
+                          };
+                          return labels[tipo] || tipo;
+                        };
+
+                        const getClienteNome = () => {
+                          const tipo = clienteRelacionado.tipo || 'singular';
+                          return tipo === 'singular'
+                            ? clienteRelacionado.nome
+                            : clienteRelacionado.nome_empresa;
+                        };
+
+                        const getClienteNIF = () => {
+                          const tipo = clienteRelacionado.tipo || 'singular';
+                          return tipo === 'singular'
+                            ? clienteRelacionado.nif
+                            : clienteRelacionado.nif_empresa;
+                        };
+
+                        return (
+                          <TableRow key={membro.id}>
+                            <TableCell className="text-xs">{getTipoRelacaoLabel(membro.tipo_relacao)}</TableCell>
+                            <TableCell className="text-xs">
+                              <div className="flex items-center gap-2">
+                                <span>
+                                  {clienteRelacionado.incapacidade !== undefined && clienteRelacionado.incapacidade !== null
+                                    ? `${clienteRelacionado.incapacidade}%`
+                                    : '0,00%'}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={() => {
+                                    const tipo = clienteRelacionado.tipo || 'singular';
+                                    const nome = tipo === 'singular' ? clienteRelacionado.nome : clienteRelacionado.nome_empresa;
+                                    setTempIncapacidade(clienteRelacionado.incapacidade?.toString() || '0');
+                                    setSelectedMember({
+                                      id: clienteRelacionado.id,
+                                      tipoRelacao: membro.tipo_relacao,
+                                      nome: nome || 'Membro'
+                                    });
+                                    setIsEditingMemberIncapacidade(clienteRelacionado.id);
+                                  }}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {getClienteNome() || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs font-mono">
+                              {getClienteNIF() || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs font-mono">
+                              <div className="flex items-center gap-2">
+                                <span>{clienteRelacionado.senha_financas || '-'}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={() => {
+                                    const tipo = clienteRelacionado.tipo || 'singular';
+                                    const nome = tipo === 'singular' ? clienteRelacionado.nome : clienteRelacionado.nome_empresa;
+                                    setTempPassword(clienteRelacionado.senha_financas || '');
+                                    setSelectedMember({
+                                      id: clienteRelacionado.id,
+                                      tipoRelacao: membro.tipo_relacao,
+                                      nome: nome || 'Membro'
+                                    });
+                                    setIsEditingMemberPassword(clienteRelacionado.id);
+                                  }}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+
+                  {/* IBAN do titular - aparece na parte de baixo */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-muted-foreground">IBAN do Titular</label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => {
+                            setTempIBAN(clienteData?.iban || '');
+                            setIsEditingIBAN(true);
+                          }}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+                      <p className="text-sm font-mono">{clienteData?.iban || '-'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <p>A carregar dados do cliente...</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           <TabsContent value="timeline" className="space-y-6 mt-6">
             <Card>
               <CardHeader className="pb-3">
@@ -645,6 +968,251 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Modal de Edição de Incapacidade do Titular */}
+      <Dialog open={isEditingIncapacidade} onOpenChange={setIsEditingIncapacidade}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Editar Incapacidade do Titular</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="incapacidade">Incapacidade (%)</Label>
+              <Input
+                id="incapacidade"
+                type="number"
+                min="0"
+                max="100"
+                value={tempIncapacidade}
+                onChange={(e) => setTempIncapacidade(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditingIncapacidade(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={async () => {
+                const valorAnterior = clienteData?.incapacidade?.toString() || '0';
+                await handleUpdateTitularField('incapacidade', tempIncapacidade, valorAnterior);
+                setIsEditingIncapacidade(false);
+              }}
+            >
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição de Password do Titular */}
+      <Dialog open={isEditingPassword} onOpenChange={setIsEditingPassword}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Editar Password Finanças do Titular</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password Finanças</Label>
+              <Input
+                id="password"
+                type="text"
+                value={tempPassword}
+                onChange={(e) => setTempPassword(e.target.value)}
+                placeholder="Digite a password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditingPassword(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={async () => {
+                const valorAnterior = clienteData?.senha_financas || '';
+                await handleUpdateTitularField('senha_financas', tempPassword, valorAnterior);
+                setIsEditingPassword(false);
+              }}
+            >
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição de IBAN do Titular */}
+      <Dialog open={isEditingIBAN} onOpenChange={setIsEditingIBAN}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Editar IBAN do Titular</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="iban">IBAN</Label>
+              <Input
+                id="iban"
+                type="text"
+                value={tempIBAN}
+                onChange={(e) => setTempIBAN(e.target.value)}
+                placeholder="PT50 0000 0000 0000 0000 0000 0"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditingIBAN(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={async () => {
+                const valorAnterior = clienteData?.iban || '';
+                await handleUpdateTitularField('iban', tempIBAN, valorAnterior);
+                setIsEditingIBAN(false);
+              }}
+            >
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição de Incapacidade de Membro */}
+      {isEditingMemberIncapacidade && selectedMember && (() => {
+        const getTipoRelacaoLabel = (tipo: string) => {
+          const labels: Record<string, string> = {
+            'conjuge': 'Cônjuge',
+            'filho': 'Filho',
+            'filha': 'Filha',
+            'pai': 'Pai',
+            'mae': 'Mãe',
+            'irmao': 'Irmão',
+            'irma': 'Irmã',
+          };
+          return labels[tipo] || tipo;
+        };
+
+        const membro = agregado?.find(m => m.cliente_relacionado?.id === isEditingMemberIncapacidade);
+        const clienteRelacionado = membro?.cliente_relacionado;
+
+        return (
+          <Dialog open={!!isEditingMemberIncapacidade} onOpenChange={() => {
+            setIsEditingMemberIncapacidade(null);
+            setSelectedMember(null);
+          }}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Editar Incapacidade - {getTipoRelacaoLabel(selectedMember.tipoRelacao)}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="member-incapacidade">Incapacidade (%)</Label>
+                  <Input
+                    id="member-incapacidade"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={tempIncapacidade}
+                    onChange={(e) => setTempIncapacidade(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setIsEditingMemberIncapacidade(null);
+                  setSelectedMember(null);
+                }}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const valorAnterior = clienteRelacionado?.incapacidade?.toString() || '0';
+                    await handleUpdateMemberField(
+                      selectedMember.id,
+                      'incapacidade',
+                      tempIncapacidade,
+                      valorAnterior,
+                      selectedMember.nome
+                    );
+                    setIsEditingMemberIncapacidade(null);
+                    setSelectedMember(null);
+                  }}
+                >
+                  Guardar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
+
+      {/* Modal de Edição de Password de Membro */}
+      {isEditingMemberPassword && selectedMember && (() => {
+        const getTipoRelacaoLabel = (tipo: string) => {
+          const labels: Record<string, string> = {
+            'conjuge': 'Cônjuge',
+            'filho': 'Filho',
+            'filha': 'Filha',
+            'pai': 'Pai',
+            'mae': 'Mãe',
+            'irmao': 'Irmão',
+            'irma': 'Irmã',
+          };
+          return labels[tipo] || tipo;
+        };
+
+        const membro = agregado?.find(m => m.cliente_relacionado?.id === isEditingMemberPassword);
+        const clienteRelacionado = membro?.cliente_relacionado;
+
+        return (
+          <Dialog open={!!isEditingMemberPassword} onOpenChange={() => {
+            setIsEditingMemberPassword(null);
+            setSelectedMember(null);
+          }}>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Editar Password Finanças - {getTipoRelacaoLabel(selectedMember.tipoRelacao)}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="member-password">Password Finanças</Label>
+                  <Input
+                    id="member-password"
+                    type="text"
+                    value={tempPassword}
+                    onChange={(e) => setTempPassword(e.target.value)}
+                    placeholder="Digite a password"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setIsEditingMemberPassword(null);
+                  setSelectedMember(null);
+                }}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const valorAnterior = clienteRelacionado?.senha_financas || '';
+                    await handleUpdateMemberField(
+                      selectedMember.id,
+                      'senha_financas',
+                      tempPassword,
+                      valorAnterior,
+                      selectedMember.nome
+                    );
+                    setIsEditingMemberPassword(null);
+                    setSelectedMember(null);
+                  }}
+                >
+                  Guardar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </Dialog>
   );
 };

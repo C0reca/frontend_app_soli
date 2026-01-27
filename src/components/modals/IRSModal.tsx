@@ -63,21 +63,31 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
   const [updatingTelefone, setUpdatingTelefone] = useState(false);
   const [telefoneAddress, setTelefoneAddress] = useState('');
 
-  // Preparar clientes para o ClientCombobox
-  const clientsForCombobox = (allClients || clients).map((client) => {
-    const tipo = client.tipo || 'singular';
-    const nome = tipo === 'singular' 
-      ? (client as any).nome 
-      : (client as any).nome_empresa;
-    return {
-      id: parseInt(client.id.toString()),
-      nome: nome || `Cliente #${client.id}`,
-      nome_empresa: tipo === 'coletivo' ? (client as any).nome_empresa : null,
-      tipo: tipo as 'singular' | 'coletivo',
-      nif: tipo === 'singular' ? (client as any).nif : null,
-      nif_empresa: tipo === 'coletivo' ? (client as any).nif_empresa : null,
-    };
-  });
+  // Preparar clientes para o ClientCombobox (ordenados do mais recente para o mais antigo)
+  const clientsForCombobox = (allClients || clients)
+    .map((client) => {
+      const tipo = client.tipo || 'singular';
+      const nome = tipo === 'singular' 
+        ? (client as any).nome 
+        : (client as any).nome_empresa;
+      return {
+        id: parseInt(client.id.toString()),
+        nome: nome || `Cliente #${client.id}`,
+        nome_empresa: tipo === 'coletivo' ? (client as any).nome_empresa : null,
+        tipo: tipo as 'singular' | 'coletivo',
+        nif: tipo === 'singular' ? (client as any).nif : null,
+        nif_empresa: tipo === 'coletivo' ? (client as any).nif_empresa : null,
+        criado_em: (client as any).criado_em || (client as any).createdAt || null,
+      };
+    })
+    .sort((a, b) => {
+      // Ordenar do mais recente para o mais antigo
+      if (a.criado_em && b.criado_em) {
+        return new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime();
+      }
+      // Se não houver data, ordenar por ID (mais recente = maior ID)
+      return b.id - a.id;
+    });
 
   const {
     register,

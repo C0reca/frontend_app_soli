@@ -13,6 +13,8 @@ interface Client {
     tipo?: 'singular' | 'coletivo';
     nif?: string | null;
     nif_empresa?: string | null;
+    criado_em?: string | null;
+    createdAt?: string | null;
 }
 
 interface ClientComboboxProps {
@@ -31,7 +33,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading }: Cli
 
     const filteredClients = useMemo(() => {
         const normSearch = normalize(search);
-        return (clients ?? []).filter((client) => {
+        const filtered = (clients ?? []).filter((client) => {
             const nome = client?.nome || client?.nome_empresa || "";
             const nif = client?.tipo === 'coletivo' 
                 ? (client?.nif_empresa || "")
@@ -39,6 +41,22 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading }: Cli
             
             return normalize(nome).includes(normSearch) || 
                    normalize(nif).includes(normSearch);
+        });
+        
+        // Ordenar do mais recente para o mais antigo (por data de criação ou ID)
+        return filtered.sort((a, b) => {
+            // Tentar ordenar por data de criação primeiro
+            const dateA = a.criado_em || a.createdAt;
+            const dateB = b.criado_em || b.createdAt;
+            
+            if (dateA && dateB) {
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+            }
+            
+            // Se não houver data, ordenar por ID (mais recente = maior ID)
+            const idA = typeof a.id === 'string' ? parseInt(a.id, 10) : a.id;
+            const idB = typeof b.id === 'string' ? parseInt(b.id, 10) : b.id;
+            return idB - idA;
         });
     }, [clients, search]);
 

@@ -24,6 +24,7 @@ const OPCOES_LOCALIZACAO = [
   'Cartorio',
   'Camara/GaiaUrb',
   'DPA Agendado',
+  'Armário DPA',
   'Conservatoria Civil/Comercial',
   'Reuniões',
   'Conservatoria Predial',
