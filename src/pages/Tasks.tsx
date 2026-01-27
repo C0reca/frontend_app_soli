@@ -9,12 +9,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2 } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
+import { useProcesses } from '@/hooks/useProcesses';
 import { TaskModal } from '@/components/modals/TaskModal';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 
 export const Tasks: React.FC = () => {
   const { tasks, isLoading, deleteTask, updateTaskStatus, setExternal } = useTasks();
   const { employees } = useEmployees();
+  const { processes } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,6 +159,24 @@ export const Tasks: React.FC = () => {
                 <div className="flex items-center space-x-2 mb-2">
                   {getStatusIcon(task.concluida)}
                   <h3 className="font-semibold">{task.titulo}</h3>
+                  {task.processo_id && (() => {
+                    const processo = processes.find(p => p.id === task.processo_id);
+                    if (!processo) return null;
+                    
+                    // Tentar obter nome do cliente de diferentes formas
+                    let clienteNome: string | null = null;
+                    if (processo.cliente) {
+                      // Cliente pode ter nome (singular) ou nome_empresa (coletivo)
+                      clienteNome = (processo.cliente as any).nome || (processo.cliente as any).nome_empresa || null;
+                    } else if (processo.cliente_id) {
+                      // Se não tiver cliente carregado, mostrar apenas o ID
+                      clienteNome = `Cliente #${processo.cliente_id}`;
+                    }
+                    
+                    return clienteNome ? (
+                      <span className="text-sm text-muted-foreground font-normal">- {clienteNome}</span>
+                    ) : null;
+                  })()}
                   {level > 0 && <Badge variant="secondary">Sub-compromisso</Badge>}
                   {isOverdue(task.data_fim, task.concluida) && (
                     <Badge variant="destructive">Atrasada</Badge>
