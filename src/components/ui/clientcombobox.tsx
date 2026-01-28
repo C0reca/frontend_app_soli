@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Command, CommandInput, CommandItem, CommandList, CommandEmpty } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, normalizeString } from "@/lib/utils";
 import { Check } from "lucide-react";
 
 interface Client {
@@ -28,19 +28,16 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading }: Cli
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
-    const normalize = (str: string) =>
-        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
     const filteredClients = useMemo(() => {
-        const normSearch = normalize(search);
+        const normSearch = normalizeString(search);
         const filtered = (clients ?? []).filter((client) => {
             const nome = client?.nome || client?.nome_empresa || "";
             const nif = client?.tipo === 'coletivo' 
                 ? (client?.nif_empresa || "")
                 : (client?.nif || "");
             
-            return normalize(nome).includes(normSearch) || 
-                   normalize(nif).includes(normSearch);
+            return normalizeString(nome).includes(normSearch) || 
+                   normalizeString(nif).includes(normSearch);
         });
         
         // Ordenar do mais recente para o mais antigo (por data de criação ou ID)

@@ -8,6 +8,7 @@ import { useClients, Client } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { normalizeString } from '@/lib/utils';
 
 export const Clients: React.FC = () => {
   const { clients, isLoading, deleteClient } = useClients();
@@ -39,12 +40,14 @@ export const Clients: React.FC = () => {
 
   const filteredClients = clients
     .filter((client: Client) => {
-      const nome = getClientName(client)?.toLowerCase() || '';
-      const email = client.email?.toLowerCase() || '';
+      const nome = getClientName(client) || '';
+      const email = client.email || '';
       const nifVal = ((client.tipo || 'singular') === 'singular' ? (client as any).nif : (client as any).nif_empresa) || '';
-      const searchLower = searchTerm.toLowerCase();
+      const searchNormalized = normalizeString(searchTerm);
 
-      const matchesSearch = nome.includes(searchLower) || email.includes(searchLower) || String(nifVal).toLowerCase().includes(searchLower);
+      const matchesSearch = normalizeString(nome).includes(searchNormalized) || 
+                           normalizeString(email).includes(searchNormalized) || 
+                           normalizeString(String(nifVal)).includes(searchNormalized);
       const matchesTipo = filterTipo === 'all' || (client.tipo || 'singular') === filterTipo;
       const matchesStatus = filterStatus === 'all' || (client.status || 'active') === filterStatus;
       return matchesSearch && matchesTipo && matchesStatus;

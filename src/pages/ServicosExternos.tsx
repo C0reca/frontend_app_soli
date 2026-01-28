@@ -135,7 +135,7 @@ export const ServicosExternos: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Coisas a fazer fora do escritório</CardTitle>
+          <CardTitle>Diligências Externas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

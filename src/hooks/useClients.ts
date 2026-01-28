@@ -20,6 +20,7 @@ export interface IndividualClient extends BaseClient {
   
   // Dados principais
   nome: string;
+  designacao?: string;
   email?: string;
   telefone?: string;
   
@@ -56,6 +57,7 @@ export interface CorporateClient extends BaseClient {
   
   // Dados principais
   nome_empresa: string;
+  designacao?: string;
   email?: string;
   telefone?: string;
   

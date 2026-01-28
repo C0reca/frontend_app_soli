@@ -14,6 +14,7 @@ import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
+import { normalizeString } from '@/lib/utils';
 
 
 export const Processes: React.FC = () => {
@@ -62,13 +63,13 @@ export const Processes: React.FC = () => {
   const concluidoCount = source.filter((p: Process) => p.estado === 'concluido').length;
 
   const filteredProcesses = source.filter((process) => {
-    const term = searchTerm.toLowerCase();
+    const termNormalized = normalizeString(searchTerm);
     const clienteNome = process.cliente?.nome || getClientNameById(process.cliente_id) || '';
     const funcionarioNome = process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || '';
     const matchesSearch = (
-      process.titulo.toLowerCase().includes(term) ||
-      clienteNome.toLowerCase().includes(term) ||
-      funcionarioNome.toLowerCase().includes(term)
+      normalizeString(process.titulo).includes(termNormalized) ||
+      normalizeString(clienteNome).includes(termNormalized) ||
+      normalizeString(funcionarioNome).includes(termNormalized)
     );
     
     const matchesStatus = filters.status === 'all' || process.estado === filters.status;

@@ -36,18 +36,27 @@ import { ClientCombobox } from "@/components/ui/clientcombobox";
 import { Loader2, Minimize2 } from "lucide-react";
 import { useMinimize } from '@/contexts/MinimizeContext';
 
-const processSchema = z.object({
+// Schema base - cliente_id é opcional para edição
+const processSchemaBase = z.object({
     titulo: z.string().min(1, "Título é obrigatório"),
     descricao: z.string().optional(),
     tipo: z.string().optional(),
     onde_estao: z.string().optional(),
-    cliente_id: z.number().optional(), // Mantido para compatibilidade
-    dossie_id: z.number().optional(), // Nova relação com dossiê (opcional)
+    cliente_id: z.number().optional(),
+    dossie_id: z.number().optional(),
     funcionario_id: z.number().optional(),
     estado: z.enum(["pendente", "em_curso", "concluido"]).default("pendente"),
 });
 
-type ProcessFormData = z.infer<typeof processSchema>;
+// Schema para criação - cliente_id é obrigatório
+const processSchemaCreate = processSchemaBase.extend({
+    cliente_id: z.number({ required_error: "Entidade principal é obrigatória" }),
+});
+
+// Schema para edição - cliente_id é opcional
+const processSchemaUpdate = processSchemaBase;
+
+type ProcessFormData = z.infer<typeof processSchemaBase>;
 
 interface ProcessModalProps {
     isOpen: boolean;
@@ -80,8 +89,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         clienteTemDossies ? selectedCliente.id : undefined
     );
 
+    const isEditing = !!process;
+    const schema = isEditing ? processSchemaUpdate : processSchemaCreate;
+
     const form = useForm<ProcessFormData>({
-        resolver: zodResolver(processSchema),
+        resolver: zodResolver(schema),
         defaultValues: {
             titulo: initialData?.titulo ?? "",
             descricao: initialData?.descricao ?? "",
@@ -259,6 +271,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
                                                 <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
                                                 <SelectItem value="Armário DPA">Armário DPA</SelectItem>
+                                                <SelectItem value="PEPEX">PEPEX</SelectItem>
                                                 <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
                                                 <SelectItem value="Reuniões">Reuniões</SelectItem>
                                                 <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>
@@ -283,7 +296,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     name="cliente_id"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Entidade (Opcional)</FormLabel>
+                                            <FormLabel>
+                                                {isEditing ? 'Cliente' : 'Cliente *'}
+                                            </FormLabel>
                                             <ClientCombobox
                                                 clients={clients ?? []}
                                                 value={field.value}
@@ -296,9 +311,6 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 isLoading={isClientsLoading}
                                             />
                                             <FormMessage />
-                                            <p className="text-xs text-muted-foreground">
-                                                Selecione a entidade para associar o processo
-                                            </p>
                                         </FormItem>
                                     )}
                                 />

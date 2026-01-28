@@ -10,6 +10,7 @@ import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
 import { RegistoPredialDetailsModal } from '@/components/modals/RegistoPredialDetailsModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
+import { normalizeString } from '@/lib/utils';
 
 export const RegistosPrediais: React.FC = () => {
   const { registos, isLoading, deleteRegisto, updateRegisto } = useRegistosPrediais();
@@ -29,10 +30,11 @@ export const RegistosPrediais: React.FC = () => {
     return match?.nome || match?.nome_empresa || '';
   };
   const filteredRegistos = registos.filter((registo: any) => {
-    const matchesSearch = safe(registo.numero_processo).includes(searchTerm.toLowerCase()) ||
-      safe(registo.predio).includes(searchTerm.toLowerCase()) ||
-      safe(registo.freguesia).includes(searchTerm.toLowerCase()) ||
-      safe(registo.cliente?.nome).includes(searchTerm.toLowerCase());
+    const searchNormalized = normalizeString(searchTerm);
+    const matchesSearch = normalizeString(safe(registo.numero_processo)).includes(searchNormalized) ||
+      normalizeString(safe(registo.predio)).includes(searchNormalized) ||
+      normalizeString(safe(registo.freguesia)).includes(searchNormalized) ||
+      normalizeString(safe(registo.cliente?.nome)).includes(searchNormalized);
     
     const matchesEstado = !filterEstado || registo.estado_key === filterEstado;
     

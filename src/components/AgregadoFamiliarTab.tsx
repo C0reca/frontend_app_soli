@@ -23,6 +23,19 @@ interface AgregadoFamiliarTabProps {
   onRegistrarHistorico?: (acao: string, campoAlterado?: string, valorAnterior?: string, valorNovo?: string, detalhes?: string) => Promise<void>;
 }
 
+// Função para traduzir estado civil de inglês para português
+const getEstadoCivilLabel = (estadoCivil?: string): string => {
+  if (!estadoCivil) return '-';
+  const traducoes: Record<string, string> = {
+    'single': 'Solteiro(a)',
+    'married': 'Casado(a)',
+    'divorced': 'Divorciado(a)',
+    'widowed': 'Viúvo(a)',
+    'separated': 'Separado(a)',
+  };
+  return traducoes[estadoCivil.toLowerCase()] || estadoCivil;
+};
+
 export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ clienteId, cliente, irsId, onRegistrarHistorico }) => {
   const { agregado, isLoading, createRelacao, deleteRelacao } = useAgregadoFamiliar(clienteId);
   const { clients, updateClient } = useClients();
@@ -50,6 +63,17 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
   const [selectedMemberForPassword, setSelectedMemberForPassword] = useState<AgregadoFamiliar | null>(null);
   const [memberNewPassword, setMemberNewPassword] = useState('');
   const [updatingMemberPassword, setUpdatingMemberPassword] = useState(false);
+  
+  // Estados para o modal de atualização de incapacidade do titular
+  const [isIncapacidadeModalOpen, setIsIncapacidadeModalOpen] = useState(false);
+  const [newIncapacidade, setNewIncapacidade] = useState('');
+  const [updatingIncapacidade, setUpdatingIncapacidade] = useState(false);
+  
+  // Estados para o modal de atualização de incapacidade dos membros
+  const [isMemberIncapacidadeModalOpen, setIsMemberIncapacidadeModalOpen] = useState(false);
+  const [selectedMemberForIncapacidade, setSelectedMemberForIncapacidade] = useState<AgregadoFamiliar | null>(null);
+  const [memberNewIncapacidade, setMemberNewIncapacidade] = useState('');
+  const [updatingMemberIncapacidade, setUpdatingMemberIncapacidade] = useState(false);
 
   // Preparar clientes para o ClientCombobox (excluir o próprio cliente, inclui campos de NIF para pesquisa)
   const clientsForCombobox = clients
@@ -182,6 +206,13 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
       return relacao.cliente_relacionado.senha_financas || 'Não definida';
     }
     return '-';
+  };
+
+  const getClienteIncapacidade = (relacao: AgregadoFamiliar) => {
+    if (relacao.cliente_relacionado) {
+      return relacao.cliente_relacionado.incapacidade;
+    }
+    return null;
   };
 
   const handleOpenMoradaModal = () => {
@@ -351,9 +382,14 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Nome</label>
                 <p className="text-sm font-medium">
-                  {(clientePrincipal.tipo === 'singular' || !clientePrincipal.tipo)
-                    ? (clientePrincipal as any).nome || `Cliente #${clientePrincipal.id}`
-                    : (clientePrincipal as any).nome_empresa || `Cliente #${clientePrincipal.id}`}
+                  <ClickableClientName 
+                    clientId={clientePrincipal.id} 
+                    client={clientePrincipal}
+                    clientName={(clientePrincipal.tipo === 'singular' || !clientePrincipal.tipo)
+                      ? (clientePrincipal as any).nome || `Cliente #${clientePrincipal.id}`
+                      : (clientePrincipal as any).nome_empresa || `Cliente #${clientePrincipal.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                  />
                 </p>
               </div>
               <div className="space-y-1">
@@ -364,6 +400,12 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                     : (clientePrincipal as any).nif_empresa || '-'}
                 </p>
               </div>
+              {(clientePrincipal as any).telefone && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Telefone</label>
+                  <p className="text-sm">{(clientePrincipal as any).telefone}</p>
+                </div>
+              )}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-muted-foreground">Password Finanças</label>
@@ -383,12 +425,18 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 </div>
                 <p className="font-mono text-sm">{(clientePrincipal as any).senha_financas || 'Não definida'}</p>
               </div>
-              {clientePrincipal.incapacidade !== undefined && clientePrincipal.incapacidade !== null && (
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Incapacidade</label>
-                  <p className="text-sm">{clientePrincipal.incapacidade}%</p>
+              <div className="space-y-1 col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Incapacidade</label>
+                <div>
+                  {clientePrincipal.incapacidade !== undefined && clientePrincipal.incapacidade !== null && clientePrincipal.incapacidade > 0 ? (
+                    <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs px-2 py-0.5 font-semibold">
+                      {clientePrincipal.incapacidade}%
+                    </Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">0%</p>
+                  )}
                 </div>
-              )}
+              </div>
               {clientePrincipal.iban && (
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">IBAN</label>
@@ -398,7 +446,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
               {(clientePrincipal as IndividualClient).estado_civil && (
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">Estado Civil</label>
-                  <p className="text-sm">{(clientePrincipal as IndividualClient).estado_civil}</p>
+                  <p className="text-sm">{getEstadoCivilLabel((clientePrincipal as IndividualClient).estado_civil)}</p>
                 </div>
               )}
             </div>
@@ -438,27 +486,6 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 </div>
               </div>
             </div>
-            
-            {agregado.length > 0 && (
-              <div className="pt-3 border-t">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Última Atualização do Agregado Familiar</label>
-                  <p className="text-xs">
-                    {new Date(
-                      Math.max(
-                        ...agregado.map((rel) => new Date(rel.atualizado_em).getTime())
-                      )
-                    ).toLocaleString('pt-PT', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -499,11 +526,85 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                   <TableHead className="text-xs">Nome</TableHead>
                   <TableHead className="text-xs">NIF</TableHead>
                   <TableHead className="text-xs">Password Finanças</TableHead>
+                  <TableHead className="text-xs">Incapacidade</TableHead>
                   <TableHead className="text-xs">Relação</TableHead>
                   <TableHead className="text-xs">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* Linha do Titular */}
+                {clientePrincipal && (
+                  <TableRow>
+                    <TableCell className="text-sm">
+                      <ClickableClientName 
+                        clientId={clientePrincipal.id} 
+                        client={clientePrincipal}
+                        clientName={(clientePrincipal.tipo === 'singular' || !clientePrincipal.tipo)
+                          ? (clientePrincipal as any).nome || `Cliente #${clientePrincipal.id}`
+                          : (clientePrincipal as any).nome_empresa || `Cliente #${clientePrincipal.id}`}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-xs">
+                        {(clientePrincipal.tipo === 'singular' || !clientePrincipal.tipo)
+                          ? (clientePrincipal as any).nif || '-'
+                          : (clientePrincipal as any).nif_empresa || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs">{(clientePrincipal as any).senha_financas || 'Não definida'}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => {
+                            setNewPassword((clientePrincipal as any).senha_financas || '');
+                            setIsPasswordModalOpen(true);
+                          }}
+                          title="Atualizar Password Finanças"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {clientePrincipal.incapacidade !== undefined && clientePrincipal.incapacidade !== null && clientePrincipal.incapacidade > 0 ? (
+                          <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs px-2 py-0.5 font-semibold">
+                            {clientePrincipal.incapacidade}%
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">0%</span>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => {
+                            setNewIncapacidade((clientePrincipal as any).incapacidade?.toString() || '0');
+                            setIsIncapacidadeModalOpen(true);
+                          }}
+                          title="Atualizar Incapacidade"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0">
+                        Titular
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {/* Titular não pode ser removido */}
+                    </TableCell>
+                  </TableRow>
+                )}
+                {/* Membros do agregado familiar */}
                 {agregado.map((relacao) => (
                   <TableRow key={relacao.id}>
                     <TableCell className="text-sm">
@@ -537,6 +638,36 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                       </div>
                     </TableCell>
                     <TableCell>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const incapacidade = getClienteIncapacidade(relacao);
+                          if (incapacidade !== undefined && incapacidade !== null && incapacidade > 0) {
+                            return (
+                              <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs px-2 py-0.5 font-semibold">
+                                {incapacidade}%
+                              </Badge>
+                            );
+                          }
+                          return <span className="text-xs text-muted-foreground">0%</span>;
+                        })()}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => {
+                            const incapacidade = getClienteIncapacidade(relacao);
+                            setMemberNewIncapacidade(incapacidade?.toString() || '0');
+                            setSelectedMemberForIncapacidade(relacao);
+                            setIsMemberIncapacidadeModalOpen(true);
+                          }}
+                          title="Atualizar Incapacidade"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <Badge className={`${getTipoRelacaoBadge(relacao.tipo_relacao)} text-xs px-1.5 py-0`}>
                         {getTipoRelacaoLabel(relacao.tipo_relacao)}
                       </Badge>
@@ -556,6 +687,26 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 ))}
               </TableBody>
             </Table>
+          )}
+          {agregado.length > 0 && (
+            <div className="pt-4 mt-4 border-t">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Última Atualização do Agregado Familiar</label>
+                <p className="text-xs">
+                  {new Date(
+                    Math.max(
+                      ...agregado.map((rel) => new Date(rel.atualizado_em).getTime())
+                    )
+                  ).toLocaleString('pt-PT', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -739,6 +890,178 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 Atualizar Só Titular
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Atualização de Incapacidade do Titular */}
+      <Dialog open={isIncapacidadeModalOpen} onOpenChange={setIsIncapacidadeModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Atualizar Incapacidade do Titular</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="incapacidade">Incapacidade (%)</Label>
+              <Input
+                id="incapacidade"
+                type="number"
+                min="0"
+                max="100"
+                value={newIncapacidade}
+                onChange={(e) => setNewIncapacidade(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsIncapacidadeModalOpen(false)}
+              disabled={updatingIncapacidade}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => {
+                if (!clienteId || !clientePrincipal) {
+                  toast({
+                    title: 'Erro',
+                    description: 'Cliente não encontrado.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+
+                const incapacidadeAnterior = (clientePrincipal as any).incapacidade?.toString() || '0';
+
+                setUpdatingIncapacidade(true);
+                try {
+                  await updateClient.mutateAsync({
+                    id: clienteId.toString(),
+                    incapacidade: newIncapacidade ? parseInt(newIncapacidade) : null,
+                  });
+
+                  // Registrar no histórico do IRS se disponível
+                  if (irsId && onRegistrarHistorico) {
+                    await onRegistrarHistorico(
+                      'alteracao',
+                      'incapacidade',
+                      incapacidadeAnterior ? `${incapacidadeAnterior}%` : '0%',
+                      newIncapacidade ? `${newIncapacidade}%` : '0%',
+                      `Incapacidade do titular atualizada`
+                    );
+                  }
+
+                  toast({
+                    title: 'Sucesso',
+                    description: 'Incapacidade do titular atualizada com sucesso.',
+                  });
+                  setIsIncapacidadeModalOpen(false);
+                  setNewIncapacidade('0');
+                } catch (error: any) {
+                  toast({
+                    title: 'Erro',
+                    description: error.response?.data?.detail || 'Erro ao atualizar incapacidade.',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setUpdatingIncapacidade(false);
+                }
+              }}
+              disabled={updatingIncapacidade}
+            >
+              {updatingIncapacidade ? 'A atualizar...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Atualização de Incapacidade dos Membros */}
+      <Dialog open={isMemberIncapacidadeModalOpen} onOpenChange={setIsMemberIncapacidadeModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Atualizar Incapacidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedMemberForIncapacidade && (
+              <div className="space-y-2">
+                <Label>Membro</Label>
+                <p className="text-sm font-medium">{getClienteNome(selectedMemberForIncapacidade)}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="member-incapacidade">Incapacidade (%)</Label>
+              <Input
+                id="member-incapacidade"
+                type="number"
+                min="0"
+                max="100"
+                value={memberNewIncapacidade}
+                onChange={(e) => setMemberNewIncapacidade(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsMemberIncapacidadeModalOpen(false)}
+              disabled={updatingMemberIncapacidade}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => {
+                if (!selectedMemberForIncapacidade) return;
+
+                const membroId = selectedMemberForIncapacidade.cliente_relacionado_id;
+                const nomeMembro = getClienteNome(selectedMemberForIncapacidade);
+                const incapacidadeAnterior = getClienteIncapacidade(selectedMemberForIncapacidade)?.toString() || '0';
+
+                setUpdatingMemberIncapacidade(true);
+                try {
+                  await updateClient.mutateAsync({
+                    id: membroId.toString(),
+                    incapacidade: memberNewIncapacidade ? parseInt(memberNewIncapacidade) : null,
+                  });
+
+                  // Registrar no histórico do IRS se disponível
+                  if (irsId && onRegistrarHistorico) {
+                    await onRegistrarHistorico(
+                      'alteracao',
+                      'incapacidade',
+                      incapacidadeAnterior ? `${incapacidadeAnterior}%` : '0%',
+                      memberNewIncapacidade ? `${memberNewIncapacidade}%` : '0%',
+                      `Incapacidade de ${nomeMembro} atualizada`
+                    );
+                  }
+
+                  toast({
+                    title: 'Sucesso',
+                    description: 'Incapacidade atualizada com sucesso.',
+                  });
+                  setIsMemberIncapacidadeModalOpen(false);
+                  setSelectedMemberForIncapacidade(null);
+                  setMemberNewIncapacidade('0');
+                } catch (error: any) {
+                  toast({
+                    title: 'Erro',
+                    description: error.response?.data?.detail || 'Erro ao atualizar incapacidade.',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setUpdatingMemberIncapacidade(false);
+                }
+              }}
+              disabled={updatingMemberIncapacidade}
+            >
+              {updatingMemberIncapacidade ? 'A atualizar...' : 'Guardar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

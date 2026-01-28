@@ -8,6 +8,7 @@ import { useDossies, Dossie } from '@/hooks/useDossies';
 import { DossieModal } from '@/components/modals/DossieModal';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { normalizeString } from '@/lib/utils';
 
 export const Dossies: React.FC = () => {
   const { dossies, isLoading } = useDossies();
@@ -17,11 +18,11 @@ export const Dossies: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
 
   const filteredDossies = dossies.filter((dossie) => {
-    const term = searchTerm.toLowerCase();
-    const nomeMatch = dossie.nome?.toLowerCase().includes(term);
-    const numeroMatch = dossie.numero?.toLowerCase().includes(term);
-    const entidadeMatch = (dossie as any).entidade?.nome?.toLowerCase().includes(term) ||
-                         (dossie as any).entidade?.nome_empresa?.toLowerCase().includes(term);
+    const termNormalized = normalizeString(searchTerm);
+    const nomeMatch = normalizeString(dossie.nome || '').includes(termNormalized);
+    const numeroMatch = normalizeString(dossie.numero || '').includes(termNormalized);
+    const entidadeMatch = normalizeString((dossie as any).entidade?.nome || '').includes(termNormalized) ||
+                         normalizeString((dossie as any).entidade?.nome_empresa || '').includes(termNormalized);
     return nomeMatch || numeroMatch || entidadeMatch;
   });
 

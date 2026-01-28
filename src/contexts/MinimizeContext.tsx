@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
-type MinimizedType = 'task' | 'process' | 'client';
+type MinimizedType = 'task' | 'process' | 'client' | 'log-processo' | 'irs-details';
 
 export interface MinimizedItem {
   id: string;

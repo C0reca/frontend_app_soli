@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,7 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CorporateClient } from '@/hooks/useClients';
+import { Button } from '@/components/ui/button';
+import { CorporateClient, useClients } from '@/hooks/useClients';
+import { ClienteContactosTab } from '@/components/ClienteContactosTab';
+import { ClientCombobox } from '@/components/ui/clientcombobox';
+import { ClientModal } from './ClientModal';
+import { Plus } from 'lucide-react';
 
 interface CorporateClientFormProps {
   form: UseFormReturn<any>;
@@ -26,8 +31,12 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
   onContactosChange
 }) => {
   const { register, formState: { errors } } = form;
+  const { clients, isLoading: isClientsLoading } = useClients();
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const representanteId = watch('representante_id');
 
   return (
+    <>
     <Tabs defaultValue="identification" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
@@ -65,6 +74,15 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                   <p className="text-sm text-red-600">{errors.nif_empresa.message?.toString()}</p>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="designacao">Designação</Label>
+              <Input
+                id="designacao"
+                {...register('designacao')}
+                placeholder="Designação"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -131,45 +149,43 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               <div className="space-y-4 border-t pt-4">
               <h4 className="font-semibold">Representante Legal</h4>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="representante_nome">Nome *</Label>
-                  <Input
-                    id="representante_nome"
-                    {...register('representante_nome')}
-                    placeholder="Nome completo"
-                  />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="representante_id">Entidade *</Label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsClientModalOpen(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Nova Entidade
+                  </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="representante_nif">NIF *</Label>
-                  <Input
-                    id="representante_nif"
-                    {...register('representante_nif')}
-                    placeholder="123456789"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="representante_email">Email *</Label>
-                  <Input
-                    type="email"
-                    id="representante_email"
-                    {...register('representante_email')}
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="representante_telemovel">Telemóvel</Label>
-                  <Input
-                    id="representante_telemovel"
-                    {...register('representante_telemovel')}
-                    placeholder="+351 123 456 789"
-                  />
-                </div>
+                <ClientCombobox
+                  clients={clients || []}
+                  value={representanteId}
+                  onChange={(value) => {
+                    setValue('representante_id', value);
+                    // Preencher automaticamente os campos do representante com os dados do cliente selecionado
+                    const selectedClient = clients?.find(c => Number(c.id) === value);
+                    if (selectedClient) {
+                      setValue('representante_nome', selectedClient.nome || selectedClient.nome_empresa || '');
+                      setValue('representante_nif', selectedClient.nif || selectedClient.nif_empresa || '');
+                      setValue('representante_email', selectedClient.email || '');
+                      setValue('representante_telemovel', selectedClient.telefone || '');
+                    }
+                  }}
+                  isLoading={isClientsLoading}
+                />
+                {errors.representante_id && (
+                  <p className="text-sm text-red-500">{errors.representante_id.message as string}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -339,5 +355,24 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
         </Card>
       </TabsContent>
     </Tabs>
+    <ClientModal
+      isOpen={isClientModalOpen}
+      onClose={() => setIsClientModalOpen(false)}
+      onSuccess={(newClient) => {
+        // Após criar o cliente, selecioná-lo automaticamente
+        if (newClient?.id) {
+          setValue('representante_id', Number(newClient.id));
+          const client = clients?.find(c => Number(c.id) === Number(newClient.id));
+          if (client) {
+            setValue('representante_nome', client.nome || client.nome_empresa || '');
+            setValue('representante_nif', client.nif || client.nif_empresa || '');
+            setValue('representante_email', client.email || '');
+            setValue('representante_telemovel', client.telefone || '');
+          }
+        }
+        setIsClientModalOpen(false);
+      }}
+    />
+    </>
   );
 };

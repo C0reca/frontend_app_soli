@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X } from 'lucide-react';
+import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
 import api from '@/services/api';
@@ -346,6 +346,13 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   </div>
                 </div>
               )}
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4 text-gray-400" />
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Localização</label>
+                  <p className="text-sm text-gray-900">{(currentTask as any).onde_estao || 'Sem Localização'}</p>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-500">Anexos</label>

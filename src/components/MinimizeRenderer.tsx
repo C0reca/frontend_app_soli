@@ -4,6 +4,7 @@ import { TaskModal } from '@/components/modals/TaskModal';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
+import { IRSDetailsModal } from '@/components/modals/IRSDetailsModal';
 
 export const MinimizeRenderer: React.FC = () => {
   const { active, setActive, remove } = useMinimize();
@@ -60,6 +61,20 @@ export const MinimizeRenderer: React.FC = () => {
         onClose={closeAndClear}
         processoId={processoId || 0}
         log={log || null}
+      />
+    );
+  }
+
+  if (active.type === 'irs-details') {
+    const { irs, onEdit, onGenerateRecibo, onOpenReciboWizard } = active.payload || {};
+    return (
+      <IRSDetailsModal
+        isOpen={true}
+        onClose={closeAndClear}
+        irs={irs || null}
+        onEdit={onEdit}
+        onGenerateRecibo={onGenerateRecibo}
+        onOpenReciboWizard={onOpenReciboWizard}
       />
     );
   }

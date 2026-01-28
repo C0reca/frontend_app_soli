@@ -145,6 +145,15 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="designacao">Designação</Label>
+              <Input
+                id="designacao"
+                {...register('designacao')}
+                placeholder="Designação"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="num_cc">Cartão de Cidadão</Label>

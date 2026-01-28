@@ -35,6 +35,19 @@ interface ClientDetailsModalProps {
   client: Client | null;
 }
 
+// Função para traduzir estado civil de inglês para português
+const getEstadoCivilLabel = (estadoCivil?: string): string => {
+  if (!estadoCivil) return '-';
+  const traducoes: Record<string, string> = {
+    'single': 'Solteiro(a)',
+    'married': 'Casado(a)',
+    'divorced': 'Divorciado(a)',
+    'widowed': 'Viúvo(a)',
+    'separated': 'Separado(a)',
+  };
+  return traducoes[estadoCivil.toLowerCase()] || estadoCivil;
+};
+
 export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
   isOpen,
   onClose,
@@ -71,6 +84,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               <p className="text-lg font-semibold">{client.nome || '-'}</p>
             </div>
             <div>
+              <label className="text-sm font-medium text-muted-foreground">Designação</label>
+              <p className="text-sm">{(client as any).designacao || '-'}</p>
+            </div>
+            <div>
               <label className="text-sm font-medium text-muted-foreground">NIF</label>
               <p>{client.nif || '-'}</p>
             </div>
@@ -100,7 +117,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Estado Civil</label>
-              <p>{client.estado_civil || '-'}</p>
+              <p>{getEstadoCivilLabel(client.estado_civil)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Profissão</label>
@@ -291,11 +308,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 
   const renderCorporateClient = (client: CorporateClient) => (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
         <TabsTrigger value="contact">Contacto</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
-        <TabsTrigger value="irs">IRS</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
         {(client as any).tem_dossies && <TabsTrigger value="dossies">Arquivos</TabsTrigger>}
       </TabsList>
@@ -312,6 +328,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             <div>
               <label className="text-sm font-medium text-muted-foreground">Nome da Empresa</label>
               <p className="text-lg font-semibold">{client.nome_empresa || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Designação</label>
+              <p className="text-sm">{(client as any).designacao || '-'}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">NIF</label>
@@ -432,10 +452,6 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </div>
           </CardContent>
         </Card>
-      </TabsContent>
-
-      <TabsContent value="irs" className="mt-6">
-        <AgregadoFamiliarTab clienteId={client.id} cliente={client} />
       </TabsContent>
 
       <TabsContent value="informacao" className="mt-6">
@@ -576,28 +592,24 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             <div className="flex items-center space-x-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Nº Cliente</label>
-                <p className="font-mono">{client.internalNumber}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Responsável</label>
-                <p>{client.responsibleEmployee}</p>
+                <p className="font-mono">{client.id}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <div className="mt-1">
                   <Badge className={
-                    (client.status || 'active') === 'active' 
+                    (client.ativo !== false) 
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                   }>
-                    {(client.status || 'active') === 'active' ? 'Ativo' : 'Inativo'}
+                    {(client.ativo !== false) ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-              <p className="text-sm">{new Date(client.createdAt).toLocaleDateString('pt-PT')}</p>
+              <p className="text-sm">{(client as any).criado_em ? new Date((client as any).criado_em).toLocaleDateString('pt-PT') : '-'}</p>
             </div>
           </div>
 

@@ -39,6 +39,7 @@ interface IRSModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialStep?: number;
+  onCreateTask?: (irsData: { id: number; cliente_id: number; ano: number; fase: number; estado: string; numero_recibo?: string }) => void;
 }
 
 const STEPS = [
@@ -48,7 +49,7 @@ const STEPS = [
   { id: 4, title: 'Recibo', icon: Printer },
 ];
 
-export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClose, initialStep }) => {
+export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClose, initialStep, onCreateTask }) => {
   const { createIRS, updateIRS, registrarHistorico } = useIRS();
   const { clients: allClients, isLoading: isClientsLoading, updateClient } = useClients();
   const { user } = useAuth();
@@ -257,7 +258,17 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           setCurrentStep(4);
           return;
         }
-        // Se não for "Pago", fechar o modal
+        // Se não for "Pago", abrir formulário de tarefas e fechar o modal
+        if (onCreateTask) {
+          onCreateTask({
+            id: novoIRS.id,
+            cliente_id: novoIRS.cliente_id,
+            ano: novoIRS.ano,
+            fase: novoIRS.fase,
+            estado: novoIRS.estado,
+            numero_recibo: novoIRS.numero_recibo
+          });
+        }
         onClose();
       }
     } catch (error) {
@@ -984,7 +995,37 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                 ) : (
                   <Button 
                     type="button"
-                    onClick={onClose}
+                    onClick={async () => {
+                      // Se houver onCreateTask e o IRS foi criado, buscar dados completos e abrir formulário de tarefas
+                      if (onCreateTask && createdIRSId) {
+                        try {
+                          // Buscar dados completos do IRS criado
+                          const response = await api.get(`/irs/${createdIRSId}`);
+                          const irsData = response.data;
+                          onCreateTask({
+                            id: irsData.id,
+                            cliente_id: irsData.cliente_id,
+                            ano: irsData.ano,
+                            fase: irsData.fase,
+                            estado: irsData.estado,
+                            numero_recibo: irsData.numero_recibo
+                          });
+                        } catch (error) {
+                          console.error('Erro ao buscar dados do IRS:', error);
+                          // Fallback: usar dados do formulário
+                          const formData = watch();
+                          onCreateTask({
+                            id: createdIRSId,
+                            cliente_id: formData.cliente_id,
+                            ano: formData.ano || new Date().getFullYear(),
+                            fase: formData.fase,
+                            estado: formData.estado,
+                            numero_recibo: undefined
+                          });
+                        }
+                      }
+                      onClose();
+                    }}
                   >
                     Concluir
                   </Button>

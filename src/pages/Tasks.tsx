@@ -184,8 +184,11 @@ export const Tasks: React.FC = () => {
                 </div>
                 <p className="text-sm text-gray-600 mb-3">{task.descricao}</p>
                 <div className="flex items-center space-x-4 text-xs text-gray-500">
-                  <span><strong>Processo:</strong> {task.processo_id || 'N/A'}</span>
-                  <span><strong>Localização:</strong> {task.onde_estao || 'Não definida'}</span>
+                  <span><strong>Processo:</strong> {task.processo_id ? (() => {
+                    const processo = processes.find(p => p.id === task.processo_id);
+                    return processo ? `${processo.id} - ${processo.titulo}` : task.processo_id;
+                  })() : 'N/A'}</span>
+                  <span><strong>Localização:</strong> {task.onde_estao || 'Sem Localização'}</span>
                   <span>
                     <strong>Responsável:</strong>{' '}
                     {task.responsavel_id

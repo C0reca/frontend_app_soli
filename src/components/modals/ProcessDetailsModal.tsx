@@ -22,7 +22,8 @@ import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useToast } from '@/hooks/use-toast';
-import { Client } from '@/hooks/useClients';
+import { Client, useClients } from '@/hooks/useClients';
+import { ProcessoEntidadesSecundariasTab } from '@/components/ProcessoEntidadesSecundariasTab';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
@@ -520,9 +521,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Compromissos</TabsTrigger>
+              <TabsTrigger value="entidades">Entidades</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
             </TabsList>
@@ -904,7 +906,26 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               </div>
             </TabsContent>
 
-            
+            <TabsContent value="entidades" className="space-y-6 mt-6">
+              <ProcessoEntidadesSecundariasTab 
+                processoId={process?.id || null}
+                clientePrincipal={process?.cliente ? {
+                  id: process.cliente_id || 0,
+                  nome: (process.cliente as any)?.nome,
+                  nome_empresa: (process.cliente as any)?.nome_empresa,
+                  nif: (process.cliente as any)?.nif,
+                  nif_empresa: (process.cliente as any)?.nif_empresa,
+                  tipo: (process.cliente as any)?.tipo,
+                } : clienteData ? {
+                  id: clienteData.id,
+                  nome: clienteData.nome,
+                  nome_empresa: clienteData.nome_empresa,
+                  nif: clienteData.nif,
+                  nif_empresa: clienteData.nif_empresa,
+                  tipo: clienteData.tipo,
+                } : null}
+              />
+            </TabsContent>
 
             <TabsContent value="timeline" className="space-y-6 mt-6">
               <div className="flex justify-between items-center">

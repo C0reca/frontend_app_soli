@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,11 @@ import { Plus, Search, Edit, FileText, CheckCircle, XCircle, Clock, ArrowLeftRig
 import { useIRS, IRS } from '@/hooks/useIRS';
 import { IRSModal } from '@/components/modals/IRSModal';
 import { IRSDetailsModal } from '@/components/modals/IRSDetailsModal';
+import { TaskModal } from '@/components/modals/TaskModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useAuth } from '@/contexts/AuthContext';
+import { normalizeString } from '@/lib/utils';
 
 export const IRS: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,9 @@ export const IRS: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [irsToMarkAsPaid, setIrsToMarkAsPaid] = useState<IRS | null>(null);
   const [confirmStep, setConfirmStep] = useState(1);
+  const [openDetailsInReciboTab, setOpenDetailsInReciboTab] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskInitialData, setTaskInitialData] = useState<any>(null);
   const [filters, setFilters] = useState({
     estado: 'all',
     estadoEntrega: 'all',
@@ -40,16 +45,23 @@ export const IRS: React.FC = () => {
 
   // Calcular estatísticas
   const porPagarCount = irsList.filter((irs: IRS) => irs.estado === 'Por Pagar').length;
-  const pagoCount = irsList.filter((irs: IRS) => irs.estado === 'Pago').length;
-  const isentoCount = irsList.filter((irs: IRS) => irs.estado === 'Isento').length;
+  
+  // Estatísticas de Estado de Entrega
+  const enviadoCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Enviado').length;
+  const levantadoCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Levantado Pelo Cliente').length;
+  const aguardaDocCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Aguarda Documentos').length;
+  const contenciosoCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Contencioso Administrativo').length;
+  const emAnaliseCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Em Análise').length;
+  const verificadoCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Verificado').length;
+  const concluidoCount = irsList.filter((irs: IRS) => irs.estado_entrega === 'Concluído').length;
 
   // Obter anos únicos para filtro
   const anos = Array.from(new Set(irsList.map((irs: IRS) => irs.ano))).sort((a, b) => b - a);
 
   const filteredIRS = irsList.filter((irs: IRS) => {
-    const clienteNome = irs.cliente?.nome?.toLowerCase() || '';
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = searchTerm === '' || clienteNome.includes(searchLower);
+    const clienteNome = irs.cliente?.nome || '';
+    const searchNormalized = normalizeString(searchTerm);
+    const matchesSearch = searchTerm === '' || normalizeString(clienteNome).includes(searchNormalized);
     
     const matchesEstado = filters.estado === 'all' || irs.estado === filters.estado;
     
@@ -91,6 +103,40 @@ export const IRS: React.FC = () => {
         </Badge>
       );
     }
+  };
+
+  // Função para obter classes de cor do estado de pagamento
+  const getEstadoPagamentoClasses = (estado: string) => {
+    if (estado === 'Pago') {
+      return 'bg-green-100 text-green-800 border-green-300';
+    } else if (estado === 'Isento') {
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+    } else {
+      return 'bg-red-100 text-red-800 border-red-300';
+    }
+  };
+
+  // Função para obter classes de cor do estado de entrega
+  const getEstadoEntregaClasses = (estadoEntrega?: string) => {
+    if (!estadoEntrega || estadoEntrega === 'none') {
+      return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+    if (estadoEntrega === 'Enviado') {
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+    } else if (estadoEntrega === 'Levantado Pelo Cliente') {
+      return 'bg-green-100 text-green-800 border-green-300';
+    } else if (estadoEntrega === 'Concluído') {
+      return 'bg-purple-100 text-purple-800 border-purple-300';
+    } else if (estadoEntrega === 'Verificado') {
+      return 'bg-green-100 text-green-800 border-green-300';
+    } else if (estadoEntrega === 'Em Análise') {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    } else if (estadoEntrega === 'Contencioso Administrativo') {
+      return 'bg-orange-100 text-orange-800 border-orange-300';
+    } else if (estadoEntrega === 'Aguarda Documentos') {
+      return 'bg-amber-100 text-amber-800 border-amber-300';
+    }
+    return 'bg-gray-100 text-gray-800 border-gray-300';
   };
 
   const getEstadoEntregaBadge = (estadoEntrega?: string) => {
@@ -161,15 +207,16 @@ export const IRS: React.FC = () => {
     setIsConfirmModalOpen(false);
     setConfirmStep(1);
     
-    // Criar o IRS atualizado com estado "Pago" para abrir o modal
+    // Criar o IRS atualizado com estado "Pago" para abrir o modal de detalhes na aba Recibo
     const irsWithPagoState: IRS = {
       ...irsToMarkAsPaid,
       estado: 'Pago' as const
     };
     
-    setSelectedIRS(irsWithPagoState);
-    setIsModalOpen(true);
-    // O IRSModal vai receber initialStep=4 e abrir direto no step 4
+    setOpenDetailsInReciboTab(true);
+    setSelectedIRSDetails(irsWithPagoState);
+    setIsDetailsModalOpen(true);
+    // O IRSDetailsModal vai abrir na aba "Recibo"
     
     setIrsToMarkAsPaid(null);
   };
@@ -249,6 +296,7 @@ export const IRS: React.FC = () => {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card Por Pagar - mantém o mesmo tamanho */}
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => {
@@ -273,53 +321,164 @@ export const IRS: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              estado: 'Pago',
-              estadoEntrega: 'all',
-              ano: 'all',
-              showConcluidos: true,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-              Pago
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {pagoCount}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Cards menores de Estado de Entrega */}
+        <div className="grid grid-cols-4 gap-2 md:col-span-2">
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => {
+              setFilters({
+                estado: 'all',
+                estadoEntrega: 'Enviado',
+                ano: 'all',
+                showConcluidos: true,
+              });
+            }}
+          >
+            <CardHeader className="pb-1 pt-3 px-3">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <div className="flex items-center">
+                  <CheckCircle className="mr-1.5 h-4 w-4 text-blue-600" />
+                  <span>Enviado:</span>
+                </div>
+                <span className="text-lg font-bold text-blue-600">{enviadoCount}</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
 
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              estado: 'Isento',
-              estadoEntrega: 'all',
-              ano: 'all',
-              showConcluidos: true,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <CheckCircle className="mr-2 h-5 w-5 text-blue-600" />
-              Isento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {isentoCount}
-            </div>
-          </CardContent>
-        </Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => {
+              setFilters({
+                estado: 'all',
+                estadoEntrega: 'Levantado Pelo Cliente',
+                ano: 'all',
+                showConcluidos: true,
+              });
+            }}
+          >
+            <CardHeader className="pb-1 pt-3 px-3">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <div className="flex items-center">
+                  <CheckCircle className="mr-1.5 h-4 w-4 text-green-600" />
+                  <span>Levantado:</span>
+                </div>
+                <span className="text-lg font-bold text-green-600">{levantadoCount}</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => {
+              setFilters({
+                estado: 'all',
+                estadoEntrega: 'Aguarda Documentos',
+                ano: 'all',
+                showConcluidos: true,
+              });
+            }}
+          >
+            <CardHeader className="pb-1 pt-3 px-3">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <div className="flex items-center">
+                  <Clock className="mr-1.5 h-4 w-4 text-amber-600" />
+                  <span>Aguarda Doc.:</span>
+                </div>
+                <span className="text-lg font-bold text-amber-600">{aguardaDocCount}</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => {
+              setFilters({
+                estado: 'all',
+                estadoEntrega: 'Contencioso Administrativo',
+                ano: 'all',
+                showConcluidos: true,
+              });
+            }}
+          >
+            <CardHeader className="pb-1 pt-3 px-3">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="mr-1.5 h-4 w-4 text-orange-600" />
+                  <span>Contencioso:</span>
+                </div>
+                <span className="text-lg font-bold text-orange-600">{contenciosoCount}</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <div className="col-span-4 flex gap-2">
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow flex-1"
+              onClick={() => {
+                setFilters({
+                  estado: 'all',
+                  estadoEntrega: 'Em Análise',
+                  ano: 'all',
+                  showConcluidos: true,
+                });
+              }}
+            >
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Clock className="mr-1.5 h-4 w-4 text-yellow-600" />
+                    <span>Em Análise:</span>
+                  </div>
+                  <span className="text-lg font-bold text-yellow-600">{emAnaliseCount}</span>
+                </CardTitle>
+              </CardHeader>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow flex-1"
+              onClick={() => {
+                setFilters({
+                  estado: 'all',
+                  estadoEntrega: 'Verificado',
+                  ano: 'all',
+                  showConcluidos: true,
+                });
+              }}
+            >
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <div className="flex items-center">
+                    <CheckCircle className="mr-1.5 h-4 w-4 text-green-600" />
+                    <span>Verificado:</span>
+                  </div>
+                  <span className="text-lg font-bold text-green-600">{verificadoCount}</span>
+                </CardTitle>
+              </CardHeader>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow flex-1"
+              onClick={() => {
+                setFilters({
+                  estado: 'all',
+                  estadoEntrega: 'Concluído',
+                  ano: 'all',
+                  showConcluidos: true,
+                });
+              }}
+            >
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <div className="flex items-center">
+                    <CheckCircle className="mr-1.5 h-4 w-4 text-purple-600" />
+                    <span>Concluído:</span>
+                  </div>
+                  <span className="text-lg font-bold text-purple-600">{concluidoCount}</span>
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
       </div>
 
       {/* Filtros e Pesquisa */}
@@ -464,54 +623,63 @@ export const IRS: React.FC = () => {
                       <TableCell>{irs.ano}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {getEstadoBadge(
-                            irs.estado,
-                            !irs.numero_recibo && (irs.estado === 'Por Pagar' || irs.estado === 'Pago')
-                              ? () => {
-                                  if (irs.estado === 'Por Pagar') {
-                                    handleMarkAsPaid(irs);
-                                  } else if (irs.estado === 'Pago') {
-                                    handleToggleEstado(irs);
-                                  }
+                          <Select
+                            value={irs.estado}
+                            onValueChange={async (value) => {
+                              const novoEstado = value as 'Por Pagar' | 'Pago' | 'Isento';
+                              if (novoEstado !== irs.estado) {
+                                if (novoEstado === 'Pago') {
+                                  // Usar o mesmo fluxo de confirmação
+                                  handleMarkAsPaid(irs);
+                                } else {
+                                  await updateIRS.mutateAsync({
+                                    id: irs.id,
+                                    data: { estado: novoEstado }
+                                  });
                                 }
-                              : undefined
-                          )}
-                          {/* Só mostrar botão para marcar como Pago se estiver Por Pagar e não tiver recibo */}
-                          {!irs.numero_recibo && irs.estado === 'Por Pagar' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 flex items-center justify-center"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkAsPaid(irs);
-                              }}
-                              title="Marcar como Pago"
-                            >
-                              <Check className="w-4 h-4 text-green-500" />
-                            </Button>
-                          )}
-                          {/* Só mostrar botão para marcar como Por Pagar se estiver Pago e não tiver recibo */}
-                          {!irs.numero_recibo && irs.estado === 'Pago' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 flex items-center justify-center"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleEstado(irs);
-                              }}
-                              title="Marcar como Por Pagar"
-                            >
-                              <X className="w-4 h-4 text-red-500" />
-                            </Button>
-                          )}
+                              }
+                            }}
+                            disabled={irs.estado === 'Pago' && !!irs.numero_recibo}
+                          >
+                            <SelectTrigger className={`h-8 w-[120px] rounded-full border-2 ${getEstadoPagamentoClasses(irs.estado)}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Por Pagar">Por Pagar</SelectItem>
+                              <SelectItem value="Pago">Pago</SelectItem>
+                              <SelectItem value="Isento">Isento</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getEstadoEntregaBadge(irs.estado_entrega) || (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={irs.estado_entrega || 'none'}
+                            onValueChange={async (value) => {
+                              if (value !== (irs.estado_entrega || 'none')) {
+                                await updateIRS.mutateAsync({
+                                  id: irs.id,
+                                  data: { estado_entrega: value === 'none' ? undefined : value }
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={`h-8 w-[180px] rounded-full border-2 ${getEstadoEntregaClasses(irs.estado_entrega)} [&>span]:text-left [&>span]:block [&>span]:truncate`}>
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Não definido</SelectItem>
+                              <SelectItem value="Enviado">Enviado</SelectItem>
+                              <SelectItem value="Levantado Pelo Cliente">Levantado Pelo Cliente</SelectItem>
+                              <SelectItem value="Aguarda Documentos">Aguarda Documentos</SelectItem>
+                              <SelectItem value="Contencioso Administrativo">Contencioso Administrativo</SelectItem>
+                              <SelectItem value="Em Análise">Em Análise</SelectItem>
+                              <SelectItem value="Verificado">Verificado</SelectItem>
+                              <SelectItem value="Concluído">Concluído</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
@@ -570,6 +738,63 @@ export const IRS: React.FC = () => {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           initialStep={selectedIRS?.estado === 'Pago' && !selectedIRS?.numero_recibo ? 4 : undefined}
+          onCreateTask={async (irsData) => {
+            // Buscar dados completos do cliente
+            let clienteNome = '';
+            try {
+              const clienteResponse = await api.get(`/clientes/${irsData.cliente_id}`);
+              const cliente = clienteResponse.data;
+              const tipo = cliente.tipo || 'singular';
+              clienteNome = tipo === 'singular' 
+                ? cliente.nome 
+                : cliente.nome_empresa;
+              
+              // Se ainda não tiver nome, tentar buscar da lista de clientes
+              if (!clienteNome) {
+                const clienteNaLista = clients.find(c => c.id === irsData.cliente_id);
+                if (clienteNaLista) {
+                  const tipoLista = clienteNaLista.tipo || 'singular';
+                  clienteNome = tipoLista === 'singular'
+                    ? (clienteNaLista as any).nome
+                    : (clienteNaLista as any).nome_empresa;
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao buscar dados do cliente:', error);
+              // Tentar buscar da lista de clientes como fallback
+              const clienteNaLista = clients.find(c => c.id === irsData.cliente_id);
+              if (clienteNaLista) {
+                const tipo = clienteNaLista.tipo || 'singular';
+                clienteNome = tipo === 'singular'
+                  ? (clienteNaLista as any).nome
+                  : (clienteNaLista as any).nome_empresa;
+              }
+            }
+            
+            // Preparar dados iniciais da tarefa baseados no IRS
+            const numeroIRS = irsData.numero_recibo || `#${irsData.id}`;
+            setTaskInitialData({
+              titulo: clienteNome 
+                ? `IRS ${irsData.ano} - Nº ${numeroIRS} - ${clienteNome}`
+                : `IRS ${irsData.ano} - Nº ${numeroIRS}`,
+              descricao: clienteNome
+                ? `Tarefa relacionada com o IRS ${irsData.ano}, Fase ${irsData.fase} do cliente ${clienteNome}.`
+                : `Tarefa relacionada com o IRS ${irsData.ano}, Fase ${irsData.fase}.`,
+            });
+            setIsTaskModalOpen(true);
+            handleCloseModal();
+          }}
+        />
+      )}
+
+      {isTaskModalOpen && (
+        <TaskModal
+          isOpen={isTaskModalOpen}
+          onClose={() => {
+            setIsTaskModalOpen(false);
+            setTaskInitialData(null);
+          }}
+          initialData={taskInitialData}
         />
       )}
 
@@ -632,16 +857,30 @@ export const IRS: React.FC = () => {
           onClose={() => {
             setIsDetailsModalOpen(false);
             setSelectedIRSDetails(null);
+            setOpenDetailsInReciboTab(false);
           }}
           irs={selectedIRSDetails}
           onEdit={() => {
             setIsDetailsModalOpen(false);
             setSelectedIRSDetails(null);
+            setOpenDetailsInReciboTab(false);
             handleEdit(selectedIRSDetails);
           }}
           onGenerateRecibo={() => {
             handleGenerateRecibo(selectedIRSDetails);
           }}
+          onOpenReciboWizard={(irs) => {
+            setIsDetailsModalOpen(false);
+            setSelectedIRSDetails(null);
+            setOpenDetailsInReciboTab(false);
+            const irsWithPagoState: IRS = {
+              ...irs,
+              estado: 'Pago' as const
+            };
+            setSelectedIRS(irsWithPagoState);
+            setIsModalOpen(true);
+          }}
+          initialTab={openDetailsInReciboTab && selectedIRSDetails.estado === 'Pago' ? 'recibo' : undefined}
         />
       )}
     </div>

@@ -108,7 +108,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         prioridade: data.prioridade,
         concluida: data.concluida,
         tipo: data.tipo,
-        onde_estao: data.onde_estao === "" || data.onde_estao === undefined ? null : data.onde_estao,
+        onde_estao: data.onde_estao === "" || data.onde_estao === undefined || data.onde_estao === null ? null : data.onde_estao,
         processo_id: data.processo_id || null,
         responsavel_id: data.responsavel_id || null,
         autor_id: data.autor_id || null,
@@ -132,7 +132,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
           parent_id: normalizedData.parent_id,
           data_fim: normalizedData.data_fim,
         };
-        console.log('Update payload:', updatePayload); // Debug temporário
+        console.log('Update payload onde_estao:', updatePayload.onde_estao); // Debug
         await updateTask.mutateAsync(updatePayload as Task & { id: string });
       } else {
         const newTask = await createTask.mutateAsync(normalizedData as Omit<Task, 'id' | 'criado_em'>);
@@ -373,10 +373,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                   <FormLabel>Localização</FormLabel>
                   <Select
                     onValueChange={(v) => {
-                      const value = v === "--------" ? null : v;
+                      const value = v === "--------" || v === "" ? null : v;
                       field.onChange(value);
                     }}
-                    value={field.value ?? ""}
+                    value={field.value || "--------"}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -390,6 +390,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                       <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
                       <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
                       <SelectItem value="Armário DPA">Armário DPA</SelectItem>
+                      <SelectItem value="PEPEX">PEPEX</SelectItem>
                       <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
                       <SelectItem value="Reuniões">Reuniões</SelectItem>
                       <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>

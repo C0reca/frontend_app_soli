@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, User, Calendar, CheckCircle, Clock, XCircle, Edit, Printer, Download, AlertCircle, History, Plus, ExternalLink } from 'lucide-react';
+import { FileText, User, Calendar, CheckCircle, Clock, XCircle, Edit, Printer, Download, AlertCircle, History, Plus, ExternalLink, Mail, MessageCircle, Check, Loader2, Minimize2, X } from 'lucide-react';
 import { IRS } from '@/hooks/useIRS';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
@@ -18,6 +18,10 @@ import { useAgregadoFamiliar } from '@/hooks/useAgregadoFamiliar';
 import { useIRSTimeline } from '@/hooks/useIRSTimeline';
 import { useClients } from '@/hooks/useClients';
 import { useToast } from '@/hooks/use-toast';
+import { useIRS } from '@/hooks/useIRS';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useMinimize } from '@/contexts/MinimizeContext';
+import { TaskModal } from '@/components/modals/TaskModal';
 
 interface IRSDetailsModalProps {
   isOpen: boolean;
@@ -25,6 +29,9 @@ interface IRSDetailsModalProps {
   irs: IRS | null;
   onEdit?: () => void;
   onGenerateRecibo?: () => void;
+  onOpenReciboWizard?: (irs: IRS) => void;
+  initialTab?: string;
+  onCreateTask?: (irsData: { id: number; cliente_id: number; ano: number; fase: number; estado: string; numero_recibo?: string }) => void;
 }
 
 export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
@@ -33,6 +40,9 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
   irs,
   onEdit,
   onGenerateRecibo,
+  onOpenReciboWizard,
+  initialTab,
+  onCreateTask,
 }) => {
   const { data: clienteData, isLoading: isLoadingCliente } = useQuery({
     queryKey: ['cliente', irs?.cliente_id],
@@ -45,10 +55,39 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
   const { agregado } = useAgregadoFamiliar(irs?.cliente_id || 0);
   const { data: timeline, isLoading: isLoadingTimeline } = useIRSTimeline(irs?.id);
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState(initialTab || 'details');
+  
+  // Atualizar aba quando initialTab mudar
+  React.useEffect(() => {
+    if (initialTab && isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, isOpen]);
   const { updateClient } = useClients();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { updateIRS, generateRecibo } = useIRS();
+  const { minimize } = useMinimize();
+  const { clients } = useClients();
+  
+  // Estados para criar tarefa
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskInitialData, setTaskInitialData] = useState<any>(null);
+  
+  // Estados para aba Recibo
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailAddress, setEmailAddress] = useState('');
+  const [updatingEmail, setUpdatingEmail] = useState(false);
+  const [updatingTelefone, setUpdatingTelefone] = useState(false);
+  const [telefoneAddress, setTelefoneAddress] = useState('');
+  
+  // Estados para modais de alteração de estado
+  const [isConfirmEstadoModalOpen, setIsConfirmEstadoModalOpen] = useState(false);
+  const [isEstadoEntregaModalOpen, setIsEstadoEntregaModalOpen] = useState(false);
+  const [isEstadoSelectModalOpen, setIsEstadoSelectModalOpen] = useState(false);
+  const [confirmStep, setConfirmStep] = useState(1);
+  const [newEstado, setNewEstado] = useState<'Por Pagar' | 'Pago' | 'Isento' | null>(null);
+  const [newEstadoEntrega, setNewEstadoEntrega] = useState<string>('none');
 
   // Estados para modais de edição rápida
   const [isEditingIncapacidade, setIsEditingIncapacidade] = useState(false);
@@ -145,6 +184,119 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
       toast({
         title: 'Erro',
         description: error.response?.data?.detail || `Erro ao atualizar ${campo}.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Função para abrir modal de confirmação de alteração de estado de pagamento
+  const handleChangeEstado = (novoEstado: 'Por Pagar' | 'Pago' | 'Isento') => {
+    if (!irs) return;
+    setNewEstado(novoEstado);
+    setConfirmStep(1);
+    setIsConfirmEstadoModalOpen(true);
+  };
+
+  // Função para confirmar passo 1 da alteração de estado
+  const handleConfirmEstadoStep1 = () => {
+    setConfirmStep(2);
+  };
+
+  // Função para confirmar passo 2 e atualizar estado
+  const handleConfirmEstadoStep2 = async () => {
+    if (!irs || !newEstado) return;
+
+    try {
+      const valorAnterior = irs.estado;
+      await updateIRS.mutateAsync({
+        id: irs.id,
+        data: { estado: newEstado }
+      });
+
+      await registrarHistorico(
+        'alteracao',
+        'estado',
+        valorAnterior || 'Não definido',
+        newEstado || 'Não definido',
+        'Estado de pagamento alterado'
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['irs'] });
+      queryClient.invalidateQueries({ queryKey: ['irs-timeline', irs.id] });
+      
+      setIsConfirmEstadoModalOpen(false);
+      setConfirmStep(1);
+      setNewEstado(null);
+
+      // Se o novo estado for "Pago", abrir o wizard de recibo
+      if (newEstado === 'Pago' && onOpenReciboWizard) {
+        const irsAtualizado: IRS = {
+          ...irs,
+          estado: 'Pago' as const
+        };
+        onOpenReciboWizard(irsAtualizado);
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Estado de pagamento atualizado com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar estado de pagamento.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Função para cancelar alteração de estado
+  const handleCancelEstado = () => {
+    setIsConfirmEstadoModalOpen(false);
+    setConfirmStep(1);
+    setNewEstado(null);
+  };
+
+  // Função para abrir modal de alteração de estado de entrega
+  const handleOpenEstadoEntregaModal = () => {
+    if (!irs) return;
+    setNewEstadoEntrega(irs.estado_entrega || 'none');
+    setIsEstadoEntregaModalOpen(true);
+  };
+
+  // Função para atualizar estado de entrega
+  const handleUpdateEstadoEntrega = async () => {
+    if (!irs) return;
+
+    try {
+      const valorAnterior = irs.estado_entrega || 'Não definido';
+      await updateIRS.mutateAsync({
+        id: irs.id,
+        data: { estado_entrega: newEstadoEntrega === 'none' ? undefined : newEstadoEntrega }
+      });
+
+      await registrarHistorico(
+        'alteracao',
+        'estado_entrega',
+        valorAnterior,
+        newEstadoEntrega === 'none' ? 'Não definido' : newEstadoEntrega,
+        'Estado de entrega alterado'
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['irs'] });
+      queryClient.invalidateQueries({ queryKey: ['irs-timeline', irs.id] });
+      
+      setIsEstadoEntregaModalOpen(false);
+      setNewEstadoEntrega('none');
+
+      toast({
+        title: 'Sucesso',
+        description: 'Estado de entrega atualizado com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar estado de entrega.',
         variant: 'destructive',
       });
     }
@@ -503,9 +655,269 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
     handlePrint();
   };
 
+  // Funções para aba Recibo
+  const handlePrintRecibo = async () => {
+    if (!irs?.id) {
+      toast({
+        title: 'Erro',
+        description: 'IRS não encontrado. Por favor, tente novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      const response = await api.post(`/irs/${irs.id}/recibo`, {}, {
+        responseType: 'blob',
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
+        };
+      } else {
+        // Fallback: download se não conseguir abrir janela
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `recibo_irs_${irs.id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Recibo aberto para impressão.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao gerar recibo.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!emailAddress.trim() || !clienteData) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, insira um endereço de email válido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!irs?.id) {
+      toast({
+        title: 'Erro',
+        description: 'IRS não encontrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const emailAnterior = clienteData?.email || '';
+
+    setUpdatingEmail(true);
+    try {
+      await updateClient.mutateAsync({
+        id: clienteData.id.toString(),
+        email: emailAddress.trim(),
+      });
+
+      await registrarHistorico(
+        'alteracao',
+        'email',
+        emailAnterior || 'Não definido',
+        emailAddress.trim(),
+        `Email do cliente atualizado`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['cliente', irs.cliente_id] });
+      toast({
+        title: 'Sucesso',
+        description: 'Email atualizado com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar email.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingEmail(false);
+    }
+  };
+
+  const handleUpdateTelefone = async () => {
+    if (!telefoneAddress.trim() || !clienteData) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, insira um número de telefone válido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!irs?.id) {
+      toast({
+        title: 'Erro',
+        description: 'IRS não encontrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const telefoneAnterior = clienteData?.telefone || '';
+
+    setUpdatingTelefone(true);
+    try {
+      await updateClient.mutateAsync({
+        id: clienteData.id.toString(),
+        telefone: telefoneAddress.trim(),
+      });
+
+      await registrarHistorico(
+        'alteracao',
+        'telefone',
+        telefoneAnterior || 'Não definido',
+        telefoneAddress.trim(),
+        `Telefone do cliente atualizado`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['cliente', irs.cliente_id] });
+      toast({
+        title: 'Sucesso',
+        description: 'Telefone atualizado com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar telefone.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingTelefone(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailAddress.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, insira um endereço de email.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!irs?.id) return;
+
+    setSendingEmail(true);
+    try {
+      await api.post(`/irs/${irs.id}/enviar-recibo-email`, {
+        email: emailAddress.trim(),
+      });
+      
+      toast({
+        title: 'Sucesso',
+        description: `Recibo enviado com sucesso para ${emailAddress}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao enviar email.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!irs?.id || !telefoneAddress.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, insira um número de telefone.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const numeroLimpo = telefoneAddress.trim().replace(/\D/g, '');
+    const numeroComCodigo = numeroLimpo.startsWith('351') ? numeroLimpo : `351${numeroLimpo}`;
+    const url = `https://wa.me/${numeroComCodigo}`;
+    window.open(url, '_blank');
+  };
+
+  // Inicializar email e telefone quando o modal abrir
+  React.useEffect(() => {
+    if (isOpen && clienteData) {
+      setEmailAddress(clienteData.email || '');
+      setTelefoneAddress(clienteData.telefone || '');
+    }
+  }, [isOpen, clienteData]);
+
+  // Função para criar tarefa relacionada com o IRS
+  const handleCreateTask = async () => {
+    if (!irs) return;
+    
+    // Buscar dados completos do cliente
+    let clienteNome = '';
+    try {
+      const clienteResponse = await api.get(`/clientes/${irs.cliente_id}`);
+      const cliente = clienteResponse.data;
+      const tipo = cliente.tipo || 'singular';
+      clienteNome = tipo === 'singular' 
+        ? cliente.nome 
+        : cliente.nome_empresa;
+      
+      // Se ainda não tiver nome, tentar buscar da lista de clientes
+      if (!clienteNome) {
+        const clienteNaLista = clients.find(c => c.id === irs.cliente_id);
+        if (clienteNaLista) {
+          const tipoLista = clienteNaLista.tipo || 'singular';
+          clienteNome = tipoLista === 'singular'
+            ? (clienteNaLista as any).nome
+            : (clienteNaLista as any).nome_empresa;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados do cliente:', error);
+      // Tentar buscar da lista de clientes como fallback
+      const clienteNaLista = clients.find(c => c.id === irs.cliente_id);
+      if (clienteNaLista) {
+        const tipo = clienteNaLista.tipo || 'singular';
+        clienteNome = tipo === 'singular'
+          ? (clienteNaLista as any).nome
+          : (clienteNaLista as any).nome_empresa;
+      }
+    }
+    
+    // Preparar dados iniciais da tarefa baseados no IRS
+    const numeroIRS = irs.numero_recibo || `#${irs.id}`;
+    setTaskInitialData({
+      titulo: clienteNome 
+        ? `IRS ${irs.ano} - Nº ${numeroIRS} - ${clienteNome}`
+        : `IRS ${irs.ano} - Nº ${numeroIRS}`,
+      descricao: clienteNome
+        ? `Tarefa relacionada com o IRS ${irs.ano}, Fase ${irs.fase} do cliente ${clienteNome}.`
+        : `Tarefa relacionada com o IRS ${irs.ano}, Fase ${irs.fase}.`,
+    });
+    setIsTaskModalOpen(true);
+  };
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -526,27 +938,51 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
+              <Button variant="outline" size="sm" onClick={handleCreateTask}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Tarefa
+              </Button>
               {onEdit && (
                 <Button variant="outline" size="sm" onClick={onEdit}>
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </Button>
               )}
-              {irs.estado === 'Pago' && onGenerateRecibo && (
-                <Button variant="outline" size="sm" onClick={onGenerateRecibo}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Gerar Recibo
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  minimize({ 
+                    type: 'irs-details', 
+                    title: `IRS ${irs.ano} - Fase ${irs.fase}`, 
+                    payload: { irs, onEdit, onGenerateRecibo, onOpenReciboWizard } 
+                  });
+                  onClose();
+                }}
+                aria-label="Minimizar"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onClose}
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${irs.estado === 'Pago' ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="details">Detalhes</TabsTrigger>
             <TabsTrigger value="dados-irs">Dados do IRS</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            {irs.estado === 'Pago' && (
+              <TabsTrigger value="recibo">Recibo</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="details" className="space-y-6 mt-6">
@@ -556,47 +992,70 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
               <CardTitle className="text-sm font-semibold">Informações do IRS</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Ano</label>
-                  <p className="text-sm">{irs.ano}</p>
+              <div className="flex flex-wrap items-center gap-4 pb-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Ano:</label>
+                  <p className="text-sm font-semibold">{irs.ano}</p>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Fase</label>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Fase:</label>
                   <p className="text-sm">{getFaseLabel(irs.fase)}</p>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Estado de Pagamento</label>
-                  <div>{getEstadoBadge(irs.estado)}</div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Estado de Pagamento:</label>
+                  <div className="flex items-center gap-2">
+                    {getEstadoBadge(irs.estado)}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setIsEstadoSelectModalOpen(true)}
+                      disabled={irs.estado === 'Pago' && !!irs.numero_recibo}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Estado de Entrega</label>
-                  <div className="text-sm">
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Estado de Entrega:</label>
+                  <div className="flex items-center gap-2 text-sm">
                     {getEstadoEntregaBadge(irs.estado_entrega) || <span className="text-gray-400">-</span>}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={handleOpenEstadoEntregaModal}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
                 {irs.numero_recibo && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Número do Recibo</label>
-                    <p className="text-sm font-mono">{irs.numero_recibo}</p>
-                  </div>
+                  <>
+                    <Separator orientation="vertical" className="h-6" />
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-muted-foreground">Nº Recibo:</label>
+                      <p className="text-sm font-mono font-semibold">{irs.numero_recibo}</p>
+                    </div>
+                  </>
                 )}
                 {irs.levantar_irs_apos_dia && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Levantar IRS após</label>
-                    <p className="text-sm">{irs.levantar_irs_apos_dia}</p>
-                  </div>
+                  <>
+                    <Separator orientation="vertical" className="h-6" />
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-muted-foreground">Levantar após:</label>
+                      <p className="text-sm">{irs.levantar_irs_apos_dia}</p>
+                    </div>
+                  </>
                 )}
-              </div>
-              <Separator className="my-4" />
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Observações</label>
-                <p className="text-sm whitespace-pre-wrap">{irs.observacoes || <span className="text-gray-400">-</span>}</p>
-              </div>
-              <Separator className="my-4" />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Data de Criação</label>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Criado em:</label>
                   <p className="text-sm">
                     {new Date(irs.criado_em).toLocaleString('pt-PT', {
                       day: '2-digit',
@@ -607,8 +1066,9 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                     })}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Última Atualização</label>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Atualizado em:</label>
                   <p className="text-sm">
                     {new Date(irs.atualizado_em).toLocaleString('pt-PT', {
                       day: '2-digit',
@@ -620,45 +1080,14 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Informações do Cliente */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold flex items-center space-x-2">
-                <User className="h-4 w-4" />
-                <span>Cliente</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingCliente ? (
-                <p className="text-sm text-muted-foreground">A carregar...</p>
-              ) : (
-                <div className="space-y-1">
-                  <ClickableClientName 
-                    clientId={irs.cliente_id} 
-                    client={clienteData}
-                    clientName={clienteNome}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                  />
-                  {clienteData && (
-                    <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-                      {clienteData.telefone && (
-                        <div>
-                          <span className="font-medium">Telefone:</span> {clienteData.telefone}
-                        </div>
-                      )}
-                      {clienteData.morada && (
-                        <div>
-                          <span className="font-medium">Morada:</span> {clienteData.morada}
-                          {clienteData.codigo_postal && `, ${clienteData.codigo_postal}`}
-                          {clienteData.localidade && ` ${clienteData.localidade}`}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+              {irs.observacoes && (
+                <>
+                  <Separator className="my-4" />
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Observações</label>
+                    <p className="text-sm whitespace-pre-wrap">{irs.observacoes}</p>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -705,8 +1134,8 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs">Relação</TableHead>
-                        <TableHead className="text-xs">Incapacidade</TableHead>
                         <TableHead className="text-xs">Nome</TableHead>
+                        <TableHead className="text-xs">Incapacidade</TableHead>
                         <TableHead className="text-xs">NIF</TableHead>
                         <TableHead className="text-xs">Password Finanças</TableHead>
                       </TableRow>
@@ -716,12 +1145,17 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                       <TableRow>
                         <TableCell className="text-xs font-medium">Titular</TableCell>
                         <TableCell className="text-xs">
+                          {clienteData?.nome || clienteData?.nome_empresa || '-'}
+                        </TableCell>
+                        <TableCell className="text-xs">
                           <div className="flex items-center gap-2">
-                            <span>
-                              {clienteData.incapacidade !== undefined && clienteData.incapacidade !== null
-                                ? `${clienteData.incapacidade}%`
-                                : '0,00%'}
-                            </span>
+                            {clienteData.incapacidade !== undefined && clienteData.incapacidade !== null && clienteData.incapacidade > 0 ? (
+                              <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs px-2 py-0.5 font-semibold">
+                                {clienteData.incapacidade}%
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">0%</span>
+                            )}
                             <Button
                               type="button"
                               variant="ghost"
@@ -735,9 +1169,6 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                               <Edit className="h-3 w-3" />
                             </Button>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {clienteData?.nome || clienteData?.nome_empresa || '-'}
                         </TableCell>
                         <TableCell className="text-xs font-mono">
                           {clienteData?.nif || clienteData?.nif_empresa || '-'}
@@ -797,12 +1228,17 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                           <TableRow key={membro.id}>
                             <TableCell className="text-xs">{getTipoRelacaoLabel(membro.tipo_relacao)}</TableCell>
                             <TableCell className="text-xs">
+                              {getClienteNome() || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">
                               <div className="flex items-center gap-2">
-                                <span>
-                                  {clienteRelacionado.incapacidade !== undefined && clienteRelacionado.incapacidade !== null
-                                    ? `${clienteRelacionado.incapacidade}%`
-                                    : '0,00%'}
-                                </span>
+                                {clienteRelacionado.incapacidade !== undefined && clienteRelacionado.incapacidade !== null && clienteRelacionado.incapacidade > 0 ? (
+                                  <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs px-2 py-0.5 font-semibold">
+                                    {clienteRelacionado.incapacidade}%
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">0%</span>
+                                )}
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -823,9 +1259,6 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
                                   <Edit className="h-3 w-3" />
                                 </Button>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {getClienteNome() || '-'}
                             </TableCell>
                             <TableCell className="text-xs font-mono">
                               {getClienteNIF() || '-'}
@@ -892,6 +1325,140 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
               </Card>
             )}
           </TabsContent>
+
+          {irs.estado === 'Pago' && (
+            <TabsContent value="recibo" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Recibo do IRS</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      <Check className="w-4 h-4 inline mr-2" />
+                      IRS pago! O recibo está disponível para impressão e envio.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Imprimir Recibo */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex flex-col items-center justify-center h-24 space-y-2"
+                      onClick={handlePrintRecibo}
+                    >
+                      <Printer className="w-6 h-6" />
+                      <span className="text-sm">Imprimir Recibo</span>
+                    </Button>
+
+                    {/* Enviar por Email */}
+                    <div className="flex flex-col space-y-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex flex-col items-center justify-center h-24 space-y-2"
+                      >
+                        <Mail className="w-6 h-6" />
+                        <span className="text-sm">Enviar por Email</span>
+                      </Button>
+                      <div className="space-y-2">
+                        <Input
+                          type="email"
+                          placeholder="email@exemplo.com"
+                          value={emailAddress}
+                          onChange={(e) => setEmailAddress(e.target.value)}
+                          className="text-sm"
+                        />
+                        {emailAddress && emailAddress !== clienteData?.email && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleUpdateEmail}
+                            disabled={updatingEmail}
+                            className="w-full"
+                          >
+                            {updatingEmail ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4 mr-2" />
+                            )}
+                            Atualizar Email do Cliente
+                          </Button>
+                        )}
+                        {emailAddress && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleSendEmail}
+                            disabled={sendingEmail}
+                            className="w-full"
+                          >
+                            {sendingEmail ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Mail className="w-4 h-4 mr-2" />
+                            )}
+                            Enviar Recibo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Enviar por WhatsApp */}
+                    <div className="flex flex-col space-y-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex flex-col items-center justify-center h-24 space-y-2"
+                      >
+                        <MessageCircle className="w-6 h-6" />
+                        <span className="text-sm">Enviar por WhatsApp</span>
+                      </Button>
+                      <div className="space-y-2">
+                        <Input
+                          type="tel"
+                          placeholder="Telefone (ex: 912345678)"
+                          value={telefoneAddress}
+                          onChange={(e) => setTelefoneAddress(e.target.value)}
+                          className="text-sm"
+                        />
+                        {telefoneAddress && telefoneAddress !== clienteData?.telefone && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleUpdateTelefone}
+                            disabled={updatingTelefone}
+                            className="w-full"
+                          >
+                            {updatingTelefone ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4 mr-2" />
+                            )}
+                            Atualizar Telefone do Cliente
+                          </Button>
+                        )}
+                        {telefoneAddress && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleSendWhatsApp}
+                            className="w-full"
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Abrir WhatsApp
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="timeline" className="space-y-6 mt-6">
             <Card>
@@ -1213,6 +1780,135 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
           </Dialog>
         );
       })()}
+
+      {/* Modal de Confirmação de Alteração de Estado de Pagamento */}
+      <Dialog open={isConfirmEstadoModalOpen} onOpenChange={setIsConfirmEstadoModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {confirmStep === 1 ? 'Confirmar Alteração de Estado' : 'Confirmação Final'}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmStep === 1 
+                ? `Tem certeza que deseja alterar o estado de pagamento para "${newEstado}"?`
+                : 'Esta ação irá alterar o estado de pagamento e abrir o wizard de recibo. Deseja continuar?'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelEstado}>
+              Cancelar
+            </Button>
+            {confirmStep === 1 ? (
+              <Button onClick={handleConfirmEstadoStep1}>
+                Continuar
+              </Button>
+            ) : (
+              <Button onClick={handleConfirmEstadoStep2}>
+                Confirmar e Abrir Recibo
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Seleção de Estado de Pagamento */}
+      <Dialog open={isEstadoSelectModalOpen} onOpenChange={setIsEstadoSelectModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Alterar Estado de Pagamento</DialogTitle>
+            <DialogDescription>
+              Selecione o novo estado de pagamento para este IRS.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="estado">Estado de Pagamento</Label>
+              <Select 
+                value={irs.estado} 
+                onValueChange={(value) => {
+                  const novoEstado = value as 'Por Pagar' | 'Pago' | 'Isento';
+                  if (novoEstado !== irs.estado) {
+                    setIsEstadoSelectModalOpen(false);
+                    handleChangeEstado(novoEstado);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Por Pagar">Por Pagar</SelectItem>
+                  <SelectItem 
+                    value="Pago" 
+                    disabled={irs.estado === 'Pago' && !!irs.numero_recibo}
+                  >
+                    Pago
+                  </SelectItem>
+                  <SelectItem value="Isento">Isento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEstadoSelectModalOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Alteração de Estado de Entrega */}
+      <Dialog open={isEstadoEntregaModalOpen} onOpenChange={setIsEstadoEntregaModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Alterar Estado de Entrega</DialogTitle>
+            <DialogDescription>
+              Selecione o novo estado de entrega para este IRS.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="estado_entrega">Estado de Entrega</Label>
+              <Select value={newEstadoEntrega} onValueChange={setNewEstadoEntrega}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não definido</SelectItem>
+                  <SelectItem value="Enviado">Enviado</SelectItem>
+                  <SelectItem value="Levantado Pelo Cliente">Levantado Pelo Cliente</SelectItem>
+                  <SelectItem value="Aguarda Documentos">Aguarda Documentos</SelectItem>
+                  <SelectItem value="Contencioso Administrativo">Contencioso Administrativo</SelectItem>
+                  <SelectItem value="Em Análise">Em Análise</SelectItem>
+                  <SelectItem value="Verificado">Verificado</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEstadoEntregaModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateEstadoEntrega}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
+
+    {isTaskModalOpen && (
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setTaskInitialData(null);
+        }}
+        initialData={taskInitialData}
+      />
+    )}
+    </>
   );
 };
