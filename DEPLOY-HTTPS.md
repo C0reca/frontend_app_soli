@@ -2,7 +2,7 @@
 
 Se o site em **https://helenamelosolicitadora.com** continua a dar erro  
 *"requested an insecure XMLHttpRequest endpoint 'http://helenamelosolicitadora.com/api/...'"*,  
-o browser está a usar **JavaScript antigo**. É preciso **rebuild e redeploy** do frontend.
+o browser está a usar **JavaScript antigo**. O código atual **reescreve cada pedido** para o URL completo em `https://` quando a página está em HTTPS; para ter efeito, é **obrigatório** fazer **rebuild e redeploy** do frontend.
 
 ## Passos obrigatórios
 
@@ -48,10 +48,9 @@ Depois do deploy:
 
 ## O que o código faz
 
-Em **`src/services/api.ts`** o axios usa um interceptor que define  
-`baseURL = getBaseURL()` em cada pedido:
+Em **`src/services/api.ts`** um interceptor de pedidos chama **`ensureHttpsUrl(config)`** em cada request:
 
-- Se a página estiver em **HTTPS**, `getBaseURL()` devolve `https://helenamelosolicitadora.com/api/`.
-- Assim, todos os pedidos (clientes, processos, etc.) vão em **HTTPS** e o aviso de Mixed Content deixa de aparecer.
+- Se a página estiver em **HTTPS**, o `config.url` é substituído pelo URL absoluto `https://<host>/api/...` (ex.: `https://helenamelosolicitadora.com/api/clientes/`).
+- Assim, todos os pedidos (clientes, processos, IRS, calendário, tarefas, etc.) usam **HTTPS** e o aviso de Mixed Content deixa de aparecer.
 
-O fix só tem efeito quando o **ficheiro JavaScript servido ao browser** incluir este código. Daí ser essencial **rebuild + redeploy + limpar cache**.
+O fix só tem efeito quando o **JavaScript servido ao browser** for o que contém este código. Daí ser essencial **rebuild + redeploy + limpar cache**.

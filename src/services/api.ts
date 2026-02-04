@@ -1,23 +1,27 @@
 import axios from 'axios';
 
-// Base URL: em browser usa o origin da página; se a página está em HTTPS, forçar https (evita Mixed Content).
-const getBaseURL = (): string => {
-  if (typeof window === 'undefined') return '/api/';
-  const { protocol, host } = window.location;
-  const origin = protocol === 'https:' ? `https://${host}` : `${protocol}//${host}`;
-  return `${origin}/api/`;
-};
+const API_PREFIX = '/api';
+
+// Em HTTPS, forçar o URL absoluto para https:// para evitar Mixed Content (o browser pode estar a servir JS em cache).
+function ensureHttpsUrl(config: { url?: string; baseURL?: string }): void {
+  if (typeof window === 'undefined') return;
+  if (window.location.protocol !== 'https:') return;
+  const host = window.location.host;
+  const path = (config.url || '').replace(/^\//, '');
+  const fullPath = path ? `${API_PREFIX}/${path}` : API_PREFIX;
+  (config as any).url = `https://${host}${fullPath.startsWith('/') ? fullPath : `/${fullPath}`}`;
+  (config as any).baseURL = '';
+}
 
 export const api = axios.create({
-  baseURL: '/api/',
+  baseURL: API_PREFIX + '/',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 api.interceptors.request.use((config) => {
-  // Forçar baseURL com o origin atual para garantir HTTPS quando a página está em HTTPS
-  config.baseURL = getBaseURL();
+  ensureHttpsUrl(config);
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
