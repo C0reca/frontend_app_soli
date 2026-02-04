@@ -19,6 +19,29 @@
 
   <body>
     <div id="root"></div>
+    <!-- Corrige Mixed Content: quando a página está em HTTPS, pedidos ao mesmo domínio em http:// são forçados para https:// -->
+    <script>
+(function(){
+  if (document.location.protocol !== 'https:') return;
+  var host = document.location.host;
+  var httpOrigin = 'http://' + host;
+  var httpsOrigin = 'https://' + host;
+  var origOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url) {
+    if (typeof url === 'string' && url.indexOf(httpOrigin) === 0)
+      url = httpsOrigin + url.slice(httpOrigin.length);
+    return origOpen.apply(this, [method, url].concat(Array.prototype.slice.call(arguments, 2)));
+  };
+  if (window.fetch) {
+    var origFetch = window.fetch;
+    window.fetch = function(url, opts) {
+      if (typeof url === 'string' && url.indexOf(httpOrigin) === 0)
+        url = httpsOrigin + url.slice(httpOrigin.length);
+      return origFetch.call(this, url, opts);
+    };
+  }
+})();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

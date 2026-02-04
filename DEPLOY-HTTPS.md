@@ -1,8 +1,11 @@
 # Resolver Mixed Content (API em HTTPS)
 
-Se o site em **https://helenamelosolicitadora.com** continua a dar erro  
-*"requested an insecure XMLHttpRequest endpoint 'http://helenamelosolicitadora.com/api/...'"*,  
-o browser está a usar **JavaScript antigo**. O código atual **reescreve cada pedido** para o URL completo em `https://` quando a página está em HTTPS; para ter efeito, é **obrigatório** fazer **rebuild e redeploy** do frontend.
+Dois níveis de proteção:
+
+1. **index.html** – Um script inline (antes do React) reescreve **XMLHttpRequest** e **fetch**: quando a página está em HTTPS, qualquer pedido a `http://<mesmo-domínio>` é convertido para `https://`. Assim o Mixed Content fica resolvido **mesmo que o JS da app esteja em cache**.
+2. **api.ts** – O axios usa um interceptor que força o URL da API para `https://` quando a página está em HTTPS.
+
+Para o fix ter efeito, é preciso fazer **rebuild e redeploy** (pelo menos o **index.html** tem de ser o novo; idealmente toda a pasta `dist/`).
 
 ## Passos obrigatórios
 
