@@ -21,6 +21,9 @@ interface IndividualClientFormProps {
   onContactosChange?: (contactos: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>) => void;
 }
 
+// Tempo máximo para ler o CC (inclui tempo para o utilizador introduzir a PIN da morada no diálogo)
+const CC_READ_TIMEOUT_MS = 90 * 1000; // 90 segundos
+
 export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
   form,
   watch,
@@ -31,13 +34,17 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 }) => {
   const { register, formState: { errors } } = form;
   const { toast } = useToast();
+  const [isReadingCC, setIsReadingCC] = React.useState(false);
 
   const handleCitizenCardScan = async () => {
+    if (isReadingCC) return;
+    setIsReadingCC(true);
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | null = setTimeout(() => controller.abort(), CC_READ_TIMEOUT_MS);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
       const response = await fetch('http://127.0.0.1:8081/cc', { signal: controller.signal });
-      clearTimeout(timeout);
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = null;
       if (!response.ok) {
         let msg = "Erro ao obter dados do Cartão de Cidadão.";
         try {
@@ -80,15 +87,17 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
         title: "Dados preenchidos com sucesso",
         description: "Os dados do Cartão de Cidadão foram carregados.",
       });
-
     } catch (err: any) {
       toast({
         title: "Erro ao ler Cartão de Cidadão",
-        description: err?.name === 'AbortError'
-          ? 'Tempo esgotado. Certifique-se que o leitor está a correr e o cartão inserido.'
-          : (err?.message || 'Certifique-se que instalou o middleware Autenticação.gov e iniciou o leitor.'),
+        description: (err?.name === 'AbortError'
+          ? 'Tempo esgotado. Tem até 90 s para inserir a PIN da morada no diálogo. '
+          : (err?.message || 'Certifique-se que instalou o middleware Autenticação.gov e iniciou o leitor. ') + 'Pode tentar novamente clicando em Ler CC.',
         variant: "destructive"
       });
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      setIsReadingCC(false);
     }
   };
 
@@ -111,10 +120,11 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleCitizenCardScan}
+                disabled={isReadingCC}
                 className="flex items-center space-x-2"
               >
                 <CreditCard className="h-4 w-4" />
-                <span>Ler CC</span>
+                <span>{isReadingCC ? 'A ler CC...' : 'Ler CC'}</span>
               </Button>
             </div>
           </CardHeader>
