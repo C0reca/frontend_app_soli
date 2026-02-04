@@ -89,4 +89,19 @@ Se o **index.html** servido for o novo, o script no `<head>` já resolve o Mixed
 | Verificar | Ver código-fonte do site e procurar `VERSAO-HTTPS-FIX` |
 | Cache | Hard refresh (Ctrl+Shift+R) ou janela anónima; purge CDN se usares |
 
-Se depois disto o erro continuar, envia o resultado de **Ver código-fonte** (primeiras 30 linhas) do site em produção para confirmar se o `index.html` servido é o novo.
+---
+
+## 5. Confirmar se o patch está ativo no browser
+
+1. Abre https://helenamelosolicitadora.com
+2. F12 → separador **Consola**
+3. Escreve e carrega Enter:
+   ```js
+   XMLHttpRequest.prototype.open.toString().slice(0, 80)
+   ```
+4. Se aparecer algo como `"function (method, url) { url = toHttps(url);"` → o patch está aplicado.
+5. Se aparecer a função nativa (ex.: `"function open() { [native code] }"`) → o patch **não** está a correr (o teu script no `<head>` pode estar a falhar ou a ser carregado depois do React).
+
+Se o patch não estiver ativo, verifica se no código-fonte do site existe o script com `toHttps` e `XMLHttpRequest.prototype.open` no `<head>`.
+
+Se depois disto o erro continuar, envia o resultado de **Ver código-fonte** (primeiras 50 linhas) do site em produção e o resultado do passo 4 da consola.
