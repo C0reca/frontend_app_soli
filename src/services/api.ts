@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-// Caminho relativo: o browser usa SEMPRE o mesmo protocolo e host da página (HTTPS em produção = sem Mixed Content)
+// Base URL: em browser usa o origin da página; se a página está em HTTPS, forçar https (evita Mixed Content).
+const getBaseURL = (): string => {
+  if (typeof window === 'undefined') return '/api/';
+  const { protocol, host } = window.location;
+  const origin = protocol === 'https:' ? `https://${host}` : `${protocol}//${host}`;
+  return `${origin}/api/`;
+};
+
 export const api = axios.create({
   baseURL: '/api/',
   headers: {
@@ -9,6 +16,8 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  // Forçar baseURL com o origin atual para garantir HTTPS quando a página está em HTTPS
+  config.baseURL = getBaseURL();
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
