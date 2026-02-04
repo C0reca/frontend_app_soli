@@ -1,18 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
+  <!-- VERSAO-HTTPS-FIX: se vir isto no "Ver código-fonte" do site, o servidor está a servir o index.html novo -->
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Força base HTTPS: todos os URLs relativos (/api/, etc.) passam a ser https (resolve Mixed Content) -->
     <script>
 (function(){
   if (location.protocol !== 'https:') return;
+  var h = document.location.host, httpO = 'http://'+h, httpsO = 'https://'+h;
   var head = document.head;
-  var existing = head.querySelector('base');
-  if (existing) existing.remove();
-  var b = document.createElement('base');
-  b.href = location.origin + '/';
-  head.insertBefore(b, head.firstChild);
+  var q = head.querySelector('base'); if (q) q.remove();
+  var b = document.createElement('base'); b.href = location.origin + '/'; head.insertBefore(b, head.firstChild);
+  var open = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url) {
+    if (typeof url === 'string') {
+      if (url.indexOf(httpO) === 0) url = httpsO + url.slice(httpO.length);
+      else if (url.indexOf('/') === 0) url = httpsO + url;
+    }
+    return open.apply(this, [method, url].concat(Array.prototype.slice.call(arguments, 2)));
+  };
+  if (window.fetch) {
+    var f = window.fetch;
+    window.fetch = function(url, opts) {
+      if (typeof url === 'string') {
+        if (url.indexOf(httpO) === 0) url = httpsO + url.slice(httpO.length);
+        else if (url.indexOf('/') === 0) url = httpsO + url;
+      }
+      return f.call(this, url, opts);
+    };
+  }
 })();
     </script>
     <title>process-sphere-ui</title>
@@ -31,29 +47,6 @@
 
   <body>
     <div id="root"></div>
-    <!-- Corrige Mixed Content: quando a página está em HTTPS, pedidos ao mesmo domínio em http:// são forçados para https:// -->
-    <script>
-(function(){
-  if (document.location.protocol !== 'https:') return;
-  var host = document.location.host;
-  var httpOrigin = 'http://' + host;
-  var httpsOrigin = 'https://' + host;
-  var origOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function(method, url) {
-    if (typeof url === 'string' && url.indexOf(httpOrigin) === 0)
-      url = httpsOrigin + url.slice(httpOrigin.length);
-    return origOpen.apply(this, [method, url].concat(Array.prototype.slice.call(arguments, 2)));
-  };
-  if (window.fetch) {
-    var origFetch = window.fetch;
-    window.fetch = function(url, opts) {
-      if (typeof url === 'string' && url.indexOf(httpOrigin) === 0)
-        url = httpsOrigin + url.slice(httpOrigin.length);
-      return origFetch.call(this, url, opts);
-    };
-  }
-})();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
