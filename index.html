@@ -8,7 +8,6 @@
 (function(){
   if (location.protocol !== 'https:') return;
   var origin = location.origin;
-  var host = location.host;
   var hostname = location.hostname.replace(/^www\./, '');
   function toHttps(url) {
     if (typeof url !== 'string') return url;
@@ -16,7 +15,7 @@
       try {
         var u = new URL(url);
         var uHost = u.hostname.replace(/^www\./, '');
-        if (uHost === hostname || u.host === host) return 'https://' + u.host + u.pathname + u.search + u.hash;
+        if (uHost === hostname) return 'https://' + u.host + u.pathname + u.search + u.hash;
       } catch(e) {}
     }
     if (url.indexOf('/') === 0) return origin + url;
@@ -25,10 +24,16 @@
   var head = document.head;
   var q = head.querySelector('base'); if (q) q.remove();
   var b = document.createElement('base'); b.href = origin + '/'; head.insertBefore(b, head.firstChild);
-  var open = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function(method, url) {
-    url = toHttps(url);
-    return open.apply(this, [method, url].concat(Array.prototype.slice.call(arguments, 2)));
+  var NativeXHR = window.XMLHttpRequest;
+  var origOpen = NativeXHR.prototype.open;
+  NativeXHR.prototype.open = function(method, url, async, user, password) {
+    this._url = toHttps(url);
+    return origOpen.call(this, method, this._url, async !== false, user, password);
+  };
+  var origSend = NativeXHR.prototype.send;
+  NativeXHR.prototype.send = function(body) {
+    if (this._url) { this._url = null; }
+    return origSend.call(this, body);
   };
   if (window.fetch) {
     var f = window.fetch;

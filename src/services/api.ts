@@ -1,12 +1,17 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
 /**
- * Base da API: SEMPRE o origin da página (https em produção = sem Mixed Content).
- * O URL completo é construído no interceptor para não depender de baseURL nem de URLs relativos.
+ * Base da API: SEMPRE HTTPS quando a página está em HTTPS (evita Mixed Content).
+ * Usa location.origin e força https para o mesmo host, para não depender de proxy/redirect.
  */
 function getApiBase(): string {
   if (typeof window === 'undefined') return '/api';
-  return `${window.location.origin}/api`;
+  const { protocol, host, origin } = window.location;
+  // Em HTTPS, garantir que o base da API seja https (evita Mixed Content mesmo com cache/proxy)
+  if (protocol === 'https:') {
+    return `https://${host}/api`;
+  }
+  return `${origin}/api`;
 }
 
 const api = axios.create({
