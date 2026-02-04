@@ -1,27 +1,29 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
-const API_PREFIX = '/api';
-
-// Em HTTPS, forçar o URL absoluto para https:// para evitar Mixed Content (o browser pode estar a servir JS em cache).
-function ensureHttpsUrl(config: { url?: string; baseURL?: string }): void {
-  if (typeof window === 'undefined') return;
-  if (window.location.protocol !== 'https:') return;
-  const host = window.location.host;
-  const path = (config.url || '').replace(/^\//, '');
-  const fullPath = path ? `${API_PREFIX}/${path}` : API_PREFIX;
-  (config as any).url = `https://${host}${fullPath.startsWith('/') ? fullPath : `/${fullPath}`}`;
-  (config as any).baseURL = '';
+/**
+ * Base da API: SEMPRE o origin da página (https em produção = sem Mixed Content).
+ * O URL completo é construído no interceptor para não depender de baseURL nem de URLs relativos.
+ */
+function getApiBase(): string {
+  if (typeof window === 'undefined') return '/api';
+  return `${window.location.origin}/api`;
 }
 
-export const api = axios.create({
-  baseURL: API_PREFIX + '/',
+const api = axios.create({
+  baseURL: '/api/',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-api.interceptors.request.use((config) => {
-  ensureHttpsUrl(config);
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  // Construir SEMPRE o URL completo a partir do origin da página (resolve Mixed Content em HTTPS)
+  const base = getApiBase();
+  const path = (config.url || '').replace(/^\//, '');
+  const fullUrl = path ? `${base}/${path}` : `${base}/`;
+  config.url = fullUrl;
+  config.baseURL = '';
+
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -29,7 +31,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle responses and errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -43,3 +44,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+export { api };
