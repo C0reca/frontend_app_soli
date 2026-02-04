@@ -4,6 +4,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Força o browser a fazer todos os pedidos em HTTPS (resolve Mixed Content mesmo com JS em cache) -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
     <script>
 (function(){
   if (location.protocol !== 'https:') return;
