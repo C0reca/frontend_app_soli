@@ -1,13 +1,16 @@
 import axios from 'axios';
 
-// Usar o mesmo origin que a página (HTTPS em produção) para evitar Mixed Content
-const API_BASE_URL =
-  typeof window !== 'undefined'
-    ? `${window.location.origin}/api/`
-    : 'api/';
+// Usar o mesmo origin que a página para evitar Mixed Content (HTTPS em produção)
+function getApiBaseUrl(): string {
+  if (typeof window === 'undefined') return 'api/';
+  const { protocol, host } = window.location;
+  // Se a página está em HTTPS, forçar API em HTTPS (evita proxies que passam origin em http)
+  const origin = protocol === 'https:' ? `https://${host}` : `${protocol}//${host}`;
+  return `${origin}/api/`;
+}
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
