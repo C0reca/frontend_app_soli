@@ -1,24 +1,14 @@
 import axios from 'axios';
 
-// Base URL da API: sempre o mesmo origin que a página, forçando HTTPS quando a página está em HTTPS (evita Mixed Content)
-function getApiBaseUrl(): string {
-  if (typeof window === 'undefined') return '/api/';
-  const { protocol, host } = window.location;
-  const origin = protocol === 'https:' ? `https://${host}` : `${protocol}//${host}`;
-  return `${origin}/api/`;
-}
-
+// Caminho relativo: o browser usa SEMPRE o mesmo protocolo e host da página (HTTPS em produção = sem Mixed Content)
 export const api = axios.create({
-  baseURL: '/api/', // será sobrescrito no interceptor para usar o origin correto
+  baseURL: '/api/',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Em cada pedido, forçar o baseURL com o origin atual (HTTPS em produção)
 api.interceptors.request.use((config) => {
-  const baseURL = getApiBaseUrl();
-  config.baseURL = baseURL;
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
