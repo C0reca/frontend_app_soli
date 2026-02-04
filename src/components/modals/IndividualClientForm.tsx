@@ -88,11 +88,12 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
         description: "Os dados do Cartão de Cidadão foram carregados.",
       });
     } catch (err: any) {
+      const errMsg = err?.name === 'AbortError'
+        ? 'Tempo esgotado. Tem até 90 s para inserir a PIN da morada no diálogo. '
+        : (err?.message || 'Certifique-se que instalou o middleware Autenticação.gov e iniciou o leitor. ');
       toast({
         title: "Erro ao ler Cartão de Cidadão",
-        description: (err?.name === 'AbortError'
-          ? 'Tempo esgotado. Tem até 90 s para inserir a PIN da morada no diálogo. '
-          : (err?.message || 'Certifique-se que instalou o middleware Autenticação.gov e iniciou o leitor. ') + 'Pode tentar novamente clicando em Ler CC.',
+        description: errMsg + 'Pode tentar novamente clicando em Ler CC.',
         variant: "destructive"
       });
     } finally {
