@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 
-// Base client interface
+// Base client interface (id pode ser number da API ou string)
 export interface BaseClient {
-  id: string;
+  id: string | number;
   tipo?: 'singular' | 'coletivo';
   internalNumber?: string;
   responsibleEmployee?: string;
@@ -98,20 +98,30 @@ export const useClients = () => {
   const queryClient = useQueryClient();
 
   const {
-    data: clients = [],
+    data: rawData,
     isLoading,
     error
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const response = await api.get('/clientes');
-      // Handle both paginated and non-paginated responses
-      if (response.data && Array.isArray(response.data.data)) {
-        return response.data.data; // Paginated response
+      try {
+        const response = await api.get('/clientes');
+        const data = response?.data;
+        // Garantir que retornamos sempre um array (evita crash se a API devolver objeto ou null)
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.data)) return data.data;
+        return [];
+      } catch {
+        // Em caso de erro de rede ou API, devolver array vazio para não quebrar a UI
+        return [];
       }
-      return response.data || []; // Direct array response
     },
+    retry: 2,
+    retryDelay: 1000,
   });
+
+  // Garantir que clients é sempre um array (evita crash em .filter, .map, .find)
+  const clients = Array.isArray(rawData) ? rawData : [];
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
