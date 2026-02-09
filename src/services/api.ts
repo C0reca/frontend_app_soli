@@ -21,12 +21,9 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Construir SEMPRE o URL completo a partir do origin da página (resolve Mixed Content em HTTPS)
   const base = getApiBase();
   let path = (config.url || '').replace(/^\//, '');
-  // Em produção alguns servidores exigem / no fim (ex.: /api/clientes/); garantir barra final em paths de coleção
+  // Em produção o servidor exige / no fim do path; acrescentar sempre que não tiver
   const [pathOnly, query] = path.includes('?') ? path.split('?', 2) : [path, ''];
-  const segments = pathOnly.split('/').filter(Boolean);
-  const isCollectionPath = segments.length === 1; // ex.: clientes, processos, dossies
-  const needsTrailingSlash = pathOnly.length > 0 && !pathOnly.endsWith('/') && isCollectionPath;
-  if (needsTrailingSlash) {
+  if (pathOnly.length > 0 && !pathOnly.endsWith('/')) {
     path = pathOnly + '/' + (query ? '?' + query : '');
   }
   const fullUrl = path ? `${base}/${path}` : `${base}/`;
