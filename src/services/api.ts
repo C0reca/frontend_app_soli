@@ -33,12 +33,14 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  // Sempre URL absoluta para evitar 404 por path relativo (ex. /app/api/clientes).
   const base = getApiBase().replace(/\/$/, '');
   let path = (config.url || '').replace(/^\//, '');
   path = path.replace(/^api\/?/, '');
   path = ensureTrailingSlash(path);
   const fullUrl = path ? `${base}/${path}` : `${base}/`;
-  config.url = fullUrl;
+  const absolute = fullUrl.startsWith('http') ? fullUrl : `${window.location.origin}${fullUrl.startsWith('/') ? fullUrl : `/${fullUrl}`}`;
+  config.url = absolute;
   config.baseURL = '';
 
   const token = localStorage.getItem('token');
