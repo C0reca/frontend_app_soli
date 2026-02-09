@@ -105,7 +105,7 @@ export const useClients = () => {
     queryKey: ['clients'],
     queryFn: async () => {
       try {
-        const response = await api.get('/clientes');
+        const response = await api.get('/clientes/');
         const data = response?.data;
         // Garantir que retornamos sempre um array (evita crash se a API devolver objeto ou null)
         if (Array.isArray(data)) return data;
