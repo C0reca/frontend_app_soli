@@ -10,6 +10,21 @@ function getApiBase(): string {
   return `${origin}/api`;
 }
 
+/**
+ * Garante que o path termina com / (exigido em produção).
+ * Ex.: clientes -> clientes/, clientes/1 -> clientes/1/, clientes?limit=1 -> clientes/?limit=1
+ */
+function ensureTrailingSlash(path: string): string {
+  if (!path) return path;
+  const i = path.indexOf('?');
+  const pathOnly = i >= 0 ? path.slice(0, i) : path;
+  const query = i >= 0 ? path.slice(i) : '';
+  if (!pathOnly.endsWith('/')) {
+    return pathOnly + '/' + query;
+  }
+  return path;
+}
+
 const api = axios.create({
   baseURL: '/api/',
   headers: {
@@ -18,14 +33,10 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  // Construir SEMPRE o URL completo a partir do origin da página (resolve Mixed Content em HTTPS)
-  const base = getApiBase();
+  const base = getApiBase().replace(/\/$/, '');
   let path = (config.url || '').replace(/^\//, '');
-  // Em produção o servidor exige / no fim do path; acrescentar sempre que não tiver
-  const [pathOnly, query] = path.includes('?') ? path.split('?', 2) : [path, ''];
-  if (pathOnly.length > 0 && !pathOnly.endsWith('/')) {
-    path = pathOnly + '/' + (query ? '?' + query : '');
-  }
+  path = path.replace(/^api\/?/, '');
+  path = ensureTrailingSlash(path);
   const fullUrl = path ? `${base}/${path}` : `${base}/`;
   config.url = fullUrl;
   config.baseURL = '';
