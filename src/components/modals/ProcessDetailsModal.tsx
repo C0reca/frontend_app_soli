@@ -24,17 +24,23 @@ import { useProcesses } from '@/hooks/useProcesses';
 import { useToast } from '@/hooks/use-toast';
 import { Client, useClients } from '@/hooks/useClients';
 import { ProcessoEntidadesSecundariasTab } from '@/components/ProcessoEntidadesSecundariasTab';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import listPlugin from '@fullcalendar/list';
+import ptLocale from '@fullcalendar/core/locales/pt';
 
 interface ProcessDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   process: Process | null;
+  onEdit?: (process: Process) => void;
 }
 
 export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   isOpen,
   onClose,
   process,
+  onEdit,
 }) => {
   const { data: clienteData, isLoading: loadingCliente } = useQuery({
     queryKey: ['cliente', process?.cliente_id],
@@ -467,7 +473,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -479,18 +485,38 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 Informações completas do processo e atividades relacionadas
               </DialogDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-12 top-4"
-              onClick={() => {
-                minimize({ type: 'process', title: `Processo: ${process?.titulo ?? ''}` , payload: { process } });
-                onClose();
-              }}
-              aria-label={'Minimizar'}
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {onEdit && process && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(process)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  minimize({ type: 'process', title: `Processo: ${process?.titulo ?? ''}` , payload: { process } });
+                  onClose();
+                }}
+                aria-label="Minimizar"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onClose}
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -524,9 +550,9 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Compromissos</TabsTrigger>
-              <TabsTrigger value="entidades">Entidades</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
+              <TabsTrigger value="calendar">Calendário</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6 mt-6">
@@ -603,6 +629,28 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                     <p className="text-sm">{(process as any).onde_estao || 'Não definido'}</p>
                   </div>
                 </div>
+              </div>
+
+              <Separator className="my-6" />
+              <div>
+                <ProcessoEntidadesSecundariasTab
+                  processoId={process?.id || null}
+                  clientePrincipal={process?.cliente ? {
+                    id: process.cliente_id || 0,
+                    nome: (process.cliente as any)?.nome,
+                    nome_empresa: (process.cliente as any)?.nome_empresa,
+                    nif: (process.cliente as any)?.nif,
+                    nif_empresa: (process.cliente as any)?.nif_empresa,
+                    tipo: (process.cliente as any)?.tipo,
+                  } : clienteData ? {
+                    id: clienteData.id,
+                    nome: clienteData.nome,
+                    nome_empresa: clienteData.nome_empresa,
+                    nif: clienteData.nif,
+                    nif_empresa: clienteData.nif_empresa,
+                    tipo: clienteData.tipo,
+                  } : null}
+                />
               </div>
             </TabsContent>
 
@@ -813,7 +861,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                       )}
                                     </div>
                                     {task.descricao && (
-                                      <p className="text-sm text-gray-600 mb-3">{task.descricao}</p>
+                                      <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{task.descricao}</p>
                                     )}
                                     <div className="flex items-center space-x-4 text-xs text-gray-500">
                                       {task.prioridade && (
@@ -864,7 +912,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                             )}
                                           </div>
                                           {subtask.descricao && (
-                                            <p className="text-xs text-gray-600 mb-3">{subtask.descricao}</p>
+                                            <p className="text-xs text-gray-600 mb-3 whitespace-pre-wrap">{subtask.descricao}</p>
                                           )}
                                           <div className="flex items-center space-x-4 text-xs text-gray-500">
                                             {subtask.prioridade && (
@@ -906,25 +954,39 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="entidades" className="space-y-6 mt-6">
-              <ProcessoEntidadesSecundariasTab 
-                processoId={process?.id || null}
-                clientePrincipal={process?.cliente ? {
-                  id: process.cliente_id || 0,
-                  nome: (process.cliente as any)?.nome,
-                  nome_empresa: (process.cliente as any)?.nome_empresa,
-                  nif: (process.cliente as any)?.nif,
-                  nif_empresa: (process.cliente as any)?.nif_empresa,
-                  tipo: (process.cliente as any)?.tipo,
-                } : clienteData ? {
-                  id: clienteData.id,
-                  nome: clienteData.nome,
-                  nome_empresa: clienteData.nome_empresa,
-                  nif: clienteData.nif,
-                  nif_empresa: clienteData.nif_empresa,
-                  tipo: clienteData.tipo,
-                } : null}
-              />
+            <TabsContent value="calendar" className="space-y-6 mt-6">
+              <h3 className="text-lg font-semibold">Calendário do processo</h3>
+              <p className="text-sm text-muted-foreground">Compromissos e prazos deste processo.</p>
+              <Card>
+                <CardContent className="p-4 min-h-[360px]">
+                  <FullCalendar
+                    plugins={[dayGridPlugin, listPlugin]}
+                    initialView="dayGridMonth"
+                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' }}
+                    locale={ptLocale}
+                    height="auto"
+                    events={processTasks
+                      .filter((t: any) => t.data_fim)
+                      .map((t: any) => ({
+                        id: String(t.id),
+                        title: t.titulo || '(sem título)',
+                        start: t.data_fim,
+                        allDay: true,
+                        extendedProps: { task: t },
+                        backgroundColor: t.concluida ? '#22c55e' : '#eab308',
+                        borderColor: t.concluida ? '#16a34a' : '#ca8a04',
+                        textColor: '#fff',
+                      }))}
+                    eventClick={(info) => {
+                      const task = info.event.extendedProps?.task;
+                      if (task) {
+                        setSelectedTask(task as Task);
+                        setIsTaskDetailsOpen(true);
+                      }
+                    }}
+                  />
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="timeline" className="space-y-6 mt-6">

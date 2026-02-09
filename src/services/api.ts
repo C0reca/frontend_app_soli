@@ -2,15 +2,11 @@ import axios, { InternalAxiosRequestConfig } from 'axios';
 
 /**
  * Base da API: SEMPRE HTTPS quando a página está em HTTPS (evita Mixed Content).
- * Usa location.origin e força https para o mesmo host, para não depender de proxy/redirect.
  */
 function getApiBase(): string {
   if (typeof window === 'undefined') return '/api';
   const { protocol, host, origin } = window.location;
-  // Em HTTPS, garantir que o base da API seja https (evita Mixed Content mesmo com cache/proxy)
-  if (protocol === 'https:') {
-    return `https://${host}/api`;
-  }
+  if (protocol === 'https:') return `https://${host}/api`;
   return `${origin}/api`;
 }
 

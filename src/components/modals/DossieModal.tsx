@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useDossies, Dossie } from '@/hooks/useDossies';
+import { useDossies, Dossie, getDossieDisplayLabel } from '@/hooks/useDossies';
 import { useClients } from '@/hooks/useClients';
 import { Loader2 } from 'lucide-react';
 import {
@@ -35,7 +35,6 @@ import { ClientModal } from './ClientModal';
 
 const formSchema = z.object({
   entidade_id: z.number().optional(),
-  nome: z.string().min(1, 'Nome do arquivo é obrigatório'),
   descricao: z.string().optional(),
 });
 
@@ -64,7 +63,6 @@ export const DossieModal: React.FC<DossieModalProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       entidade_id: entidadeId || dossie?.entidade_id || undefined,
-      nome: '',
       descricao: '',
     },
   });
@@ -73,13 +71,11 @@ export const DossieModal: React.FC<DossieModalProps> = ({
     if (dossie) {
       form.reset({
         entidade_id: dossie.entidade_id,
-        nome: dossie.nome || '',
         descricao: dossie.descricao || '',
       });
     } else {
       form.reset({
         entidade_id: entidadeId || undefined,
-        nome: '',
         descricao: '',
       });
     }
@@ -100,7 +96,6 @@ export const DossieModal: React.FC<DossieModalProps> = ({
       if (isEditing && dossie) {
         await updateDossie.mutateAsync({
           id: dossie.id,
-          nome: data.nome,
           descricao: data.descricao,
         });
       } else {
@@ -110,7 +105,6 @@ export const DossieModal: React.FC<DossieModalProps> = ({
         }
         await createDossie.mutateAsync({
           entidade_id: data.entidade_id,
-          nome: data.nome,
           descricao: data.descricao,
         });
       }
@@ -182,26 +176,12 @@ export const DossieModal: React.FC<DossieModalProps> = ({
               />
             )}
 
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Arquivo *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Arquivo Fiscal 2024" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {isEditing && dossie?.numero && (
+            {isEditing && dossie && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Número do Arquivo</label>
-                <Input value={dossie.numero} disabled />
+                <label className="text-sm font-medium">Arquivo</label>
+                <p className="text-sm font-semibold">{getDossieDisplayLabel(dossie)}</p>
                 <p className="text-xs text-muted-foreground">
-                  O número é gerado automaticamente e não pode ser alterado
+                  O arquivo é identificado pelo id e pela entidade
                 </p>
               </div>
             )}

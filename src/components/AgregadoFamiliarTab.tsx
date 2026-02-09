@@ -29,9 +29,11 @@ const getEstadoCivilLabel = (estadoCivil?: string): string => {
   const traducoes: Record<string, string> = {
     'single': 'Solteiro(a)',
     'married': 'Casado(a)',
+    'uniao_facto': 'União de Facto',
     'divorced': 'Divorciado(a)',
+    'separated': 'Separado(a)', // legado: já não aparece no selector
+    'separacao_facto': 'Separação de Facto',
     'widowed': 'Viúvo(a)',
-    'separated': 'Separado(a)',
   };
   return traducoes[estadoCivil.toLowerCase()] || estadoCivil;
 };

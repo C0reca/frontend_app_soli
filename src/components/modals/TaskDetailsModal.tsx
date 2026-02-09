@@ -283,7 +283,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-500">Descrição</label>
-              <p className="mt-1 text-sm text-gray-900">{currentTask.descricao || '-'}</p>
+              <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{currentTask.descricao || '-'}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

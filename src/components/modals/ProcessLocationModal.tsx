@@ -34,9 +34,11 @@ const OPCOES_LOCALIZACAO = [
   'Serviço Finanças Pendentes',
   'Aguarda Doc Cliente/Informações',
   'Aguarda Doc',
+  'Decorre Prazo',
   'Tarefas',
   'Injunções',
   'Execuções',
+  'Inventário Judicial',
 ];
 
 interface ProcessLocationModalProps {

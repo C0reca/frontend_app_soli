@@ -149,7 +149,7 @@ export const ServicosExternos: React.FC = () => {
               }}>
                 <div className="font-medium">{it.titulo}</div>
                 <div className="flex-1 ml-4">
-                  {it.descricao && <div className="text-sm text-muted-foreground">{it.descricao}</div>}
+                  {it.descricao && <div className="text-sm text-muted-foreground whitespace-pre-wrap">{it.descricao}</div>}
                   <div className="text-xs text-muted-foreground mt-1">
                     Processo: {processTitleById.get(it.processo_id) || `ID ${it.processo_id}`} {it.data_fim ? `• Prazo: ${new Date(it.data_fim).toLocaleDateString('pt-BR')}` : ''}
                   </div>

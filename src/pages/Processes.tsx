@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
+import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
 import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
@@ -373,21 +374,20 @@ export const Processes: React.FC = () => {
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        {process.dossie_id ? (
-                          <div>
-                            <span className="font-medium">Arquivo:</span> {process.dossie?.nome || `ID: ${process.dossie_id}`}
-                            {process.dossie?.numero && <span className="text-muted-foreground"> ({process.dossie.numero})</span>}
-                          </div>
-                        ) : (
                         <div>
-                            <span className="font-medium">Entidade:</span>{' '}
-                            <ClickableClientName 
-                              clientId={process.cliente_id} 
-                              client={process.cliente}
-                              clientName={process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
-                            />
+                          <span className="font-medium">Arquivo:</span>{' '}
+                          {process.dossie_id && process.dossie
+                            ? getDossieDisplayLabel(process.dossie as Dossie)
+                            : '1 (pendente)'}
                         </div>
-                        )}
+                        <div>
+                          <span className="font-medium">Entidade:</span>{' '}
+                          <ClickableClientName
+                            clientId={process.cliente_id}
+                            client={process.cliente}
+                            clientName={process.cliente?.nome || getClientNameById(process.cliente_id) || `ID: ${process.cliente_id}`}
+                          />
+                        </div>
                         <div>
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
                         </div>
@@ -443,11 +443,17 @@ export const Processes: React.FC = () => {
          process={selectedProcess}
        />
 
-       <ProcessDetailsModal
-         isOpen={isDetailsModalOpen}
-         onClose={handleCloseDetailsModal}
-         process={selectedProcessDetails}
-       />
+      <ProcessDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        process={selectedProcessDetails}
+        onEdit={(p) => {
+          setSelectedProcessDetails(null);
+          setIsDetailsModalOpen(false);
+          setSelectedProcess(p);
+          setIsModalOpen(true);
+        }}
+      />
 
        <ProcessLocationModal
          isOpen={isLocationModalOpen}

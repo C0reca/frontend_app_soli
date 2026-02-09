@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Eye, Edit, Folder, Building, FileText } from 'lucide-react';
-import { useDossies, Dossie } from '@/hooks/useDossies';
+import { useDossies, Dossie, getDossieDisplayLabel, getEntidadeNomeFromDossie } from '@/hooks/useDossies';
 import { DossieModal } from '@/components/modals/DossieModal';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -19,11 +19,11 @@ export const Dossies: React.FC = () => {
 
   const filteredDossies = dossies.filter((dossie) => {
     const termNormalized = normalizeString(searchTerm);
-    const nomeMatch = normalizeString(dossie.nome || '').includes(termNormalized);
+    const displayLabel = getDossieDisplayLabel(dossie);
+    const idMatch = String(dossie.id).includes(searchTerm.trim());
+    const labelMatch = normalizeString(displayLabel).includes(termNormalized);
     const numeroMatch = normalizeString(dossie.numero || '').includes(termNormalized);
-    const entidadeMatch = normalizeString((dossie as any).entidade?.nome || '').includes(termNormalized) ||
-                         normalizeString((dossie as any).entidade?.nome_empresa || '').includes(termNormalized);
-    return nomeMatch || numeroMatch || entidadeMatch;
+    return idMatch || labelMatch || numeroMatch;
   });
 
   const handleView = (dossie: Dossie) => {
@@ -37,14 +37,8 @@ export const Dossies: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const getEntidadeNome = (dossie: Dossie) => {
-    const entidade = (dossie as any).entidade;
-    if (!entidade) return 'N/A';
-    return entidade.nome || entidade.nome_empresa || 'N/A';
-  };
-
   const getProcessosCount = (dossie: Dossie) => {
-    const processos = (dossie as any).processos || [];
+    const processos = dossie.processos || [];
     return processos.length;
   };
 
@@ -64,10 +58,10 @@ export const Dossies: React.FC = () => {
               <div>
                 <CardTitle className="flex items-center space-x-2">
                   <Folder className="h-6 w-6" />
-                  <span>{selectedDossie.nome}</span>
+                  <span>{getDossieDisplayLabel(selectedDossie)}</span>
                 </CardTitle>
                 <CardDescription>
-                  {selectedDossie.numero && `Nº: ${selectedDossie.numero}`}
+                  Arquivo associado à entidade
                 </CardDescription>
               </div>
               <Button onClick={(e) => handleEdit(selectedDossie, e)}>
@@ -80,7 +74,7 @@ export const Dossies: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Entidade</label>
-                <p className="text-lg font-semibold">{getEntidadeNome(selectedDossie)}</p>
+                <p className="text-lg font-semibold">{getEntidadeNomeFromDossie(selectedDossie)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Criado em</label>
@@ -167,7 +161,7 @@ export const Dossies: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Pesquisar por nome, número ou entidade..."
+                placeholder="Pesquisar por id ou entidade..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -196,17 +190,14 @@ export const Dossies: React.FC = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-semibold">{dossie.nome}</h3>
-                          {dossie.numero && (
-                            <Badge variant="outline">{dossie.numero}</Badge>
-                          )}
+                          <h3 className="text-lg font-semibold">{getDossieDisplayLabel(dossie)}</h3>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                           <div className="flex items-center space-x-2">
                             <Building className="h-4 w-4 text-muted-foreground" />
                             <span>
                               <span className="font-medium">Entidade:</span>{' '}
-                              {getEntidadeNome(dossie)}
+                              {getEntidadeNomeFromDossie(dossie)}
                             </span>
                           </div>
                           <div className="flex items-center space-x-2">

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -114,7 +113,7 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center space-x-2">
               <Users className="h-4 w-4" />
-              <span>Entidades</span>
+              <span>Entidades Secundárias</span>
             </CardTitle>
             <Button
               type="button"
@@ -129,11 +128,10 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
           </div>
         </CardHeader>
         <CardContent>
-          {(clientePrincipal || entidades.length > 0) ? (
+          {entidades.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Relação</TableHead>
                   <TableHead className="text-xs">Cliente</TableHead>
                   <TableHead className="text-xs">NIF</TableHead>
                   <TableHead className="text-xs">Tipo de Participação</TableHead>
@@ -141,32 +139,8 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Entidade Principal */}
-                {clientePrincipal && (
-                  <TableRow>
-                    <TableCell className="text-xs font-medium">
-                      <Badge variant="default" className="text-xs">Principal</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      <ClickableClientName
-                        clientId={clientePrincipal.id}
-                        clientName={clientePrincipal.nome || clientePrincipal.nome_empresa || `Cliente #${clientePrincipal.id}`}
-                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                      />
-                    </TableCell>
-                    <TableCell className="text-xs font-mono">
-                      {clientePrincipal.nif || clientePrincipal.nif_empresa || '-'}
-                    </TableCell>
-                    <TableCell className="text-xs">-</TableCell>
-                    <TableCell className="text-xs">-</TableCell>
-                  </TableRow>
-                )}
-                {/* Entidades Secundárias */}
                 {entidades.map((entidade) => (
                   <TableRow key={entidade.id}>
-                    <TableCell className="text-xs font-medium">
-                      <Badge variant="outline" className="text-xs">Secundária</Badge>
-                    </TableCell>
                     <TableCell className="text-xs">
                       <ClickableClientName
                         clientId={entidade.cliente_id}
@@ -207,8 +181,8 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Nenhuma entidade adicionada.</p>
-              <p className="text-sm mt-2">Clique em "Adicionar Entidade Secundária" para adicionar uma entidade secundária ao processo.</p>
+              <p>Nenhuma entidade secundária adicionada.</p>
+              <p className="text-sm mt-2">Clique em "Adicionar Entidade Secundária" para associar outro cliente ao processo.</p>
             </div>
           )}
         </CardContent>

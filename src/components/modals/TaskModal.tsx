@@ -399,9 +399,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                       <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
                       <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
                       <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
+                      <SelectItem value="Decorre Prazo">Decorre Prazo</SelectItem>
                       <SelectItem value="Tarefas">Compromissos</SelectItem>
                       <SelectItem value="Injunções">Injunções</SelectItem>
                       <SelectItem value="Execuções">Execuções</SelectItem>
+                      <SelectItem value="Inventário Judicial">Inventário Judicial</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

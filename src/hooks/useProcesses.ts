@@ -20,8 +20,9 @@ export interface Process {
   };
   dossie?: {
     id: number;
-    nome: string;
+    nome?: string;
     numero?: string;
+    entidade?: { nome?: string; nome_empresa?: string };
   };
   funcionario?: {
     id: number;

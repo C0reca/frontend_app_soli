@@ -92,43 +92,29 @@ export const Tasks: React.FC = () => {
     return taskMatchesFilters(task, true);
   });
 
-  // Get IDs of visible main tasks
-  const visibleMainTaskIds = new Set(filteredMainTasks.map(t => t.id.toString()));
+  const visibleMainTaskIds = new Set(filteredMainTasks.map((t) => String(t.id)));
 
-  // Now, include subtasks:
-  // 1. Subtasks of visible main tasks (even if subtask is concluida)
-  // 2. Subtasks of concluida main tasks if showConcluidas is active
+  // Incluir TODAS as subtarefas dos compromissos visíveis, para o número "Sub-compromissos: N" bater com as linhas
   const shouldShowConcluidas = filters.showConcluidas || filters.status === 'concluidas';
   const filteredSubtasks = tasks.filter((task) => {
-    // Only process subtasks (has parent_id)
     if (!task.parent_id) return false;
-    
-    const parentId = task.parent_id.toString();
-    const parentTask = tasks.find(t => t.id.toString() === parentId);
-    
+    const parentId = String(task.parent_id);
+    const parentTask = tasks.find((t) => String(t.id) === parentId);
     if (!parentTask) return false;
-    
-    // Include subtask if:
-    // 1. Parent is visible (even if subtask is concluida)
-    if (visibleMainTaskIds.has(parentId)) {
-      return taskMatchesFilters(task, false); // Don't check concluida for subtask
-    }
-    
-    // 2. Parent is concluida but being shown
-    if (parentTask.concluida && shouldShowConcluidas) {
-      return taskMatchesFilters(task, false); // Don't check concluida for subtask
-    }
-    
+    // Pai visível na lista principal → mostrar todas as suas subtarefas (sem filtrar por status/prioridade)
+    if (visibleMainTaskIds.has(parentId)) return true;
+    // Pai concluído mas a mostrar concluídas → mostrar todas as suas subtarefas
+    if (parentTask.concluida && shouldShowConcluidas) return true;
     return false;
   });
 
   // Combine main tasks and subtasks
   const filteredTasks = [...filteredMainTasks, ...filteredSubtasks];
 
-  // Build hierarchy: parent -> children
+  // Hierarquia: chaves sempre string para evitar pai/filhos não baterem (API pode devolver id number)
   const childrenByParent: Record<string, Task[]> = {};
-  filteredTasks.forEach(t => {
-    const key = (t.parent_id ?? 'root').toString();
+  filteredTasks.forEach((t) => {
+    const key = t.parent_id != null ? String(t.parent_id) : 'root';
     if (!childrenByParent[key]) childrenByParent[key] = [];
     childrenByParent[key].push(t);
   });
@@ -137,7 +123,7 @@ export const Tasks: React.FC = () => {
 
   const renderTaskRow = (task: Task, level: number = 0) => {
     const indentClass = level > 0 ? `pl-${Math.min(level * 4, 12)}` : '';
-    const subtasks = childrenByParent[task.id.toString()] || [];
+    const subtasks = childrenByParent[String(task.id)] || [];
     
     // Determinar a cor de fundo baseada no estado da tarefa
     const getBackgroundColor = () => {
@@ -182,7 +168,7 @@ export const Tasks: React.FC = () => {
                     <Badge variant="destructive">Atrasada</Badge>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mb-3">{task.descricao}</p>
+                <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{task.descricao}</p>
                 <div className="flex items-center space-x-4 text-xs text-gray-500">
                   <span><strong>Processo:</strong> {task.processo_id ? (() => {
                     const processo = processes.find(p => p.id === task.processo_id);

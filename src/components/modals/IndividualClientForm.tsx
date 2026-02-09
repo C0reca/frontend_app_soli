@@ -240,9 +240,10 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                   <SelectContent>
                     <SelectItem value="single">Solteiro(a)</SelectItem>
                     <SelectItem value="married">Casado(a)</SelectItem>
+                    <SelectItem value="uniao_facto">União de Facto</SelectItem>
                     <SelectItem value="divorced">Divorciado(a)</SelectItem>
+                    <SelectItem value="separacao_facto">Separação de Facto</SelectItem>
                     <SelectItem value="widowed">Viúvo(a)</SelectItem>
-                    <SelectItem value="separated">Separado(a)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

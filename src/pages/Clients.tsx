@@ -204,7 +204,11 @@ export const Clients: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredClients.map((client: Client) => (
-                <TableRow key={client.id}>
+                <TableRow
+                  key={client.id}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleView(client)}
+                >
                   <TableCell className="font-mono text-sm">{client.id}</TableCell>
                   <TableCell className="font-medium">{getClientName(client)}</TableCell>
                   <TableCell>{client.email}</TableCell>
@@ -219,19 +223,19 @@ export const Clients: React.FC = () => {
                       {(client.status || 'active') === 'active' ? 'Ativo' : 'Inativo'}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end space-x-2">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleView(client)}
+                        onClick={(e) => { e.stopPropagation(); handleView(client); }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit(client)}
+                        onClick={(e) => { e.stopPropagation(); handleEdit(client); }}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -239,7 +243,7 @@ export const Clients: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(client.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(String(client.id)); }}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />

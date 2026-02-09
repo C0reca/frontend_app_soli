@@ -41,9 +41,11 @@ const getEstadoCivilLabel = (estadoCivil?: string): string => {
   const traducoes: Record<string, string> = {
     'single': 'Solteiro(a)',
     'married': 'Casado(a)',
+    'uniao_facto': 'União de Facto',
     'divorced': 'Divorciado(a)',
+    'separated': 'Separado(a)', // legado: já não aparece no selector
+    'separacao_facto': 'Separação de Facto',
     'widowed': 'Viúvo(a)',
-    'separated': 'Separado(a)',
   };
   return traducoes[estadoCivil.toLowerCase()] || estadoCivil;
 };
@@ -276,15 +278,9 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                   <CardContent className="p-4">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Nome do Arquivo</label>
-                        <p className="text-lg font-semibold">{dossie.nome}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Arquivo</label>
+                        <p className="text-lg font-semibold">{dossie.id} - {client.nome || (client as any).nome_empresa || 'N/A'}</p>
                       </div>
-                      {dossie.numero && (
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Número</label>
-                          <p>{dossie.numero}</p>
-                        </div>
-                      )}
                       {dossie.descricao && (
                         <div>
                           <label className="text-sm font-medium text-muted-foreground">Descrição</label>
@@ -526,15 +522,9 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                   <CardContent className="p-4">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Nome do Arquivo</label>
-                        <p className="text-lg font-semibold">{dossie.nome}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Arquivo</label>
+                        <p className="text-lg font-semibold">{dossie.id} - {(client as any).nome || client.nome_empresa || 'N/A'}</p>
                       </div>
-                      {dossie.numero && (
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Número</label>
-                          <p>{dossie.numero}</p>
-                        </div>
-                      )}
                       {dossie.descricao && (
                         <div>
                           <label className="text-sm font-medium text-muted-foreground">Descrição</label>

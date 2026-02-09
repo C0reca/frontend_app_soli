@@ -5,12 +5,26 @@ import { useToast } from '@/hooks/use-toast';
 export interface Dossie {
   id: number;
   entidade_id: number;
-  nome: string;
+  nome?: string;
   descricao?: string;
   numero?: string;
   criado_em: string;
   atualizado_em: string;
   ativo: boolean;
+  entidade?: { nome?: string; nome_empresa?: string };
+  processos?: unknown[];
+}
+
+/** Nome da entidade (cliente) do dossiê */
+export function getEntidadeNomeFromDossie(dossie: Dossie): string {
+  const entidade = dossie.entidade;
+  if (!entidade) return 'N/A';
+  return entidade.nome || entidade.nome_empresa || 'N/A';
+}
+
+/** Representação do arquivo: "id - nome da entidade" */
+export function getDossieDisplayLabel(dossie: Dossie): string {
+  return `${dossie.id} - ${getEntidadeNomeFromDossie(dossie)}`;
 }
 
 export type NovaEntidadePayload = {
@@ -40,24 +54,22 @@ export const useDossies = (entidadeId?: number) => {
     isLoading,
     error
   } = useQuery({
-    queryKey: ['dossies', entidadeId],
+    queryKey: ['dossies', entidadeId ?? 'all'],
     queryFn: async () => {
-      if (!entidadeId) {
-        // Se não há entidade_id, retornar array vazio (endpoint não existe)
-        return [];
-      }
-      const url = `/dossies?entidade_id=${entidadeId}`;
+      const url = entidadeId != null
+        ? `/dossies?entidade_id=${entidadeId}`
+        : '/dossies';
       try {
         const response = await api.get(url);
         return response.data;
-      } catch (error: any) {
-        if (error.response?.status === 404) {
-          return []; // Endpoint não existe, retornar array vazio
+      } catch (error: unknown) {
+        const err = error as { response?: { status?: number } };
+        if (err.response?.status === 404) {
+          return [];
         }
         throw error;
       }
     },
-    enabled: !!entidadeId, // Só faz a chamada se houver entidadeId
   });
 
   // Hook para obter o dossiê de uma entidade específica (uma entidade tem apenas um dossiê)
