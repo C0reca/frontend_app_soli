@@ -24,7 +24,6 @@ export interface Process {
     numero?: string;
     entidade?: { nome?: string; nome_empresa?: string };
   };
-  numero_no_dossie?: number; // ordem do processo dentro do dossiê (1, 2, 3...)
   funcionario?: {
     id: number;
     nome: string;
