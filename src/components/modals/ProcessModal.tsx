@@ -347,11 +347,13 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     </FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="__none__">Nenhum arquivo</SelectItem>
-                                                        {dossieEntidade && dossieEntidade.id != null && Number.isFinite(Number(dossieEntidade.id)) && (
-                                                            <SelectItem key={dossieEntidade.id} value={`dossie-${dossieEntidade.id}`}>
-                                                                {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ""}
-                                                            </SelectItem>
-                                                        )}
+                                                        {dossieEntidade &&
+                                                            dossieEntidade.id != null &&
+                                                            String(dossieEntidade.id).trim() !== "" && (
+                                                                <SelectItem key={dossieEntidade.id} value={`dossie-${dossieEntidade.id}`}>
+                                                                    {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ""}
+                                                                </SelectItem>
+                                                            )}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -383,14 +385,16 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="__none__">Nenhum</SelectItem>
-                                                    {employees.map((employee) => (
-                                                        <SelectItem
-                                                            key={employee.id}
-                                                            value={employee.id.toString()}
-                                                        >
-                                                            {employee.nome}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {employees
+                                                        .filter((e) => e.id != null && String(e.id).trim() !== "")
+                                                        .map((employee) => (
+                                                            <SelectItem
+                                                                key={employee.id}
+                                                                value={String(employee.id)}
+                                                            >
+                                                                {employee.nome}
+                                                            </SelectItem>
+                                                        ))}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

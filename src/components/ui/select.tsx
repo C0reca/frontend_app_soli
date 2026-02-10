@@ -5,7 +5,8 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function Select({ value, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root value={value === "" ? undefined : value} {...props} />
+  const safeValue = value === "" || value == null ? undefined : value;
+  return <SelectPrimitive.Root {...props} value={safeValue} />
 }
 Select.displayName = "Select"
 
@@ -116,8 +117,12 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, value, ...props }, ref) => {
-  // Radix Select não permite value="" (reservado para limpar seleção). Garantir valor não vazio.
-  const safeValue = value === "" || (typeof value === "string" && !value.trim()) ? "__empty__" : value;
+  // Radix Select não permite value="" nem undefined (reservado para limpar). Garantir valor não vazio.
+  const raw = value ?? "";
+  const safeValue =
+    raw === "" || (typeof raw === "string" && !raw.trim())
+      ? "__empty__"
+      : String(raw);
   return (
   <SelectPrimitive.Item
     ref={ref}
@@ -125,8 +130,8 @@ const SelectItem = React.forwardRef<
       "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
-    value={safeValue}
     {...props}
+    value={safeValue}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
