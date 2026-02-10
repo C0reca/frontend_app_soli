@@ -252,8 +252,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     <FormItem>
                                         <FormLabel>Localização</FormLabel>
                                         <Select
-                                            onValueChange={(v) => field.onChange(v === "--------" ? undefined : v)}
-                                            value={field.value ?? ""}
+                                            onValueChange={(v) => field.onChange(v === "__none__" || v === "--------" ? undefined : v)}
+                                            value={field.value != null && field.value !== "" ? field.value : "__none__"}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
@@ -261,7 +261,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="--------">--------</SelectItem>
+                                                <SelectItem value="__none__">--------</SelectItem>
                                                 <SelectItem value="Casa">Casa</SelectItem>
                                                 <SelectItem value="Cartorio">Cartorio</SelectItem>
                                                 <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
@@ -328,7 +328,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                             form.setValue("cliente_id", selectedCliente.id);
                                                         }
                                                     }}
-                                                    value={field.value != null ? field.value.toString() : "__none__"}
+                                                    value={field.value != null && field.value !== "" ? String(field.value) : "__none__"}
                                                     disabled={isDossieLoading}
                                                 >
                                                     <FormControl>
@@ -338,9 +338,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     </FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="__none__">Nenhum arquivo</SelectItem>
-                                                        {dossieEntidade && dossieEntidade.id != null && String(dossieEntidade.id).trim() !== '' && (
+                                                        {dossieEntidade && dossieEntidade.id != null && String(dossieEntidade.id).trim() !== "" && (
                                                             <SelectItem key={dossieEntidade.id} value={String(dossieEntidade.id)}>
-                                                                {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ''}
+                                                                {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ""}
                                                             </SelectItem>
                                                         )}
                                                     </SelectContent>
