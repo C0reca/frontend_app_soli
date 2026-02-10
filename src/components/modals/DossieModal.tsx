@@ -22,11 +22,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDossies, Dossie, getDossieDisplayLabel } from '@/hooks/useDossies';
 import { useClients } from '@/hooks/useClients';
-import { Loader2, Check } from 'lucide-react';
+import { useProcesses } from '@/hooks/useProcesses';
+import { Loader2, Check, FolderOpen } from 'lucide-react';
 import { Command, CommandInput, CommandItem, CommandList, CommandEmpty } from '@/components/ui/command';
 import { CommandDialog } from '@/components/ui/command';
 import { cn, normalizeString } from '@/lib/utils';
-import { ClientModal } from './ClientModal';
 
 const formSchema = z.object({
   entidade_id: z.number().optional(),
@@ -39,7 +39,7 @@ interface DossieModalProps {
   isOpen: boolean;
   onClose: () => void;
   dossie?: Dossie | null;
-  entidadeId?: number; // Opcional - se não fornecido, permite selecionar
+  entidadeId?: number;
 }
 
 export const DossieModal: React.FC<DossieModalProps> = ({
@@ -49,9 +49,9 @@ export const DossieModal: React.FC<DossieModalProps> = ({
   entidadeId,
 }) => {
   const { clients = [], isLoading: isClientsLoading } = useClients();
+  const { processes = [] } = useProcesses();
   const { createDossie, updateDossie } = useDossies();
   const isEditing = !!dossie;
-  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
   const [entitySearch, setEntitySearch] = useState('');
   const needsEntidadeSelection = !isEditing && !entidadeId;
@@ -59,7 +59,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      entidade_id: entidadeId || dossie?.entidade_id || undefined,
+      entidade_id: entidadeId ?? dossie?.entidade_id ?? undefined,
       descricao: '',
     },
   });
@@ -68,18 +68,21 @@ export const DossieModal: React.FC<DossieModalProps> = ({
     if (dossie) {
       form.reset({
         entidade_id: dossie.entidade_id,
-        descricao: dossie.descricao || '',
+        descricao: dossie.descricao ?? '',
       });
     } else {
       form.reset({
-        entidade_id: entidadeId || undefined,
+        entidade_id: entidadeId ?? undefined,
         descricao: '',
       });
     }
   }, [dossie, entidadeId, form, isOpen]);
+
   useEffect(() => {
-    if (!isOpen) setEntityPickerOpen(false);
-    if (!isOpen) setEntitySearch('');
+    if (!isOpen) {
+      setEntityPickerOpen(false);
+      setEntitySearch('');
+    }
   }, [isOpen]);
 
   const entidadeIdValue = form.watch('entidade_id');
@@ -87,45 +90,47 @@ export const DossieModal: React.FC<DossieModalProps> = ({
     return clients
       .filter((c: { id: number | string; tem_dossies?: boolean }) => {
         const jaTemArquivo = c.tem_dossies === true;
-        const eSelecionada = c.id === entidadeIdValue;
+        const eSelecionada = String(c.id) === String(entidadeIdValue);
         return eSelecionada || !jaTemArquivo;
       })
       .sort((a, b) => Number(b.id) - Number(a.id));
   }, [clients, entidadeIdValue]);
+
   const entidadesFiltradas = useMemo(() => {
     const norm = normalizeString(entitySearch);
     return entidadesDisponiveis.filter((c) => {
-      const nome = (c.nome || (c as { nome_empresa?: string }).nome_empresa || '').toString();
-      const nif = ((c as { tipo?: string }).tipo === 'coletivo' ? (c as { nif_empresa?: string }).nif_empresa : (c as { nif?: string }).nif) || '';
+      const nome = (c.nome ?? (c as { nome_empresa?: string }).nome_empresa ?? '').toString();
+      const nif =
+        ((c as { tipo?: string }).tipo === 'coletivo'
+          ? (c as { nif_empresa?: string }).nif_empresa
+          : (c as { nif?: string }).nif) ?? '';
       return normalizeString(nome).includes(norm) || normalizeString(nif).includes(norm);
     });
   }, [entidadesDisponiveis, entitySearch]);
 
-  const handleClientCreated = (createdClient: any) => {
-    if (createdClient?.id) {
-      const newId = typeof createdClient.id === 'string' ? parseInt(createdClient.id, 10) : createdClient.id;
-      if (!Number.isNaN(newId)) {
-        form.setValue('entidade_id', newId);
-      }
-    }
-    setIsClientModalOpen(false);
-  };
+  const processosDaEntidade = useMemo(() => {
+    if (entidadeIdValue == null) return [];
+    return (processes as { cliente_id?: number }[]).filter(
+      (p) => p.cliente_id != null && p.cliente_id === entidadeIdValue
+    );
+  }, [processes, entidadeIdValue]);
 
   const onSubmit = async (data: FormData) => {
     try {
       if (isEditing && dossie) {
         await updateDossie.mutateAsync({
           id: dossie.id,
-          descricao: data.descricao,
+          descricao: data.descricao ?? '',
         });
       } else {
-        if (!data.entidade_id) {
+        if (data.entidade_id == null) {
           form.setError('entidade_id', { message: 'Selecione uma entidade' });
           return;
         }
         await createDossie.mutateAsync({
           entidade_id: data.entidade_id,
-          descricao: data.descricao,
+          nome: '',
+          descricao: data.descricao ?? '',
         });
       }
       onClose();
@@ -134,17 +139,25 @@ export const DossieModal: React.FC<DossieModalProps> = ({
     }
   };
 
+  const selectedEntidade = entidadesDisponiveis.find(
+    (c) => String(c.id) === String(entidadeIdValue)
+  );
+  const labelEntidade = selectedEntidade
+    ? (selectedEntidade.nome ?? (selectedEntidade as { nome_empresa?: string }).nome_empresa ?? `#${selectedEntidade.id}`)
+    : 'Selecione uma entidade';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5" />
             {isEditing ? 'Editar Arquivo' : 'Novo Arquivo'}
           </DialogTitle>
           <DialogDescription>
             {isEditing
               ? 'Edite as informações do arquivo.'
-              : 'Preencha os dados para criar um novo arquivo.'}
+              : 'Preencha os dados para criar um novo arquivo. Escolha a entidade e, se quiser, uma descrição.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -154,65 +167,95 @@ export const DossieModal: React.FC<DossieModalProps> = ({
               <FormField
                 control={form.control}
                 name="entidade_id"
-                render={({ field }) => {
-                  const selected = entidadesDisponiveis.find((c) => String(c.id) === String(field.value));
-                  const label = selected ? (selected.nome || (selected as { nome_empresa?: string }).nome_empresa || `#${selected.id}`) : 'Selecione uma entidade';
-                  return (
-                    <FormItem>
-                      <FormLabel>Entidade *</FormLabel>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full justify-between"
-                        onClick={() => setEntityPickerOpen(true)}
-                      >
-                        {label}
-                      </Button>
-                      <CommandDialog open={entityPickerOpen} onOpenChange={(o) => { setEntityPickerOpen(o); setEntitySearch(''); }}>
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="Pesquisar por nome ou NIF..."
-                            value={entitySearch}
-                            onValueChange={setEntitySearch}
-                          />
-                          <CommandList>
-                            <CommandEmpty>Nenhuma entidade encontrada.</CommandEmpty>
-                            {entidadesFiltradas.map((c) => {
-                              const nome = c.nome || (c as { nome_empresa?: string }).nome_empresa || `#${c.id}`;
-                              const nif = (c as { tipo?: string }).tipo === 'coletivo'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Entidade *</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-between font-normal"
+                      onClick={() => setEntityPickerOpen(true)}
+                      disabled={isClientsLoading}
+                    >
+                      <span className="truncate">{labelEntidade}</span>
+                    </Button>
+                    <CommandDialog
+                      open={entityPickerOpen}
+                      onOpenChange={(o) => {
+                        setEntityPickerOpen(o);
+                        setEntitySearch('');
+                      }}
+                    >
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Pesquisar por nome ou NIF..."
+                          value={entitySearch}
+                          onValueChange={setEntitySearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Nenhuma entidade encontrada.</CommandEmpty>
+                          {entidadesFiltradas.map((c) => {
+                            const nome =
+                              c.nome ??
+                              (c as { nome_empresa?: string }).nome_empresa ??
+                              `#${c.id}`;
+                            const nif =
+                              (c as { tipo?: string }).tipo === 'coletivo'
                                 ? (c as { nif_empresa?: string }).nif_empresa
                                 : (c as { nif?: string }).nif;
-                              const id = typeof c.id === 'string' ? parseInt(c.id, 10) : c.id;
-                              return (
-                                <CommandItem
-                                  key={c.id}
-                                  onSelect={() => { field.onChange(id); setEntityPickerOpen(false); }}
-                                  className="flex justify-between items-center"
-                                >
-                                  <div className="flex flex-col">
-                                    <span>{nome}</span>
-                                    {nif && <span className="text-xs text-muted-foreground">NIF: {nif}</span>}
-                                  </div>
-                                  <Check className={cn('h-4 w-4', String(c.id) === String(field.value) ? 'opacity-100' : 'opacity-0')} />
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandList>
-                        </Command>
-                      </CommandDialog>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                            const id =
+                              typeof c.id === 'string' ? parseInt(c.id, 10) : c.id;
+                            return (
+                              <CommandItem
+                                key={c.id}
+                                onSelect={() => {
+                                  field.onChange(id);
+                                  setEntityPickerOpen(false);
+                                }}
+                                className="flex justify-between items-center"
+                              >
+                                <div className="flex flex-col">
+                                  <span>{nome}</span>
+                                  {nif && (
+                                    <span className="text-xs text-muted-foreground">
+                                      NIF: {nif}
+                                    </span>
+                                  )}
+                                </div>
+                                <Check
+                                  className={cn(
+                                    'h-4 w-4 shrink-0',
+                                    String(c.id) === String(field.value)
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </Command>
+                    </CommandDialog>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             )}
 
+            {entidadeIdValue != null && processosDaEntidade.length > 0 && !isEditing && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+                <span className="font-medium">Processos da entidade:</span>{' '}
+                {processosDaEntidade.length} processo(s) desta entidade ficarão
+                associados a este arquivo.
+              </div>
+            )}
+
             {isEditing && dossie && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Arquivo</label>
+              <div className="space-y-1 rounded-md border bg-muted/50 px-3 py-2">
+                <p className="text-sm font-medium">Arquivo</p>
                 <p className="text-sm font-semibold">{getDossieDisplayLabel(dossie)}</p>
                 <p className="text-xs text-muted-foreground">
-                  O arquivo é identificado pelo id e pela entidade
+                  Identificado pelo id e pela entidade
                 </p>
               </div>
             )}
@@ -222,11 +265,11 @@ export const DossieModal: React.FC<DossieModalProps> = ({
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>Descrição (opcional)</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Descrição do arquivo..."
-                      className="resize-none"
+                      className="resize-none min-h-[80px]"
                       {...field}
                     />
                   </FormControl>
@@ -235,7 +278,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
@@ -246,18 +289,16 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                 {(createDossie.isPending || updateDossie.isPending) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isEditing ? 'Atualizar' : 'Criar'}
+                {createDossie.isPending || updateDossie.isPending
+                  ? 'A guardar...'
+                  : isEditing
+                    ? 'Atualizar'
+                    : 'Criar'}
               </Button>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
-      <ClientModal
-        isOpen={isClientModalOpen}
-        onClose={() => setIsClientModalOpen(false)}
-        onSuccess={handleClientCreated}
-      />
     </Dialog>
   );
 };
-
