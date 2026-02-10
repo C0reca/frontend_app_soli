@@ -69,7 +69,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         <TabsTrigger value="documents">Documentos</TabsTrigger>
         <TabsTrigger value="irs">IRS</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
-        {(client as any).tem_dossies && <TabsTrigger value="dossies">Arquivos</TabsTrigger>}
+        <TabsTrigger value="dossies">Arquivo</TabsTrigger>
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -240,8 +240,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         </Card>
       </TabsContent>
 
-      {(client as any).tem_dossies && (
-        <TabsContent value="dossies" className="mt-6">
+      <TabsContent value="dossies" className="mt-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -249,15 +248,15 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                   <Folder className="h-5 w-5" />
                   <span>Arquivo</span>
                 </CardTitle>
-                {dossie && (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setIsDossieModalOpen(true);
-                    }}
-                  >
+                {dossie ? (
+                  <Button size="sm" onClick={() => setIsDossieModalOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Editar Arquivo
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => setIsDossieModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Arquivo
                   </Button>
                 )}
               </div>
@@ -270,8 +269,8 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               ) : !dossie ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>O arquivo será criado automaticamente quando necessário.</p>
-                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no arquivo.</p>
+                  <p>Esta entidade ainda não tem arquivo.</p>
+                  <p className="text-sm mt-2">Clique em &quot;Criar Arquivo&quot; para criar um arquivo e associar processos a esta entidade.</p>
                 </div>
               ) : (
                 <Card className="hover:shadow-md transition-shadow">
@@ -298,7 +297,6 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </CardContent>
           </Card>
         </TabsContent>
-      )}
     </Tabs>
   );
 
@@ -309,7 +307,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         <TabsTrigger value="contact">Contacto</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
-        {(client as any).tem_dossies && <TabsTrigger value="dossies">Arquivos</TabsTrigger>}
+        <TabsTrigger value="dossies">Arquivo</TabsTrigger>
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -484,8 +482,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         </Card>
       </TabsContent>
 
-      {(client as any).tem_dossies && (
-        <TabsContent value="dossies" className="mt-6">
+      <TabsContent value="dossies" className="mt-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -493,15 +490,15 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                   <Folder className="h-5 w-5" />
                   <span>Arquivo</span>
                 </CardTitle>
-                {dossie && (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setIsDossieModalOpen(true);
-                    }}
-                  >
+                {dossie ? (
+                  <Button size="sm" onClick={() => setIsDossieModalOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Editar Arquivo
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => setIsDossieModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Arquivo
                   </Button>
                 )}
               </div>
@@ -514,8 +511,8 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               ) : !dossie ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Folder className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>O arquivo será criado automaticamente quando necessário.</p>
-                  <p className="text-sm mt-2">Todos os processos desta entidade serão guardados no arquivo.</p>
+                  <p>Esta entidade ainda não tem arquivo.</p>
+                  <p className="text-sm mt-2">Clique em &quot;Criar Arquivo&quot; para criar um arquivo e associar processos a esta entidade.</p>
                 </div>
               ) : (
                 <Card className="hover:shadow-md transition-shadow">
@@ -542,7 +539,6 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </CardContent>
           </Card>
         </TabsContent>
-      )}
     </Tabs>
   );
 
@@ -628,12 +624,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         </div>
       </DialogContent>
 
-      {client && (client as any).tem_dossies && (
+      {client && (
         <DossieModal
           isOpen={isDossieModalOpen}
-          onClose={() => {
-            setIsDossieModalOpen(false);
-          }}
+          onClose={() => setIsDossieModalOpen(false)}
           dossie={dossie}
           entidadeId={client.id}
         />
