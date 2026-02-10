@@ -27,6 +27,17 @@ export function getDossieDisplayLabel(dossie: Dossie): string {
   return `${dossie.id} - ${getEntidadeNomeFromDossie(dossie)}`;
 }
 
+/**
+ * Obtém dossiês para várias entidades numa única chamada (evita N pedidos GET /dossies/entidade/{id}).
+ * Retorna array na mesma ordem de entidadeIds; null onde a entidade não tem dossiê.
+ */
+export async function fetchDossiesPorEntidades(entidadeIds: number[]): Promise<(Dossie | null)[]> {
+  if (entidadeIds.length === 0) return [];
+  const ids = entidadeIds.join(',');
+  const response = await api.get<(Dossie | null)[]>(`/dossies/por-entidades?entidade_ids=${encodeURIComponent(ids)}`);
+  return response.data ?? [];
+}
+
 export type NovaEntidadePayload = {
   tipo: 'singular' | 'coletivo';
   nome?: string;
@@ -45,30 +56,45 @@ export interface DossieCreate {
   nova_entidade?: NovaEntidadePayload;
 }
 
-export const useDossies = (entidadeId?: number) => {
+const DEFAULT_PAGE_SIZE = 25;
+
+export interface UseDossiesOptions {
+  skip?: number;
+  limit?: number;
+}
+
+export const useDossies = (entidadeId?: number, options: UseDossiesOptions = {}) => {
+  const { skip: listSkip = 0, limit: listLimit = DEFAULT_PAGE_SIZE } = options;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Lista de dossiês: só faz GET /dossies (ou /dossies?entidade_id=X) quando NÃO temos entidadeId
-  // Assim evitamos duplicar pedidos quando só precisamos do dossiê de uma entidade (ex.: ProcessModal)
+  // Lista de dossiês paginada: GET /dossies?skip=0&limit=25 (resposta: { items, total })
+  // Quando temos entidadeId usamos só o single (uma chamada). Sem entidadeId usamos lista paginada.
   const listQuery = useQuery({
-    queryKey: ['dossies', entidadeId ?? 'all'],
+    queryKey: ['dossies', entidadeId ?? 'all', listSkip, listLimit],
     queryFn: async () => {
-      const url = entidadeId != null
-        ? `/dossies?entidade_id=${entidadeId}`
-        : '/dossies';
+      const params = new URLSearchParams();
+      if (entidadeId != null) params.set('entidade_id', String(entidadeId));
+      params.set('skip', String(listSkip));
+      params.set('limit', String(listLimit));
+      const url = `/dossies?${params.toString()}`;
       try {
         const response = await api.get(url);
-        return response.data;
+        const data = response.data;
+        // Backend devolve { items, total }; compatibilidade com formato antigo (array)
+        if (data && typeof data === 'object' && 'items' in data) {
+          return { items: data.items as Dossie[], total: (data as { total?: number }).total ?? 0 };
+        }
+        return { items: Array.isArray(data) ? data : [], total: Array.isArray(data) ? data.length : 0 };
       } catch (error: unknown) {
         const err = error as { response?: { status?: number } };
         if (err.response?.status === 404) {
-          return [];
+          return { items: [], total: 0 };
         }
         throw error;
       }
     },
-    enabled: entidadeId == null, // desativado quando pedimos um dossiê por entidade (usamos só o single)
+    enabled: entidadeId == null,
   });
 
   // Um dossiê por entidade: GET /dossies/entidade/{id} (uma chamada só; backend devolve null se não houver)
@@ -90,9 +116,11 @@ export const useDossies = (entidadeId?: number) => {
 
   // Quando temos entidadeId: usar só o single (1 pedido). Lista = [dossie] ou []
   const dossie = singleQuery.data ?? null;
+  const listData = listQuery.data;
   const dossies = entidadeId != null
     ? (dossie ? [dossie] : [])
-    : (listQuery.data ?? []);
+    : (listData && 'items' in listData ? listData.items : Array.isArray(listData) ? listData : []);
+  const dossiesTotal = listData && typeof listData === 'object' && 'total' in listData ? (listData as { total: number }).total : dossies.length;
   const isLoading = entidadeId != null ? singleQuery.isLoading : listQuery.isLoading;
   const isLoadingDossie = singleQuery.isLoading;
   const error = entidadeId != null ? singleQuery.error : listQuery.error;
@@ -171,6 +199,7 @@ export const useDossies = (entidadeId?: number) => {
 
   return {
     dossies,
+    dossiesTotal,
     dossie, // Dossiê único da entidade
     isLoading,
     isLoadingDossie,

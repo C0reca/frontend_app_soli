@@ -3,19 +3,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Folder, Building, FileText } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Folder, Building, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDossies, Dossie, getDossieDisplayLabel, getEntidadeNomeFromDossie } from '@/hooks/useDossies';
 import { DossieModal } from '@/components/modals/DossieModal';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { normalizeString } from '@/lib/utils';
 
+const PAGE_SIZE = 25;
+
 export const Dossies: React.FC = () => {
-  const { dossies, isLoading } = useDossies();
+  const [page, setPage] = useState(1);
+  const { dossies, dossiesTotal, isLoading } = useDossies(undefined, {
+    skip: (page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDossie, setSelectedDossie] = useState<Dossie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
+
+  const totalPages = Math.max(1, Math.ceil(dossiesTotal / PAGE_SIZE));
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
 
   const filteredDossies = dossies.filter((dossie) => {
     const termNormalized = normalizeString(searchTerm);
@@ -144,7 +154,7 @@ export const Dossies: React.FC = () => {
                 <span>Arquivos</span>
               </CardTitle>
               <CardDescription>
-                Gerir arquivos e processos associados
+                Gerir arquivos e processos associados. Página {page} de {totalPages} (total: {dossiesTotal}).
               </CardDescription>
             </div>
             <Button onClick={() => {
@@ -237,6 +247,34 @@ export const Dossies: React.FC = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {!isLoading && dossiesTotal > 0 && (
+            <div className="flex items-center justify-between border-t pt-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, dossiesTotal)} de {dossiesTotal}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={!canPrev}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={!canNext}
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
