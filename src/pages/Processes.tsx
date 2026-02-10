@@ -56,6 +56,17 @@ export const Processes: React.FC = () => {
     return employee?.nome || '';
   };
 
+  /** Formato na lista: numero_dossie.numero_processo - nome_entidade (ex: 100.01 - Nome) */
+  const getProcessListLabel = (process: Process) => {
+    const entityName = process.cliente?.nome || getClientNameById(process.cliente_id) || (process.cliente_id ? `ID: ${process.cliente_id}` : '');
+    const numero = process.dossie?.numero;
+    const numNoDossie = process.numero_no_dossie;
+    if (numero != null && numNoDossie != null) {
+      return `${numero}.${String(numNoDossie).padStart(2, '0')} - ${entityName}`;
+    }
+    return entityName ? `– - ${entityName}` : '–';
+  };
+
   const source = showArchived ? archived : processes;
   
   // Calcular estatísticas
@@ -366,7 +377,7 @@ export const Processes: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold">{process.titulo}</h3>
+                        <h3 className="text-lg font-semibold">{getProcessListLabel(process)}</h3>
                         {process.tipo && (
                           <Badge variant="outline">
                             {process.tipo}
@@ -375,10 +386,13 @@ export const Processes: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
+                          <span className="font-medium">Título:</span> {process.titulo}
+                        </div>
+                        <div>
                           <span className="font-medium">Arquivo:</span>{' '}
                           {process.dossie_id && process.dossie
                             ? getDossieDisplayLabel(process.dossie as Dossie)
-                            : '1 (pendente)'}
+                            : '– (pendente)'}
                         </div>
                         <div>
                           <span className="font-medium">Entidade:</span>{' '}
