@@ -3,37 +3,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Folder, Building, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Folder, Building, FileText } from 'lucide-react';
 import { useDossies, Dossie, getDossieDisplayLabel, getEntidadeNomeFromDossie } from '@/hooks/useDossies';
 import { DossieModal } from '@/components/modals/DossieModal';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-
-const PAGE_SIZE = 25;
+import { normalizeString } from '@/lib/utils';
 
 export const Dossies: React.FC = () => {
-  const [page, setPage] = useState(1);
+  const { dossies, isLoading } = useDossies();
   const [searchTerm, setSearchTerm] = useState('');
-  const { dossies, dossiesTotal, isLoading } = useDossies(undefined, {
-    skip: (page - 1) * PAGE_SIZE,
-    limit: PAGE_SIZE,
-    search: searchTerm.trim() || undefined,
-  });
   const [selectedDossie, setSelectedDossie] = useState<Dossie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
 
-  const totalPages = Math.max(1, Math.ceil(dossiesTotal / PAGE_SIZE));
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-
-  React.useEffect(() => {
-    setPage(1);
-  }, [searchTerm]);
-
-  // Garantir array real (evita "t.filter is not a function" com cache/resposta inesperada)
-  const dossiesList: Dossie[] = Array.isArray(dossies) ? [...dossies] : [];
-  const filteredDossies = dossiesList; // Pesquisa feita no servidor (toda a lista)
+  const filteredDossies = dossies.filter((dossie) => {
+    const termNormalized = normalizeString(searchTerm);
+    const displayLabel = getDossieDisplayLabel(dossie);
+    const idMatch = String(dossie.id).includes(searchTerm.trim());
+    const labelMatch = normalizeString(displayLabel).includes(termNormalized);
+    const numeroMatch = normalizeString(dossie.numero || '').includes(termNormalized);
+    return idMatch || labelMatch || numeroMatch;
+  });
 
   const handleView = (dossie: Dossie) => {
     setSelectedDossie(dossie);
@@ -153,7 +144,7 @@ export const Dossies: React.FC = () => {
                 <span>Arquivos</span>
               </CardTitle>
               <CardDescription>
-                Gerir arquivos e processos associados. Página {page} de {totalPages} (total: {dossiesTotal}).
+                Gerir arquivos e processos associados
               </CardDescription>
             </div>
             <Button onClick={() => {
@@ -246,34 +237,6 @@ export const Dossies: React.FC = () => {
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          )}
-
-          {!isLoading && dossiesTotal > 0 && (
-            <div className="flex items-center justify-between border-t pt-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, dossiesTotal)} de {dossiesTotal}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!canPrev}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={!canNext}
-                >
-                  Próxima
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
             </div>
           )}
         </CardContent>
