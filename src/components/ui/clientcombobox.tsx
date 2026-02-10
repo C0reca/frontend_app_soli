@@ -24,9 +24,11 @@ interface ClientComboboxProps {
     isLoading?: boolean;
     /** Texto do botão quando nenhum cliente está selecionado (ex. "Selecione uma entidade") */
     placeholderEmpty?: string;
+    /** Usar quando o combobox está dentro de um Dialog (evita conflito de foco e z-index) */
+    insideDialog?: boolean;
 }
 
-export function ClientCombobox({ clients = [], value, onChange, isLoading, placeholderEmpty = "Selecione um cliente" }: ClientComboboxProps) {
+export function ClientCombobox({ clients = [], value, onChange, isLoading, placeholderEmpty = "Selecione um cliente", insideDialog = false }: ClientComboboxProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
@@ -66,13 +68,22 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover
+            open={open}
+            onOpenChange={(o) => {
+                setOpen(o);
+                if (!o) setSearch("");
+            }}
+            modal={!insideDialog}
+        >
             <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" className="w-full justify-between">
                     {getClientDisplayName(selectedClient)}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+            <PopoverContent
+                className={cn("w-[var(--radix-popover-trigger-width)] p-0", insideDialog && "z-[100]")}
+            >
                 <Command>
                     <CommandInput
                         placeholder="Pesquisar por nome ou NIF..."
