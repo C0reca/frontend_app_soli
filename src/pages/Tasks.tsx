@@ -17,6 +17,7 @@ const PAGE_SIZE = 25;
 
 export const Tasks: React.FC = () => {
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const { tasks, tasksTotal, isLoading, deleteTask, updateTaskStatus, setExternal } = useTasks({
     skip: (page - 1) * PAGE_SIZE,
     limit: PAGE_SIZE,
@@ -24,7 +25,6 @@ export const Tasks: React.FC = () => {
   });
   const { employees } = useEmployees();
   const { processes } = useProcesses();
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);

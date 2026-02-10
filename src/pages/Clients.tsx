@@ -14,6 +14,7 @@ const PAGE_SIZE = 25;
 
 export const Clients: React.FC = () => {
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const { clients, clientsTotal, isLoading, deleteClient } = useClients({
     skip: (page - 1) * PAGE_SIZE,
     limit: PAGE_SIZE,
@@ -21,7 +22,6 @@ export const Clients: React.FC = () => {
   });
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<'all' | 'singular' | 'coletivo'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'id' | 'createdAt' | 'nome' | 'email' | 'nif' | 'status'>('id');
