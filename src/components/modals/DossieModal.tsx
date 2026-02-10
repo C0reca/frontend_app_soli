@@ -24,13 +24,7 @@ import { Button } from '@/components/ui/button';
 import { useDossies, Dossie, getDossieDisplayLabel } from '@/hooks/useDossies';
 import { useClients } from '@/hooks/useClients';
 import { Loader2 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClientModal } from './ClientModal';
 
 const formSchema = z.object({
@@ -147,26 +141,12 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                         A entidade ainda não está criada?
                       </Button>
                     </div>
-                    <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      value={field.value?.toString() ?? ""}
-                      disabled={isClientsLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a entidade" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients
-                          .filter((c: any) => c.tem_dossies === false || c.tem_dossies === null || c.id === field.value)
-                          .map((client: any) => (
-                            <SelectItem key={client.id} value={client.id.toString()}>
-                              {client.nome || client.nome_empresa}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                    <ClientCombobox
+                      clients={clients.filter((c: any) => c.tem_dossies === false || c.tem_dossies === null || c.id === field.value)}
+                      value={field.value}
+                      onChange={(value) => field.onChange(value)}
+                      isLoading={isClientsLoading}
+                    />
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">
                       Apenas entidades sem arquivo podem ser selecionadas
