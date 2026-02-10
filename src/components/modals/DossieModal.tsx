@@ -142,7 +142,11 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                       </Button>
                     </div>
                     <ClientCombobox
-                      clients={clients.filter((c: any) => c.id === field.value || !c.tem_dossies)}
+                      clients={clients.filter((c: any) => {
+                        const jaTemArquivo = c.tem_dossies === true;
+                        const eSelecionada = c.id === field.value;
+                        return eSelecionada || !jaTemArquivo;
+                      })}
                       value={field.value}
                       onChange={(value) => field.onChange(value)}
                       isLoading={isClientsLoading}
