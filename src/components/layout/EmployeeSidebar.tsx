@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   FolderOpen,
+  Folder,
   CheckSquare,
   FileText,
   LogOut,
