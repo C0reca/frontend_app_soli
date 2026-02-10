@@ -130,17 +130,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                 name="entidade_id"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between gap-2">
-                      <FormLabel>Entidade *</FormLabel>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setIsClientModalOpen(true)}
-                      >
-                        A entidade ainda não está criada?
-                      </Button>
-                    </div>
+                    <FormLabel>Entidade *</FormLabel>
                     <ClientCombobox
                       clients={clients.filter((c: any) => {
                         const jaTemArquivo = c.tem_dossies === true;
@@ -151,12 +141,8 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                       onChange={(value) => field.onChange(value)}
                       isLoading={isClientsLoading}
                       placeholderEmpty="Selecione uma entidade"
-                      insideDialog
                     />
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground">
-                      Apenas entidades sem arquivo podem ser selecionadas
-                    </p>
                   </FormItem>
                 )}
               />
