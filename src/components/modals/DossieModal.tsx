@@ -146,6 +146,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                       value={field.value}
                       onChange={(value) => field.onChange(value)}
                       isLoading={isClientsLoading}
+                      placeholderEmpty="Selecione uma entidade"
                     />
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">

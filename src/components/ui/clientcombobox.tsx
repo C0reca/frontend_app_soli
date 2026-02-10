@@ -22,9 +22,11 @@ interface ClientComboboxProps {
     value?: number | string;
     onChange: (value: number) => void;
     isLoading?: boolean;
+    /** Texto do botão quando nenhum cliente está selecionado (ex. "Selecione uma entidade") */
+    placeholderEmpty?: string;
 }
 
-export function ClientCombobox({ clients = [], value, onChange, isLoading }: ClientComboboxProps) {
+export function ClientCombobox({ clients = [], value, onChange, isLoading, placeholderEmpty = "Selecione um cliente" }: ClientComboboxProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
@@ -59,7 +61,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading }: Cli
 
     const selectedClient = clients.find((c) => String(c.id) === String(value));
     const getClientDisplayName = (client: Client | undefined) => {
-        if (!client) return "Selecione um cliente";
+        if (!client) return placeholderEmpty;
         return client.nome || client.nome_empresa || `Cliente #${client.id}`;
     };
 
