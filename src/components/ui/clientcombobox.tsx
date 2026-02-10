@@ -44,19 +44,10 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
                    normalizeString(nif).includes(normSearch);
         });
         
-        // Ordenar do mais recente para o mais antigo (por data de criação ou ID)
+        // Ordenar do maior ID para o menor (mais recentes primeiro)
         return filtered.sort((a, b) => {
-            // Tentar ordenar por data de criação primeiro
-            const dateA = a.criado_em || a.createdAt;
-            const dateB = b.criado_em || b.createdAt;
-            
-            if (dateA && dateB) {
-                return new Date(dateB).getTime() - new Date(dateA).getTime();
-            }
-            
-            // Se não houver data, ordenar por ID (mais recente = maior ID)
-            const idA = typeof a.id === 'string' ? parseInt(a.id, 10) : a.id;
-            const idB = typeof b.id === 'string' ? parseInt(b.id, 10) : b.id;
+            const idA = typeof a.id === 'string' ? parseInt(a.id, 10) : Number(a.id);
+            const idB = typeof b.id === 'string' ? parseInt(b.id, 10) : Number(b.id);
             return idB - idA;
         });
     }, [clients, search]);
@@ -84,7 +75,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
             <PopoverContent
                 className={cn("w-[var(--radix-popover-trigger-width)] p-0", insideDialog && "z-[100]")}
             >
-                <Command>
+                <Command shouldFilter={false}>
                     <CommandInput
                         placeholder="Pesquisar por nome ou NIF..."
                         value={search}
