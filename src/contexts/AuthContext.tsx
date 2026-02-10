@@ -22,11 +22,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const defaultAuthValue: AuthContextType = {
+  user: null,
+  login: async () => false,
+  logout: () => {},
+  isAuthenticated: false,
+  loading: false,
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  // Evita crash em cascata quando há erros de rede ou re-renders após erro (ex.: ERR_SSL_PROTOCOL_ERROR).
+  if (context === undefined) return defaultAuthValue;
   return context;
 };
 

@@ -1,11 +1,19 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
 /**
- * Base da API: SEMPRE HTTPS quando a página está em HTTPS (evita Mixed Content).
+ * Base da API: em dev (Vite) usa /api para o proxy; em produção HTTPS quando a página é HTTPS.
  */
 function getApiBase(): string {
   if (typeof window === 'undefined') return '/api';
   const { protocol, host, origin } = window.location;
+  const isLocal =
+    host === 'localhost' ||
+    host.startsWith('localhost:') ||
+    host === '127.0.0.1' ||
+    host.startsWith('127.0.0.1:');
+  // Em dev, pedidos relativos para usar o proxy do Vite (evita ERR_SSL_PROTOCOL_ERROR no backend HTTP).
+  if (import.meta.env.DEV && isLocal) return '/api';
+  if (isLocal) return `http://${host}/api`;
   if (protocol === 'https:') return `https://${host}/api`;
   return `${origin}/api`;
 }
