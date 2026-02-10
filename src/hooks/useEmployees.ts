@@ -51,7 +51,7 @@ export const useEmployees = () => {
 
   const createEmployee = useMutation({
     mutationFn: async (employee: CreateEmployeePayload) => {
-      const response = await api.post('/funcionarios', employee);
+      const response = await api.post('/funcionarios/', employee);
       return response.data;
     },
     onSuccess: () => {

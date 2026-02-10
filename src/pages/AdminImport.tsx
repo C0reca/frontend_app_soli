@@ -41,7 +41,7 @@ export const AdminImport: React.FC = () => {
       setLoading(true);
       const form = new FormData();
       form.append('file', file);
-      const response = await api.post('/admin/import/preview', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const response = await api.post('/admin/import/preview/', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       setPreview(response.data);
       setResult(null);
       // criar mapeamento inicial 1:1 por header normalizado
@@ -76,10 +76,10 @@ export const AdminImport: React.FC = () => {
         form.append('mapping', JSON.stringify(mapping));
       }
       let url = '';
-      if (type === 'clientes') url = '/admin/import/clientes';
-      if (type === 'processos') url = '/admin/import/processos';
-      if (type === 'tarefas') url = '/admin/import/tarefas';
-      if (type === 'registos') url = '/admin/import/registos';
+      if (type === 'clientes') url = '/admin/import/clientes/';
+      if (type === 'processos') url = '/admin/import/processos/';
+      if (type === 'tarefas') url = '/admin/import/tarefas/';
+      if (type === 'registos') url = '/admin/import/registos/';
       const response = await api.post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } });
       setResult(response.data);
       toast({ title: 'Importação concluída' });

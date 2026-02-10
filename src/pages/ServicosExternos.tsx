@@ -42,7 +42,7 @@ export const ServicosExternos: React.FC = () => {
   const load = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/tarefas/externos');
+      const res = await api.get('/tarefas/externos/');
       setItems(res.data);
     } catch (e: any) {
       toast({ title: 'Erro', description: 'Falha ao carregar serviços externos', variant: 'destructive' });

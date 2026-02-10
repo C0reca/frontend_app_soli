@@ -125,7 +125,7 @@ export const useClients = () => {
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
-      const response = await api.post('/clientes', client);
+      const response = await api.post('/clientes/', client);
       return response.data;
     },
     onSuccess: () => {

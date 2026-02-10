@@ -32,7 +32,7 @@ export const useTemplates = () => {
 
   const createTemplate = useMutation({
     mutationFn: async (template: Omit<Template, 'id' | 'createdAt' | 'usageCount'>) => {
-      const response = await api.post('/templates', template);
+      const response = await api.post('/templates/', template);
       return response.data;
     },
     onSuccess: () => {

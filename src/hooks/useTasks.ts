@@ -33,10 +33,10 @@ export const useTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       try {
-        const response = await api.get('/tarefas/with_counts');
+        const response = await api.get('/tarefas/with_counts/');
         return response.data;
       } catch (e) {
-        const fallback = await api.get('/tarefas');
+        const fallback = await api.get('/tarefas/');
         return fallback.data;
       }
     },
@@ -44,7 +44,7 @@ export const useTasks = () => {
 
   const createTask = useMutation({
     mutationFn: async (task: Omit<Task, 'id' | 'criado_em'>) => {
-      const response = await api.post('/tarefas', task);
+      const response = await api.post('/tarefas/', task);
       return response.data;
     },
     onSuccess: () => {

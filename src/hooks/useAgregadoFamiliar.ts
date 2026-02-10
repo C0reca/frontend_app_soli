@@ -51,7 +51,7 @@ export const useAgregadoFamiliar = (clienteId?: number) => {
 
   const createRelacao = useMutation({
     mutationFn: async (data: AgregadoFamiliarCreate) => {
-      const response = await api.post('/agregado-familiar', data);
+      const response = await api.post('/agregado-familiar/', data);
       return response.data as AgregadoFamiliar;
     },
     onSuccess: () => {

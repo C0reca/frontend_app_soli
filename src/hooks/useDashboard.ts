@@ -19,7 +19,7 @@ export const useDashboard = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-kpis'],
     queryFn: async (): Promise<DashboardResponse> => {
-      const res = await api.get('/dashboard/kpis');
+      const res = await api.get('/dashboard/kpis/');
       return res.data;
     },
   });
