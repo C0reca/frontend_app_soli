@@ -4,9 +4,10 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-function Select({ value, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) {
+function Select({ value, defaultValue, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>) {
   const safeValue = value === "" || value == null ? undefined : value;
-  return <SelectPrimitive.Root {...props} value={safeValue} />
+  const safeDefaultValue = defaultValue === "" || defaultValue == null ? undefined : defaultValue;
+  return <SelectPrimitive.Root {...props} value={safeValue} defaultValue={safeDefaultValue} />
 }
 Select.displayName = "Select"
 

@@ -315,6 +315,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
 
                                 {selectedCliente ? (
                                     <FormField
+                                        key="field-dossie"
                                         control={form.control}
                                         name="dossie_id"
                                         render={({ field }) => {
@@ -366,6 +367,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     />
                                 ) : (
                                     <FormField
+                                        key="field-funcionario"
                                         control={form.control}
                                         name="funcionario_id"
                                     render={({ field }) => (
@@ -412,7 +414,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         <FormLabel>Estado</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
-                                            defaultValue={field.value}
+                                            value={field.value || undefined}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
