@@ -109,7 +109,7 @@ export const useLogsProcesso = (processoId?: number) => {
   const getTiposLog = useQuery({
     queryKey: ['tipos-log'],
     queryFn: async () => {
-      const response = await api.get('/logs-processo/tipos/');
+      const response = await api.get('/logs-processo/tipos');
       return response.data;
     },
   });

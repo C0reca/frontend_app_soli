@@ -105,7 +105,7 @@ export const useClients = () => {
     queryKey: ['clients'],
     queryFn: async () => {
       try {
-        const response = await api.get('/clientes/');
+        const response = await api.get('/clientes');
         const data = response?.data;
         // Garantir que retornamos sempre um array (evita crash se a API devolver objeto ou null)
         if (Array.isArray(data)) return data;
@@ -125,7 +125,7 @@ export const useClients = () => {
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
-      const response = await api.post('/clientes/', client);
+      const response = await api.post('/clientes', client);
       return response.data;
     },
     onSuccess: () => {

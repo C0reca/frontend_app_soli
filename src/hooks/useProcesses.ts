@@ -41,14 +41,14 @@ export const useProcesses = () => {
   } = useQuery({
     queryKey: ['processes'],
     queryFn: async () => {
-      const response = await api.get('/processos/');
+      const response = await api.get('/processos');
       return response.data;
     },
   });
 
   const createProcess = useMutation({
     mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
-      const response = await api.post('/processos/', process);
+      const response = await api.post('/processos', process);
       return response.data;
     },
     onSuccess: () => {
@@ -131,7 +131,7 @@ export const useProcesses = () => {
   });
 
   const getArchived = async (): Promise<Process[]> => {
-    const res = await api.get('/processos/arquivados/');
+    const res = await api.get('/processos/arquivados');
     return res.data;
   };
 

@@ -44,14 +44,14 @@ export const useEmployees = () => {
   } = useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
-      const response = await api.get('/funcionarios/');
+      const response = await api.get('/funcionarios');
       return response.data;
     },
   });
 
   const createEmployee = useMutation({
     mutationFn: async (employee: CreateEmployeePayload) => {
-      const response = await api.post('/funcionarios/', employee);
+      const response = await api.post('/funcionarios', employee);
       return response.data;
     },
     onSuccess: () => {

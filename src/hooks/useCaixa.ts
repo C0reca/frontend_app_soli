@@ -108,7 +108,7 @@ export const useCaixa = () => {
   const fetchMovimentos = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/caixa/movimentos/');
+      const response = await api.get('/caixa/movimentos');
       const data = Array.isArray(response.data) ? response.data.map(normalizarMovimento) : [];
       setMovimentos(data);
     } catch (error) {
@@ -122,7 +122,7 @@ export const useCaixa = () => {
   const fetchFechos = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/caixa/fechos/');
+      const response = await api.get('/caixa/fechos');
       const data = Array.isArray(response.data) ? response.data.map(normalizarExtrato) : [];
       setFechos(data);
     } catch (error) {
@@ -203,7 +203,7 @@ export const useCaixa = () => {
 
   const createMovimento = useCallback(async (data: CreateMovimentoData): Promise<void> => {
     try {
-      await api.post('/caixa/movimento/', data);
+      await api.post('/caixa/movimento', data);
       await Promise.all([fetchMovimentos(), fetchFechos(), fetchResumoDia()]);
     } catch (error) {
       setError('Erro ao criar movimento');
@@ -240,7 +240,7 @@ export const useCaixa = () => {
   const fecharCaixa = useCallback(async (saldoMoedas: number) => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const response = await api.post('/caixa/fecho/', { data: today, saldo_moedas: saldoMoedas });
+      const response = await api.post('/caixa/fecho', { data: today, saldo_moedas: saldoMoedas });
       const extrato = normalizarExtrato(response.data);
       await Promise.all([fetchFechos(), fetchResumoDia()]);
       return extrato;

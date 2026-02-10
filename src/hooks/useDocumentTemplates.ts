@@ -35,7 +35,7 @@ export const useDocumentTemplates = () => {
 
   const createTemplate = useMutation({
     mutationFn: async (template: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'>) => {
-      const response = await api.post('/document-templates/', template);
+      const response = await api.post('/document-templates', template);
       return response.data;
     },
     onSuccess: () => {

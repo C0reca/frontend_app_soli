@@ -57,8 +57,8 @@ export const useDossies = (entidadeId?: number) => {
     queryKey: ['dossies', entidadeId ?? 'all'],
     queryFn: async () => {
       const url = entidadeId != null
-        ? `/dossies/?entidade_id=${entidadeId}`
-        : '/dossies/';
+        ? `/dossies?entidade_id=${entidadeId}`
+        : '/dossies';
       try {
         const response = await api.get(url);
         return response.data;
@@ -96,7 +96,7 @@ export const useDossies = (entidadeId?: number) => {
 
   const createDossie = useMutation({
     mutationFn: async (dossie: DossieCreate) => {
-      const response = await api.post('/dossies/', dossie);
+      const response = await api.post('/dossies', dossie);
       return response.data;
     },
     onSuccess: (data, variables) => {

@@ -57,14 +57,14 @@ export const useIRS = (emAberto?: boolean) => {
       if (emAberto !== undefined) {
         params.em_aberto = emAberto;
       }
-      const response = await api.get('/irs/', { params });
+      const response = await api.get('/irs', { params });
       return response.data as IRS[];
     }
   });
 
   const createIRS = useMutation({
     mutationFn: async (data: IRSCreate) => {
-      const response = await api.post('/irs/', data);
+      const response = await api.post('/irs', data);
       return response.data as IRS;
     },
     onSuccess: () => {

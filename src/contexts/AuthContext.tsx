@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const fetchCurrentUser = async () => {
       try {
-        const response = await api.get('/auth/me/');
+        const response = await api.get('/auth/me');
         setUser(response.data);
       } catch (error) {
         localStorage.removeItem('token');
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await api.post('/auth/login/', { email, password });
+      const response = await api.post('/auth/login', { email, password });
       const { access_token, user: userData } = response.data;
 
       localStorage.setItem('token', access_token);
