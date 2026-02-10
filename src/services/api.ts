@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
 /**
- * Base da API: em dev (Vite) usa /api para o proxy; em produção HTTPS quando a página é HTTPS.
+ * Base da API: em dev (Vite) pedidos diretos ao backend em HTTP (evita proxy e SSL); em produção HTTPS quando a página é HTTPS.
  */
 function getApiBase(): string {
   if (typeof window === 'undefined') return '/api';
@@ -11,8 +11,8 @@ function getApiBase(): string {
     host.startsWith('localhost:') ||
     host === '127.0.0.1' ||
     host.startsWith('127.0.0.1:');
-  // Em dev, pedidos relativos para usar o proxy do Vite (evita ERR_SSL_PROTOCOL_ERROR no backend HTTP).
-  if (import.meta.env.DEV && isLocal) return '/api';
+  // Em dev, URL direto ao backend em HTTP (sem passar pelo proxy do Vite = menos latência; sem SSL).
+  if (import.meta.env.DEV && isLocal) return 'http://127.0.0.1:8000/api';
   if (isLocal) return `http://${host}/api`;
   if (protocol === 'https:') return `https://${host}/api`;
   return `${origin}/api`;
