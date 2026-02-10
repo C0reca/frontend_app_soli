@@ -17,6 +17,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Calendar, label: 'Calendário', path: '/calendario' },
   { icon: Users, label: 'Entidades', path: '/clientes' },
+  { icon: Folder, label: 'Arquivos', path: '/dossies' },
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: Receipt, label: 'IRS', path: '/irs' },
   { icon: CheckSquare, label: 'Compromissos', path: '/tarefas' },
