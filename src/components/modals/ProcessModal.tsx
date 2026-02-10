@@ -338,9 +338,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     </FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="__none__">Nenhum arquivo</SelectItem>
-                                                        {dossieEntidade && (
-                                                            <SelectItem key={dossieEntidade.id} value={dossieEntidade.id.toString()}>
-                                                                {dossieEntidade.nome} {dossieEntidade.numero && `(${dossieEntidade.numero})`}
+                                                        {dossieEntidade && dossieEntidade.id != null && String(dossieEntidade.id).trim() !== '' && (
+                                                            <SelectItem key={dossieEntidade.id} value={String(dossieEntidade.id)}>
+                                                                {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ''}
                                                             </SelectItem>
                                                         )}
                                                     </SelectContent>
@@ -360,10 +360,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         <FormItem>
                                             <FormLabel>Responsável</FormLabel>
                                             <Select
-                                                onValueChange={(value) =>
-                                                    field.onChange(value ? parseInt(value) : undefined)
-                                                }
-                                                value={field.value?.toString() ?? ""}
+                                                onValueChange={(value) => {
+                                                    const id = value && value !== "__none__" ? parseInt(value, 10) : undefined;
+                                                    field.onChange(id);
+                                                }}
+                                                value={field.value != null ? field.value.toString() : "__none__"}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
@@ -371,6 +372,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
+                                                    <SelectItem value="__none__">Nenhum</SelectItem>
                                                     {employees.map((employee) => (
                                                         <SelectItem
                                                             key={employee.id}

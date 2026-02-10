@@ -86,11 +86,15 @@ export const ProcessLocationModal: React.FC<ProcessLocationModalProps> = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="localizacao">Localização</Label>
-            <Select value={localizacao || ''} onValueChange={(value) => setLocalizacao(value || undefined)}>
+            <Select
+              value={localizacao != null && localizacao !== '' ? localizacao : '__none__'}
+              onValueChange={(value) => setLocalizacao(value === '__none__' ? undefined : value)}
+            >
               <SelectTrigger id="localizacao">
                 <SelectValue placeholder="Selecione uma localização" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="__none__">Nenhuma</SelectItem>
                 {OPCOES_LOCALIZACAO.map((opcao) => (
                   <SelectItem key={opcao} value={opcao}>
                     {opcao}
