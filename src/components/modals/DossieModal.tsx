@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,13 +18,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDossies, Dossie, getDossieDisplayLabel } from '@/hooks/useDossies';
 import { useClients } from '@/hooks/useClients';
-import { Loader2 } from 'lucide-react';
-import { ClientCombobox } from '@/components/ui/clientcombobox';
+import { Loader2, Check } from 'lucide-react';
+import { Command, CommandInput, CommandItem, CommandList, CommandEmpty } from '@/components/ui/command';
+import { CommandDialog } from '@/components/ui/command';
+import { cn, normalizeString } from '@/lib/utils';
 import { ClientModal } from './ClientModal';
 
 const formSchema = z.object({
@@ -51,6 +52,8 @@ export const DossieModal: React.FC<DossieModalProps> = ({
   const { createDossie, updateDossie } = useDossies();
   const isEditing = !!dossie;
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [entityPickerOpen, setEntityPickerOpen] = useState(false);
+  const [entitySearch, setEntitySearch] = useState('');
   const needsEntidadeSelection = !isEditing && !entidadeId;
 
   const form = useForm<FormData>({
@@ -74,6 +77,29 @@ export const DossieModal: React.FC<DossieModalProps> = ({
       });
     }
   }, [dossie, entidadeId, form, isOpen]);
+  useEffect(() => {
+    if (!isOpen) setEntityPickerOpen(false);
+    if (!isOpen) setEntitySearch('');
+  }, [isOpen]);
+
+  const entidadeIdValue = form.watch('entidade_id');
+  const entidadesDisponiveis = useMemo(() => {
+    return clients
+      .filter((c: { id: number | string; tem_dossies?: boolean }) => {
+        const jaTemArquivo = c.tem_dossies === true;
+        const eSelecionada = c.id === entidadeIdValue;
+        return eSelecionada || !jaTemArquivo;
+      })
+      .sort((a, b) => Number(b.id) - Number(a.id));
+  }, [clients, entidadeIdValue]);
+  const entidadesFiltradas = useMemo(() => {
+    const norm = normalizeString(entitySearch);
+    return entidadesDisponiveis.filter((c) => {
+      const nome = (c.nome || (c as { nome_empresa?: string }).nome_empresa || '').toString();
+      const nif = ((c as { tipo?: string }).tipo === 'coletivo' ? (c as { nif_empresa?: string }).nif_empresa : (c as { nif?: string }).nif) || '';
+      return normalizeString(nome).includes(norm) || normalizeString(nif).includes(norm);
+    });
+  }, [entidadesDisponiveis, entitySearch]);
 
   const handleClientCreated = (createdClient: any) => {
     if (createdClient?.id) {
@@ -128,24 +154,56 @@ export const DossieModal: React.FC<DossieModalProps> = ({
               <FormField
                 control={form.control}
                 name="entidade_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Entidade *</FormLabel>
-                    <ClientCombobox
-                      clients={clients.filter((c: any) => {
-                        const jaTemArquivo = c.tem_dossies === true;
-                        const eSelecionada = c.id === field.value;
-                        return eSelecionada || !jaTemArquivo;
-                      })}
-                      value={field.value}
-                      onChange={(value) => field.onChange(value)}
-                      isLoading={isClientsLoading}
-                      placeholderEmpty="Selecione uma entidade"
-                      insideDialog
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const selected = entidadesDisponiveis.find((c) => String(c.id) === String(field.value));
+                  const label = selected ? (selected.nome || (selected as { nome_empresa?: string }).nome_empresa || `#${selected.id}`) : 'Selecione uma entidade';
+                  return (
+                    <FormItem>
+                      <FormLabel>Entidade *</FormLabel>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between"
+                        onClick={() => setEntityPickerOpen(true)}
+                      >
+                        {label}
+                      </Button>
+                      <CommandDialog open={entityPickerOpen} onOpenChange={(o) => { setEntityPickerOpen(o); setEntitySearch(''); }}>
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Pesquisar por nome ou NIF..."
+                            value={entitySearch}
+                            onValueChange={setEntitySearch}
+                          />
+                          <CommandList>
+                            <CommandEmpty>Nenhuma entidade encontrada.</CommandEmpty>
+                            {entidadesFiltradas.map((c) => {
+                              const nome = c.nome || (c as { nome_empresa?: string }).nome_empresa || `#${c.id}`;
+                              const nif = (c as { tipo?: string }).tipo === 'coletivo'
+                                ? (c as { nif_empresa?: string }).nif_empresa
+                                : (c as { nif?: string }).nif;
+                              const id = typeof c.id === 'string' ? parseInt(c.id, 10) : c.id;
+                              return (
+                                <CommandItem
+                                  key={c.id}
+                                  onSelect={() => { field.onChange(id); setEntityPickerOpen(false); }}
+                                  className="flex justify-between items-center"
+                                >
+                                  <div className="flex flex-col">
+                                    <span>{nome}</span>
+                                    {nif && <span className="text-xs text-muted-foreground">NIF: {nif}</span>}
+                                  </div>
+                                  <Check className={cn('h-4 w-4', String(c.id) === String(field.value) ? 'opacity-100' : 'opacity-0')} />
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandList>
+                        </Command>
+                      </CommandDialog>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             )}
 
