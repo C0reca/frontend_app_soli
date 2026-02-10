@@ -317,18 +317,27 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     <FormField
                                         control={form.control}
                                         name="dossie_id"
-                                        render={({ field }) => (
+                                        render={({ field }) => {
+                                            const rawVal = field.value;
+                                            const selectValue = rawVal != null && Number.isFinite(Number(rawVal))
+                                                ? `dossie-${Number(rawVal)}`
+                                                : "__none__";
+                                            return (
                                             <FormItem>
                                                 <FormLabel>Arquivo (Opcional)</FormLabel>
                                                 <Select
                                                     onValueChange={(value) => {
-                                                        const dossieId = value && value !== "__none__" ? parseInt(value, 10) : undefined;
-                                                        field.onChange(dossieId);
-                                                        if (dossieId && selectedCliente) {
-                                                            form.setValue("cliente_id", selectedCliente.id);
+                                                        if (!value || value === "__none__") {
+                                                            field.onChange(undefined);
+                                                            return;
+                                                        }
+                                                        const dossieId = value.startsWith("dossie-") ? parseInt(value.slice(7), 10) : parseInt(value, 10);
+                                                        if (!Number.isNaN(dossieId)) {
+                                                            field.onChange(dossieId);
+                                                            if (selectedCliente) form.setValue("cliente_id", selectedCliente.id);
                                                         }
                                                     }}
-                                                    value={field.value != null && field.value !== "" ? String(field.value) : "__none__"}
+                                                    value={selectValue}
                                                     disabled={isDossieLoading}
                                                 >
                                                     <FormControl>
@@ -338,8 +347,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     </FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="__none__">Nenhum arquivo</SelectItem>
-                                                        {dossieEntidade && dossieEntidade.id != null && String(dossieEntidade.id).trim() !== "" && (
-                                                            <SelectItem key={dossieEntidade.id} value={String(dossieEntidade.id)}>
+                                                        {dossieEntidade && dossieEntidade.id != null && Number.isFinite(Number(dossieEntidade.id)) && (
+                                                            <SelectItem key={dossieEntidade.id} value={`dossie-${dossieEntidade.id}`}>
                                                                 {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ""}
                                                             </SelectItem>
                                                         )}
@@ -350,7 +359,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     Associar o processo ao arquivo da entidade (opcional)
                                                 </p>
                                             </FormItem>
-                                        )}
+                                            );
+                                        }}
                                     />
                                 ) : (
                                     <FormField
@@ -364,7 +374,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     const id = value && value !== "__none__" ? parseInt(value, 10) : undefined;
                                                     field.onChange(id);
                                                 }}
-                                                value={field.value != null ? field.value.toString() : "__none__"}
+                                                value={field.value != null ? String(field.value) : "__none__"}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
