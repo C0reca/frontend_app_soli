@@ -120,7 +120,7 @@ export const useDossies = (entidadeId?: number, options: UseDossiesOptions = {})
   const rawDossies = entidadeId != null
     ? (dossie ? [dossie] : [])
     : (listData && typeof listData === 'object' && 'items' in listData
-        ? (listData as { items?: unknown }).items
+        ? (Array.isArray((listData as { items?: unknown }).items) ? (listData as { items: unknown[] }).items : [])
         : Array.isArray(listData) ? listData : []);
   const dossies = Array.isArray(rawDossies) ? rawDossies : [];
   const dossiesTotal = listData && typeof listData === 'object' && 'total' in listData ? (listData as { total: number }).total : dossies.length;

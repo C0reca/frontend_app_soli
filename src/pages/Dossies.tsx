@@ -27,7 +27,7 @@ export const Dossies: React.FC = () => {
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
-  const dossiesList = Array.isArray(dossies) ? dossies : [];
+  const dossiesList = Array.isArray(dossies) ? dossies : ([] as Dossie[]);
   const filteredDossies = dossiesList.filter((dossie) => {
     const termNormalized = normalizeString(searchTerm);
     const displayLabel = getDossieDisplayLabel(dossie);

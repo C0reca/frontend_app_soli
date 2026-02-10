@@ -35,16 +35,20 @@ export const useProcesses = () => {
   const { toast } = useToast();
 
   const {
-    data: processes = [],
+    data: processesRaw,
     isLoading,
     error
   } = useQuery({
     queryKey: ['processes'],
     queryFn: async () => {
       const response = await api.get('/processos');
-      return response.data;
+      const data = response?.data;
+      if (Array.isArray(data)) return data;
+      if (data && typeof data === 'object' && 'items' in data && Array.isArray((data as { items: unknown[] }).items)) return (data as { items: Process[] }).items;
+      return [];
     },
   });
+  const processes = Array.isArray(processesRaw) ? processesRaw : [];
 
   const createProcess = useMutation({
     mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {

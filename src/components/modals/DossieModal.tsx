@@ -48,8 +48,10 @@ export const DossieModal: React.FC<DossieModalProps> = ({
   dossie,
   entidadeId,
 }) => {
-  const { clients = [], isLoading: isClientsLoading } = useClients();
-  const { processes = [] } = useProcesses();
+  const { clients: clientsRaw, isLoading: isClientsLoading } = useClients();
+  const { processes: processesRaw } = useProcesses();
+  const clients = Array.isArray(clientsRaw) ? clientsRaw : [];
+  const processes = Array.isArray(processesRaw) ? processesRaw : [];
   const { createDossie, updateDossie } = useDossies();
   const isEditing = !!dossie;
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
