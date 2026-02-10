@@ -327,7 +327,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 <FormLabel>Arquivo (Opcional)</FormLabel>
                                                 <Select
                                                     onValueChange={(value) => {
-                                                        if (!value || value === "__none__") {
+                                                        if (!value || value === "__none__" || value === "__empty__") {
                                                             field.onChange(undefined);
                                                             return;
                                                         }
@@ -371,7 +371,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                             <FormLabel>Responsável</FormLabel>
                                             <Select
                                                 onValueChange={(value) => {
-                                                    const id = value && value !== "__none__" ? parseInt(value, 10) : undefined;
+                                                    const id = value && value !== "__none__" && value !== "__empty__" ? parseInt(value, 10) : undefined;
                                                     field.onChange(id);
                                                 }}
                                                 value={field.value != null ? String(field.value) : "__none__"}
