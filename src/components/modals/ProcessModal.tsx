@@ -82,12 +82,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         return clients.find(c => c.id === selectedClienteId) || null;
     }, [selectedClienteId, clients]);
 
-    // Obter o dossiê único da entidade (se tiver dossiês)
-    // Só faz a chamada se o cliente tiver dossiês para evitar 404
-    const clienteTemDossies = selectedCliente?.id && (selectedCliente as any).tem_dossies;
-    const { dossie: dossieEntidade, isLoading: isDossieLoading } = useDossies(
-        clienteTemDossies ? selectedCliente.id : undefined
-    );
+    // Obter o dossiê único da entidade selecionada (uma chamada só; backend devolve null se não tiver arquivo)
+    const { dossie: dossieEntidade, isLoading: isDossieLoading } = useDossies(selectedCliente?.id);
 
     const isEditing = !!process;
     const schema = isEditing ? processSchemaUpdate : processSchemaCreate;
@@ -317,7 +313,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     )}
                                 />
 
-                                {selectedCliente && (selectedCliente as any).tem_dossies ? (
+                                {selectedCliente ? (
                                     <FormField
                                         control={form.control}
                                         name="dossie_id"
@@ -328,7 +324,6 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     onValueChange={(value) => {
                                                         const dossieId = value ? parseInt(value) : undefined;
                                                         field.onChange(dossieId);
-                                                        // Se selecionar um dossiê, garantir que o cliente_id também está definido
                                                         if (dossieId && selectedCliente) {
                                                             form.setValue("cliente_id", selectedCliente.id);
                                                         }
@@ -338,7 +333,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 >
                                                     <FormControl>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione o arquivo (opcional)" />
+                                                            <SelectValue placeholder={dossieEntidade ? "Selecione o arquivo (opcional)" : "Entidade sem arquivo"} />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>

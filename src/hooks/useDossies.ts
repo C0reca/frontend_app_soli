@@ -49,11 +49,9 @@ export const useDossies = (entidadeId?: number) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const {
-    data: dossies = [],
-    isLoading,
-    error
-  } = useQuery({
+  // Lista de dossiês: só faz GET /dossies (ou /dossies?entidade_id=X) quando NÃO temos entidadeId
+  // Assim evitamos duplicar pedidos quando só precisamos do dossiê de uma entidade (ex.: ProcessModal)
+  const listQuery = useQuery({
     queryKey: ['dossies', entidadeId ?? 'all'],
     queryFn: async () => {
       const url = entidadeId != null
@@ -70,29 +68,35 @@ export const useDossies = (entidadeId?: number) => {
         throw error;
       }
     },
+    enabled: entidadeId == null, // desativado quando pedimos um dossiê por entidade (usamos só o single)
   });
 
-  // Hook para obter o dossiê de uma entidade específica (uma entidade tem apenas um dossiê)
-  const {
-    data: dossie,
-    isLoading: isLoadingDossie,
-    error: errorDossie
-  } = useQuery({
+  // Um dossiê por entidade: GET /dossies/entidade/{id} (uma chamada só; backend devolve null se não houver)
+  const singleQuery = useQuery({
     queryKey: ['dossie', 'entidade', entidadeId],
     queryFn: async () => {
       if (!entidadeId) return null;
       try {
         const response = await api.get(`/dossies/entidade/${entidadeId}`);
         return response.data;
-      } catch (error: any) {
-        if (error.response?.status === 404) {
-          return null; // Dossiê não existe ainda
-        }
-        throw error;
+      } catch (err: unknown) {
+        const e = err as { response?: { status?: number } };
+        if (e.response?.status === 404) return null;
+        throw err;
       }
     },
     enabled: !!entidadeId,
   });
+
+  // Quando temos entidadeId: usar só o single (1 pedido). Lista = [dossie] ou []
+  const dossie = singleQuery.data ?? null;
+  const dossies = entidadeId != null
+    ? (dossie ? [dossie] : [])
+    : (listQuery.data ?? []);
+  const isLoading = entidadeId != null ? singleQuery.isLoading : listQuery.isLoading;
+  const isLoadingDossie = singleQuery.isLoading;
+  const error = entidadeId != null ? singleQuery.error : listQuery.error;
+  const errorDossie = singleQuery.error;
 
   const createDossie = useMutation({
     mutationFn: async (dossie: DossieCreate) => {
