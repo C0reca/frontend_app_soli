@@ -117,9 +117,12 @@ export const useDossies = (entidadeId?: number, options: UseDossiesOptions = {})
   // Quando temos entidadeId: usar só o single (1 pedido). Lista = [dossie] ou []
   const dossie = singleQuery.data ?? null;
   const listData = listQuery.data;
-  const dossies = entidadeId != null
+  const rawDossies = entidadeId != null
     ? (dossie ? [dossie] : [])
-    : (listData && 'items' in listData ? listData.items : Array.isArray(listData) ? listData : []);
+    : (listData && typeof listData === 'object' && 'items' in listData
+        ? (listData as { items?: unknown }).items
+        : Array.isArray(listData) ? listData : []);
+  const dossies = Array.isArray(rawDossies) ? rawDossies : [];
   const dossiesTotal = listData && typeof listData === 'object' && 'total' in listData ? (listData as { total: number }).total : dossies.length;
   const isLoading = entidadeId != null ? singleQuery.isLoading : listQuery.isLoading;
   const isLoadingDossie = singleQuery.isLoading;
