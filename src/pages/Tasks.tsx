@@ -6,15 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2 } from 'lucide-react';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useProcesses } from '@/hooks/useProcesses';
 import { TaskModal } from '@/components/modals/TaskModal';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 
+const PAGE_SIZE = 25;
+
 export const Tasks: React.FC = () => {
-  const { tasks, isLoading, deleteTask, updateTaskStatus, setExternal } = useTasks();
+  const [page, setPage] = useState(1);
+  const { tasks, tasksTotal, isLoading, deleteTask, updateTaskStatus, setExternal } = useTasks({
+    skip: (page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    search: searchTerm.trim() || undefined,
+  });
   const { employees } = useEmployees();
   const { processes } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +29,14 @@ export const Tasks: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const totalPages = Math.max(1, Math.ceil(tasksTotal / PAGE_SIZE));
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   const [filters, setFilters] = useState({
     status: 'all',
     responsavel: 'all',
@@ -50,11 +65,8 @@ export const Tasks: React.FC = () => {
     return dueDate.getTime() === today.getTime();
   };
 
-  // Helper function to check if a task matches filters (excluding concluida check for subtasks)
+  // Helper function to check if a task matches filters (excluding concluida check for subtasks). Pesquisa é feita no servidor.
   const taskMatchesFilters = (task: Task, checkConcluida: boolean = true) => {
-    const matchesSearch = task.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.descricao.toLowerCase().includes(searchTerm.toLowerCase());
-    
     if (checkConcluida) {
       const isConcluida = task.concluida;
       const shouldShowConcluidas = filters.showConcluidas || filters.status === 'concluidas';
@@ -81,7 +93,7 @@ export const Tasks: React.FC = () => {
     const matchesAtrasadas = !filters.atrasadas || 
       isOverdue(task.data_fim, task.concluida);
     
-    return matchesSearch && matchesStatus && matchesResponsavel && 
+    return matchesStatus && matchesResponsavel && 
            matchesPrioridade && matchesTipo && matchesAtrasadas;
   };
 
@@ -599,17 +611,32 @@ export const Tasks: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Tarefas</CardTitle>
+          <CardTitle>Lista de Compromissos</CardTitle>
           <CardDescription>
-            Total de {tasks.length} tarefas cadastradas
+            Página {page} de {totalPages} — total: {tasksTotal} compromissos
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             {topLevel.map(t => renderTaskRow(t, 0))}
-           </div>
-         </CardContent>
-       </Card>
+          </div>
+          {tasksTotal > 0 && (
+            <div className="flex items-center justify-between border-t pt-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, tasksTotal)} de {tasksTotal}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!canPrev}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={!canNext}>
+                  Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
        <TaskModal
          isOpen={isModalOpen}

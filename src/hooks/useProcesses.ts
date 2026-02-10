@@ -30,25 +30,41 @@ export interface Process {
   };
 }
 
-export const useProcesses = () => {
+const DEFAULT_PAGE_SIZE = 25;
+/** Limite alto para listagens que precisam de muitos itens (ex.: dropdowns noutras páginas) */
+const DEFAULT_LIMIT_FULL = 500;
+
+export interface UseProcessesOptions {
+  skip?: number;
+  limit?: number;
+  search?: string;
+}
+
+export const useProcesses = (options: UseProcessesOptions = {}) => {
+  const { skip = 0, limit = DEFAULT_LIMIT_FULL, search } = options;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const {
-    data: processesRaw,
+    data: rawData,
     isLoading,
     error
   } = useQuery({
-    queryKey: ['processes'],
+    queryKey: ['processes', skip, limit, search ?? ''],
     queryFn: async () => {
-      const response = await api.get('/processos');
+      const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+      if (search != null && search.trim()) params.set('search', search.trim());
+      const response = await api.get(`/processos?${params.toString()}`);
       const data = response?.data;
-      if (Array.isArray(data)) return data;
-      if (data && typeof data === 'object' && 'items' in data && Array.isArray((data as { items: unknown[] }).items)) return (data as { items: Process[] }).items;
-      return [];
+      if (data && typeof data === 'object' && 'items' in data) {
+        return { items: (data as { items: Process[] }).items ?? [], total: (data as { total?: number }).total ?? 0 };
+      }
+      if (Array.isArray(data)) return { items: data, total: data.length };
+      return { items: [], total: 0 };
     },
   });
-  const processes = Array.isArray(processesRaw) ? processesRaw : [];
+  const processes = Array.isArray(rawData?.items) ? rawData.items : [];
+  const processesTotal = typeof rawData?.total === 'number' ? rawData.total : processes.length;
 
   const createProcess = useMutation({
     mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
@@ -155,6 +171,7 @@ export const useProcesses = () => {
 
   return {
     processes,
+    processesTotal,
     isLoading,
     error,
     createProcess,

@@ -61,22 +61,24 @@ const DEFAULT_PAGE_SIZE = 25;
 export interface UseDossiesOptions {
   skip?: number;
   limit?: number;
+  search?: string;
 }
 
 export const useDossies = (entidadeId?: number, options: UseDossiesOptions = {}) => {
-  const { skip: listSkip = 0, limit: listLimit = DEFAULT_PAGE_SIZE } = options;
+  const { skip: listSkip = 0, limit: listLimit = DEFAULT_PAGE_SIZE, search: listSearch } = options;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Lista de dossiês paginada: GET /dossies?skip=0&limit=25 (resposta: { items, total })
   // Quando temos entidadeId usamos só o single (uma chamada). Sem entidadeId usamos lista paginada.
   const listQuery = useQuery({
-    queryKey: ['dossies', entidadeId ?? 'all', listSkip, listLimit],
+    queryKey: ['dossies', entidadeId ?? 'all', listSkip, listLimit, listSearch ?? ''],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (entidadeId != null) params.set('entidade_id', String(entidadeId));
       params.set('skip', String(listSkip));
       params.set('limit', String(listLimit));
+      if (listSearch != null && listSearch.trim()) params.set('search', listSearch.trim());
       const url = `/dossies?${params.toString()}`;
       try {
         const response = await api.get(url);

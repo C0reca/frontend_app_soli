@@ -21,26 +21,52 @@ export interface Task {
   onde_estao?: string | null;
 }
 
-export const useTasks = () => {
+const DEFAULT_PAGE_SIZE = 25;
+const LIMIT_FULL = 2000;
+
+export interface UseTasksOptions {
+  skip?: number;
+  limit?: number;
+  search?: string;
+}
+
+export const useTasks = (options: UseTasksOptions = {}) => {
+  const { skip = 0, limit = LIMIT_FULL, search } = options;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const {
-    data: tasks = [],
+    data: rawData,
     isLoading,
     error
   } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', skip, limit, search ?? ''],
     queryFn: async () => {
       try {
-        const response = await api.get('/tarefas/with_counts');
-        return response.data;
+        const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+        if (search != null && search.trim()) params.set('search', search.trim());
+        const response = await api.get(`/tarefas/with_counts?${params.toString()}`);
+        const data = response?.data;
+        if (data && typeof data === 'object' && 'items' in data) {
+          const items = Array.isArray((data as { items?: unknown }).items) ? (data as { items: Task[] }).items : [];
+          const total = typeof (data as { total?: number }).total === 'number' ? (data as { total: number }).total : items.length;
+          return { items, total };
+        }
+        if (Array.isArray(data)) return { items: data, total: data.length };
+        return { items: [], total: 0 };
       } catch (e) {
-        const fallback = await api.get('/tarefas');
-        return fallback.data;
+        try {
+          const fallback = await api.get('/tarefas');
+          const arr = Array.isArray(fallback?.data) ? fallback.data : [];
+          return { items: arr, total: arr.length };
+        } catch {
+          return { items: [], total: 0 };
+        }
       }
     },
   });
+  const tasks = Array.isArray(rawData?.items) ? rawData.items : [];
+  const tasksTotal = typeof rawData?.total === 'number' ? rawData.total : tasks.length;
 
   const createTask = useMutation({
     mutationFn: async (task: Omit<Task, 'id' | 'criado_em'>) => {
@@ -181,6 +207,7 @@ export const useTasks = () => {
 
   return {
     tasks,
+    tasksTotal,
     isLoading,
     error,
     createTask,

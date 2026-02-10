@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
@@ -15,14 +15,19 @@ import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
-import { normalizeString } from '@/lib/utils';
 
+const PAGE_SIZE = 25;
 
 export const Processes: React.FC = () => {
-  const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess } = useProcesses();
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { processes, processesTotal, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess } = useProcesses({
+    skip: (page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    search: searchTerm.trim() || undefined,
+  });
   const { clients } = useClients();
   const { employees } = useEmployees();
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProcessDetails, setSelectedProcessDetails] = useState<Process | null>(null);
@@ -44,6 +49,10 @@ export const Processes: React.FC = () => {
     }
   }, [showArchived]);
 
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   const getClientNameById = (id?: number) => {
     if (!id) return '';
     const client = clients.find((c: any) => c.id?.toString() === id.toString());
@@ -57,33 +66,25 @@ export const Processes: React.FC = () => {
   };
 
   const source = showArchived ? archived : processes;
-  
-  // Calcular estatísticas
+  const totalCount = showArchived ? archived.length : processesTotal;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+
+  // Calcular estatísticas (na página atual)
   const pendenteCount = source.filter((p: Process) => p.estado === 'pendente').length;
   const emCursoCount = source.filter((p: Process) => p.estado === 'em_curso').length;
   const concluidoCount = source.filter((p: Process) => p.estado === 'concluido').length;
 
+  // Pesquisa é feita no servidor (toda a lista). Filtros status/responsável/tipo aplicam-se à página atual.
   const filteredProcesses = source.filter((process) => {
-    const termNormalized = normalizeString(searchTerm);
-    const clienteNome = process.cliente?.nome || getClientNameById(process.cliente_id) || '';
-    const funcionarioNome = process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || '';
-    const matchesSearch = (
-      normalizeString(process.titulo).includes(termNormalized) ||
-      normalizeString(clienteNome).includes(termNormalized) ||
-      normalizeString(funcionarioNome).includes(termNormalized)
-    );
-    
     const matchesStatus = filters.status === 'all' || process.estado === filters.status;
-    
     const matchesResponsavel = filters.responsavel === 'all' || 
       process.funcionario_id?.toString() === filters.responsavel;
-    
     const matchesTipo = filters.tipo === 'all' || 
       (process.tipo && process.tipo === filters.tipo);
-    
     const matchesArquivados = filters.showArquivados || !showArchived;
-    
-    return matchesSearch && matchesStatus && matchesResponsavel && matchesTipo && matchesArquivados;
+    return matchesStatus && matchesResponsavel && matchesTipo && matchesArquivados;
   });
 
   const getStatusColor = (status: string) => {
@@ -355,7 +356,8 @@ export const Processes: React.FC = () => {
         <CardHeader>
           <CardTitle>Lista de Processos {showArchived ? '(Arquivados)' : ''}</CardTitle>
           <CardDescription>
-            Total de {filteredProcesses.length} processos encontrados
+            Página {page} de {totalPages} — {filteredProcesses.length} nesta página
+            {!showArchived && ` (total: ${processesTotal})`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -433,9 +435,24 @@ export const Processes: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-           </div>
-         </CardContent>
-       </Card>
+          </div>
+          {!showArchived && processesTotal > 0 && (
+            <div className="flex items-center justify-between border-t pt-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, processesTotal)} de {processesTotal}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!canPrev}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={!canNext}>
+                  Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
        <ProcessModal
          isOpen={isModalOpen}

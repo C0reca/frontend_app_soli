@@ -94,7 +94,17 @@ export interface CorporateClient extends BaseClient {
 
 export type Client = IndividualClient | CorporateClient;
 
-export const useClients = () => {
+const DEFAULT_PAGE_SIZE = 25;
+const LIMIT_FULL = 5000;
+
+export interface UseClientsOptions {
+  skip?: number;
+  limit?: number;
+  search?: string;
+}
+
+export const useClients = (options: UseClientsOptions = {}) => {
+  const { skip = 0, limit = LIMIT_FULL, search } = options;
   const queryClient = useQueryClient();
 
   const {
@@ -102,26 +112,30 @@ export const useClients = () => {
     isLoading,
     error
   } = useQuery({
-    queryKey: ['clients'],
+    queryKey: ['clients', skip, limit, search ?? ''],
     queryFn: async () => {
       try {
-        const response = await api.get('/clientes');
+        const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+        if (search != null && search.trim()) params.set('search', search.trim());
+        const response = await api.get(`/clientes?${params.toString()}`);
         const data = response?.data;
-        // Garantir que retornamos sempre um array (evita crash se a API devolver objeto ou null)
-        if (Array.isArray(data)) return data;
-        if (data && Array.isArray(data.data)) return data.data;
-        return [];
+        if (data && typeof data === 'object' && 'items' in data) {
+          const items = Array.isArray((data as { items?: unknown }).items) ? (data as { items: Client[] }).items : [];
+          const total = typeof (data as { total?: number }).total === 'number' ? (data as { total: number }).total : items.length;
+          return { items, total };
+        }
+        if (Array.isArray(data)) return { items: data, total: data.length };
+        return { items: [], total: 0 };
       } catch {
-        // Em caso de erro de rede ou API, devolver array vazio para não quebrar a UI
-        return [];
+        return { items: [], total: 0 };
       }
     },
     retry: 2,
     retryDelay: 1000,
   });
 
-  // Garantir que clients é sempre um array (evita crash em .filter, .map, .find)
-  const clients = Array.isArray(rawData) ? rawData : [];
+  const clients = Array.isArray(rawData?.items) ? rawData.items : [];
+  const clientsTotal = typeof rawData?.total === 'number' ? rawData.total : clients.length;
 
   const createClient = useMutation({
     mutationFn: async (client: Omit<Client, 'id' | 'createdAt'>) => {
@@ -162,6 +176,7 @@ export const useClients = () => {
 
   return {
     clients,
+    clientsTotal,
     isLoading,
     error,
     createClient,

@@ -8,17 +8,17 @@ import { useDossies, Dossie, getDossieDisplayLabel, getEntidadeNomeFromDossie } 
 import { DossieModal } from '@/components/modals/DossieModal';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { normalizeString } from '@/lib/utils';
 
 const PAGE_SIZE = 25;
 
 export const Dossies: React.FC = () => {
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const { dossies, dossiesTotal, isLoading } = useDossies(undefined, {
     skip: (page - 1) * PAGE_SIZE,
     limit: PAGE_SIZE,
+    search: searchTerm.trim() || undefined,
   });
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedDossie, setSelectedDossie] = useState<Dossie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
@@ -27,16 +27,13 @@ export const Dossies: React.FC = () => {
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   // Garantir array real (evita "t.filter is not a function" com cache/resposta inesperada)
   const dossiesList: Dossie[] = Array.isArray(dossies) ? [...dossies] : [];
-  const filteredDossies = dossiesList.filter((dossie) => {
-    const termNormalized = normalizeString(searchTerm);
-    const displayLabel = getDossieDisplayLabel(dossie);
-    const idMatch = String(dossie.id).includes(searchTerm.trim());
-    const labelMatch = normalizeString(displayLabel).includes(termNormalized);
-    const numeroMatch = normalizeString(dossie.numero || '').includes(termNormalized);
-    return idMatch || labelMatch || numeroMatch;
-  });
+  const filteredDossies = dossiesList; // Pesquisa feita no servidor (toda a lista)
 
   const handleView = (dossie: Dossie) => {
     setSelectedDossie(dossie);

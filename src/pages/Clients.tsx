@@ -3,15 +3,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Eye, Edit, Trash2, User, Building } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, User, Building, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useClients, Client } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { normalizeString } from '@/lib/utils';
 
+const PAGE_SIZE = 25;
+
 export const Clients: React.FC = () => {
-  const { clients, isLoading, deleteClient } = useClients();
+  const [page, setPage] = useState(1);
+  const { clients, clientsTotal, isLoading, deleteClient } = useClients({
+    skip: (page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    search: searchTerm.trim() || undefined,
+  });
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +30,13 @@ export const Clients: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const totalPages = Math.max(1, Math.ceil(clientsTotal / PAGE_SIZE));
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   const getClientName = (client: Client) => {
     // Se tipo for null/undefined, assume como pessoa singular
@@ -38,19 +52,12 @@ export const Clients: React.FC = () => {
     return client.telefone;
   };
 
+  // Pesquisa é feita no servidor (toda a lista). Filtros tipo/status e ordenação aplicam-se à página atual.
   const filteredClients = clients
     .filter((client: Client) => {
-      const nome = getClientName(client) || '';
-      const email = client.email || '';
-      const nifVal = ((client.tipo || 'singular') === 'singular' ? (client as any).nif : (client as any).nif_empresa) || '';
-      const searchNormalized = normalizeString(searchTerm);
-
-      const matchesSearch = normalizeString(nome).includes(searchNormalized) || 
-                           normalizeString(email).includes(searchNormalized) || 
-                           normalizeString(String(nifVal)).includes(searchNormalized);
       const matchesTipo = filterTipo === 'all' || (client.tipo || 'singular') === filterTipo;
       const matchesStatus = filterStatus === 'all' || (client.status || 'active') === filterStatus;
-      return matchesSearch && matchesTipo && matchesStatus;
+      return matchesTipo && matchesStatus;
     })
     .sort((a: Client, b: Client) => {
       const dir = sortDir === 'asc' ? 1 : -1;
@@ -151,7 +158,7 @@ export const Clients: React.FC = () => {
         <CardHeader>
           <CardTitle>Lista de Clientes</CardTitle>
           <CardDescription>
-            Total de {clients.length} clientes cadastrados
+            Página {page} de {totalPages} — total: {clientsTotal} clientes
           </CardDescription>
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 max-w-sm">
@@ -255,6 +262,21 @@ export const Clients: React.FC = () => {
               ))}
             </TableBody>
           </Table>
+          {clientsTotal > 0 && (
+            <div className="flex items-center justify-between border-t pt-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, clientsTotal)} de {clientsTotal}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!canPrev}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={!canNext}>
+                  Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
