@@ -27,7 +27,8 @@ export const Dossies: React.FC = () => {
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
-  const dossiesList = Array.isArray(dossies) ? dossies : ([] as Dossie[]);
+  // Garantir array real (evita "t.filter is not a function" com cache/resposta inesperada)
+  const dossiesList: Dossie[] = Array.isArray(dossies) ? [...dossies] : [];
   const filteredDossies = dossiesList.filter((dossie) => {
     const termNormalized = normalizeString(searchTerm);
     const displayLabel = getDossieDisplayLabel(dossie);

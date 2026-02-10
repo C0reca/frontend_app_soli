@@ -122,7 +122,8 @@ export const useDossies = (entidadeId?: number, options: UseDossiesOptions = {})
     : (listData && typeof listData === 'object' && 'items' in listData
         ? (Array.isArray((listData as { items?: unknown }).items) ? (listData as { items: unknown[] }).items : [])
         : Array.isArray(listData) ? listData : []);
-  const dossies = Array.isArray(rawDossies) ? rawDossies : [];
+  // Sempre devolver um array real (cópia) para evitar .filter is not a function em consumidores
+  const dossies: Dossie[] = Array.isArray(rawDossies) ? [...rawDossies] : [];
   const dossiesTotal = listData && typeof listData === 'object' && 'total' in listData ? (listData as { total: number }).total : dossies.length;
   const isLoading = entidadeId != null ? singleQuery.isLoading : listQuery.isLoading;
   const isLoadingDossie = singleQuery.isLoading;
