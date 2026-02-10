@@ -322,13 +322,13 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 <FormLabel>Arquivo (Opcional)</FormLabel>
                                                 <Select
                                                     onValueChange={(value) => {
-                                                        const dossieId = value ? parseInt(value) : undefined;
+                                                        const dossieId = value && value !== "__none__" ? parseInt(value, 10) : undefined;
                                                         field.onChange(dossieId);
                                                         if (dossieId && selectedCliente) {
                                                             form.setValue("cliente_id", selectedCliente.id);
                                                         }
                                                     }}
-                                                    value={field.value?.toString() ?? ""}
+                                                    value={field.value != null ? field.value.toString() : "__none__"}
                                                     disabled={isDossieLoading}
                                                 >
                                                     <FormControl>
@@ -337,7 +337,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="">Nenhum arquivo</SelectItem>
+                                                        <SelectItem value="__none__">Nenhum arquivo</SelectItem>
                                                         {dossieEntidade && (
                                                             <SelectItem key={dossieEntidade.id} value={dossieEntidade.id.toString()}>
                                                                 {dossieEntidade.nome} {dossieEntidade.numero && `(${dossieEntidade.numero})`}
