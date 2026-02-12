@@ -108,132 +108,56 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     }
   }, [process, isOpen, getTasksByProcess]);
 
+  // Buscar TODOS os documentos do processo numa única chamada API
+  // (evita N+1 queries: antes fazia 1 por tarefa + 1 por subtarefa + 1 por log)
   React.useEffect(() => {
-    const fetchAllDocuments = async () => {
-      if (!process || !isOpen) return;
-      
-      setLoadingDocuments(true);
-      try {
-        const allDocs: any[] = [];
-        
-        // Documentos do processo
-        try {
-          const processDocs = await api.get(`/documentos/${process.id}`);
-          if (processDocs.data && Array.isArray(processDocs.data)) {
-            const processDocsData = processDocs.data.map((doc: any) => ({
-              ...doc,
-              origem: 'Processo',
-              origem_id: process.id,
-              origem_nome: process.titulo,
-            }));
-            allDocs.push(...processDocsData);
-          }
-        } catch (error: any) {
-          // Se o erro for 500, pode ser que o endpoint ainda não suporte o campo log_processo_id
-          // Continuar sem quebrar a aplicação
-          if (error?.response?.status !== 500) {
-            console.error('Erro ao buscar documentos do processo:', error);
-          }
-        }
-        
-        // Função recursiva para buscar documentos de tarefas e subtarefas
-        const fetchTaskDocuments = async (taskId: number, taskTitle: string, isSubtask: boolean = false) => {
-          try {
-            const taskDocs = await api.get(`/documentos/tarefa/${taskId}`);
-            if (taskDocs.data && Array.isArray(taskDocs.data)) {
-              const taskDocsData = taskDocs.data.map((doc: any) => ({
-                ...doc,
-                origem: isSubtask ? 'Sub-compromisso' : 'Compromisso',
-                origem_id: taskId,
-                origem_nome: taskTitle,
-              }));
-              allDocs.push(...taskDocsData);
-            }
-            
-            // Buscar subtarefas desta tarefa
-            try {
-              const subtasksRes = await api.get(`/tarefas/${taskId}/subtarefas`);
-              const subtasks = subtasksRes.data || [];
-              for (const subtask of subtasks) {
-                await fetchTaskDocuments(subtask.id, subtask.titulo, true);
-              }
-            } catch {}
-          } catch (error) {
-            // Ignorar erros silenciosamente
-          }
-        };
-        
-        // Documentos das tarefas (incluindo subtarefas recursivamente)
-        if (processTasks.length > 0) {
-          for (const task of processTasks) {
-            await fetchTaskDocuments(task.id, task.titulo, false);
-          }
-        }
-        
-        // Documentos dos registos
-        if (logs && logs.length > 0) {
-          for (const log of logs) {
-            try {
-              const logDocs = await api.get(`/documentos/log/${log.id}`);
-              if (logDocs.data && Array.isArray(logDocs.data)) {
-                const logDocsData = logDocs.data.map((doc: any) => ({
-                  ...doc,
-                  origem: 'Registo',
-                  origem_id: log.id,
-                  origem_nome: log.titulo,
-                }));
-                allDocs.push(...logDocsData);
-              }
-            } catch (error: any) {
-              // Se o erro for 500, pode ser que o endpoint ainda não esteja funcionando
-              // ou que o campo log_processo_id não exista na base de dados
-              // Continuar sem quebrar a aplicação
-              if (error?.response?.status !== 500) {
-                console.error(`Erro ao buscar documentos do registo ${log.id}:`, error);
-              }
-            }
-          }
-        }
-        
-        // Remover documentos duplicados baseado no ID do documento
-        // Se um documento aparecer em múltiplas origens, manter apenas o primeiro
-        const seenIds = new Set<number>();
-        const uniqueDocs = allDocs.filter((doc: any) => {
-          if (seenIds.has(doc.id)) {
-            return false; // Já vimos este documento, ignorar
-          }
-          seenIds.add(doc.id);
-          return true; // Primeira vez que vemos este documento, manter
-        });
-        
-        setAllDocuments(uniqueDocs);
-      } catch (error) {
-        console.error('Erro ao buscar documentos:', error);
-        setAllDocuments([]);
-      } finally {
-        setLoadingDocuments(false);
-      }
-    };
-    
-    fetchAllDocuments();
-  }, [process, isOpen, processTasks, logs]);
+    if (!process || !isOpen) return;
+    let cancelled = false;
 
+    setLoadingDocuments(true);
+    api.get(`/documentos/processo-completo/${process.id}`)
+      .then(res => {
+        if (!cancelled) {
+          setAllDocuments(Array.isArray(res.data) ? res.data : []);
+        }
+      })
+      .catch(error => {
+        if (!cancelled) {
+          console.error('Erro ao buscar documentos do processo:', error);
+          setAllDocuments([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDocuments(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [process?.id, isOpen]);
+
+  // Buscar documentos agrupados por log (para mostrar anexos na timeline)
+  // Uma única chamada em vez de N chamadas (uma por log)
   React.useEffect(() => {
-    const fetchLogDocs = async () => {
-      if (!logs || logs.length === 0) return;
-      const docsMap: Record<number, {id:number; nome_original:string}[]> = {};
-      for (const log of logs) {
-        try {
-          const res = await api.get(`/documentos/log/${log.id}`);
-          docsMap[log.id] = res.data;
-        } catch {}
-      }
-      setLogDocs(docsMap);
-    };
-    if (logs && logs.length > 0) {
-      fetchLogDocs();
-    }
-  }, [logs]);
+    if (!process || !isOpen) return;
+    let cancelled = false;
+
+    api.get(`/documentos/logs-bulk/${process.id}`)
+      .then(res => {
+        if (!cancelled && res.data) {
+          // Backend retorna { log_id: [{id, nome_original}] }
+          // Converter keys para number
+          const docsMap: Record<number, {id:number; nome_original:string}[]> = {};
+          for (const [key, val] of Object.entries(res.data)) {
+            docsMap[Number(key)] = val as {id:number; nome_original:string}[];
+          }
+          setLogDocs(docsMap);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLogDocs({});
+      });
+
+    return () => { cancelled = true; };
+  }, [process?.id, isOpen]);
   
   if (!process) return null;
 
@@ -1132,18 +1056,9 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                           title: "Sucesso",
                           description: "Documento enviado com sucesso.",
                         });
-                        // Recarregar documentos
-                        const processDocs = await api.get(`/documentos/${process.id}`);
-                        const processDocsData = processDocs.data.map((doc: any) => ({
-                          ...doc,
-                          origem: 'Processo',
-                          origem_id: process.id,
-                          origem_nome: process.titulo,
-                        }));
-                        setAllDocuments(prev => {
-                          const filtered = prev.filter(d => !(d.origem === 'Processo' && d.origem_id === process.id));
-                          return [...filtered, ...processDocsData];
-                        });
+                        // Recarregar todos os documentos (endpoint bulk)
+                        const allDocs = await api.get(`/documentos/processo-completo/${process.id}`);
+                        setAllDocuments(Array.isArray(allDocs.data) ? allDocs.data : []);
                       } catch (error: any) {
                         toast({
                           title: "Erro",

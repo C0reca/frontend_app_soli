@@ -27,7 +27,15 @@ import { MinimizeRenderer } from "@/components/MinimizeRenderer";
 import { AdminImport } from "@/pages/AdminImport";
 import { ServicosExternos } from "@/pages/ServicosExternos";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,        // dados ficam "frescos" por 30s (evita refetches duplicados)
+      refetchOnWindowFocus: false, // não refetch ao mudar de tab/janela
+      retry: 1,                  // máximo 1 retry em caso de erro
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
