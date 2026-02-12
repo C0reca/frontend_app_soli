@@ -12,6 +12,7 @@ import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
 import { ProcessDetailsModal } from '@/components/modals/ProcessDetailsModal';
 import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
@@ -39,6 +40,8 @@ export const Processes: React.FC = () => {
     tipo: 'all',
     showArquivados: false,
   });
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
 
   React.useEffect(() => {
     if (showArchived) {
@@ -136,10 +139,16 @@ export const Processes: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Tem certeza que deseja excluir este processo?')) {
-      await deleteProcess.mutateAsync(id);
-    }
+  const handleDelete = (process: Process) => {
+    setProcessToArchive(process);
+    setArchiveConfirmOpen(true);
+  };
+
+  const handleConfirmArchive = async () => {
+    if (!processToArchive) return;
+    await deleteProcess.mutateAsync(processToArchive.id);
+    setArchiveConfirmOpen(false);
+    setProcessToArchive(null);
   };
 
   const handleCloseModal = () => {
@@ -410,7 +419,7 @@ export const Processes: React.FC = () => {
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
                         </div>
                         <div className="col-span-2">
-                          <span className="font-medium">Localização:</span> {(process as any).onde_estao || '-'}
+                          <span className="font-medium">Localização:</span> {(process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || '-')}
                         </div>
                         <div>
                           <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
@@ -441,7 +450,7 @@ export const Processes: React.FC = () => {
                           <ArchiveRestore className="h-4 w-4" />
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); handleDelete(process.id); }}>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); handleDelete(process); }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -541,6 +550,30 @@ export const Processes: React.FC = () => {
          onSave={handleUpdateLocation}
          isSubmitting={updateProcess.isPending}
        />
+
+       <Dialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle>Arquivar processo</DialogTitle>
+             <DialogDescription>
+               Tem certeza que deseja arquivar este processo? O processo será movido para a lista de arquivados e deixará de aparecer na lista de processos ativos.
+               {processToArchive && (
+                 <span className="block mt-2 font-medium text-foreground">
+                   &quot;{processToArchive.titulo}&quot;
+                 </span>
+               )}
+             </DialogDescription>
+           </DialogHeader>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => { setArchiveConfirmOpen(false); setProcessToArchive(null); }}>
+               Cancelar
+             </Button>
+             <Button variant="destructive" onClick={handleConfirmArchive} disabled={deleteProcess.isPending}>
+               Arquivar
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
      </div>
    );
  };

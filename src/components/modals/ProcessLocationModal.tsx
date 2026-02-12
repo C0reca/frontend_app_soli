@@ -35,7 +35,7 @@ const OPCOES_LOCALIZACAO = [
   'Aguarda Doc Cliente/Informações',
   'Aguarda Doc',
   'Decorre Prazo',
-  'Tarefas',
+  'Pendentes',
   'Injunções',
   'Execuções',
   'Inventário Judicial',
@@ -60,7 +60,8 @@ export const ProcessLocationModal: React.FC<ProcessLocationModalProps> = ({
 
   useEffect(() => {
     if (isOpen && process) {
-      setLocalizacao(process.onde_estao || undefined);
+      const valor = process.onde_estao || undefined;
+      setLocalizacao(valor === 'Tarefas' ? 'Pendentes' : valor);
     } else if (!isOpen) {
       setLocalizacao(undefined);
     }

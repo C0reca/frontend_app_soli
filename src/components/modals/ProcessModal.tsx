@@ -122,7 +122,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 titulo: process.titulo,
                 descricao: process.descricao || "",
                 tipo: process.tipo || "",
-                onde_estao: (process as any).onde_estao || undefined,
+                onde_estao: (process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || undefined),
                 cliente_id: process.cliente_id || undefined,
                 dossie_id: (process as any).dossie_id || undefined,
                 funcionario_id: process.funcionario_id || undefined,
@@ -277,7 +277,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
                                                 <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
                                                 <SelectItem value="Decorre Prazo">Decorre Prazo</SelectItem>
-                                                <SelectItem value="Tarefas">Tarefas</SelectItem>
+                                                <SelectItem value="Pendentes">Pendentes</SelectItem>
                                                 <SelectItem value="Injunções">Injunções</SelectItem>
                                                 <SelectItem value="Execuções">Execuções</SelectItem>
                                                 <SelectItem value="Inventário Judicial">Inventário Judicial</SelectItem>

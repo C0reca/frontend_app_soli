@@ -350,7 +350,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <MapPin className="h-4 w-4 text-gray-400" />
                 <div>
                   <label className="text-sm font-medium text-gray-500">Localização</label>
-                  <p className="text-sm text-gray-900">{(currentTask as any).onde_estao || 'Sem Localização'}</p>
+                  <p className="text-sm text-gray-900">{(currentTask as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((currentTask as any).onde_estao || 'Sem Localização')}</p>
                 </div>
               </div>
             </div>

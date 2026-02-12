@@ -42,6 +42,8 @@ interface IRSModalProps {
   onCreateTask?: (irsData: { id: number; cliente_id: number; ano: number; fase: number; estado: string; numero_recibo?: string }) => void;
 }
 
+const LEVANTAR_IRS_DEFAULT = '30 de junho de 2026';
+
 const STEPS = [
   { id: 1, title: 'Cliente e Ano', icon: User },
   { id: 2, title: 'Agregado Familiar', icon: FileText },
@@ -106,7 +108,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           fase: irs.fase.toString() as '1' | '2',
           estado: irs.estado,
           estado_entrega: irs.estado_entrega,
-          levantar_irs_apos_dia: irs.levantar_irs_apos_dia || '',
+          levantar_irs_apos_dia: irs.levantar_irs_apos_dia || LEVANTAR_IRS_DEFAULT,
           observacoes: irs.observacoes || '',
         }
       : {
@@ -115,7 +117,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
           estado_entrega: undefined,
-          levantar_irs_apos_dia: '',
+          levantar_irs_apos_dia: LEVANTAR_IRS_DEFAULT,
           observacoes: '',
         },
   });
@@ -130,7 +132,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           fase: irs.fase.toString() as '1' | '2',
           estado: irs.estado,
           estado_entrega: irs.estado_entrega,
-          levantar_irs_apos_dia: irs.levantar_irs_apos_dia || '',
+          levantar_irs_apos_dia: irs.levantar_irs_apos_dia || LEVANTAR_IRS_DEFAULT,
           observacoes: irs.observacoes || '',
         });
         // Se initialStep foi passado, usar ele, senão começar no step 1
@@ -142,7 +144,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
           estado_entrega: undefined,
-          levantar_irs_apos_dia: '',
+          levantar_irs_apos_dia: LEVANTAR_IRS_DEFAULT,
           observacoes: '',
         });
         setCurrentStep(1);
@@ -576,7 +578,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                 <Select
                   value={watch('fase').toString()}
                   onValueChange={(value) => setValue('fase', value as '1' | '2')}
-                  disabled={isEditing}
+                  disabled={!!(isEditing && irs?.numero_recibo)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -588,6 +590,11 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                 </Select>
                 {errors.fase && (
                   <p className="text-sm text-red-500">{errors.fase.message}</p>
+                )}
+                {isEditing && irs?.numero_recibo && (
+                  <p className="text-sm text-amber-600">
+                    Não é possível alterar a fase após o recibo ter sido gerado.
+                  </p>
                 )}
               </div>
             </div>

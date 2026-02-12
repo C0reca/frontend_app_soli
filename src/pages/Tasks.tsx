@@ -174,7 +174,7 @@ export const Tasks: React.FC = () => {
                     const processo = processes.find(p => p.id === task.processo_id);
                     return processo ? `${processo.id} - ${processo.titulo}` : task.processo_id;
                   })() : 'N/A'}</span>
-                  <span><strong>Localização:</strong> {task.onde_estao || 'Sem Localização'}</span>
+                  <span><strong>Localização:</strong> {task.onde_estao === 'Tarefas' ? 'Pendentes' : (task.onde_estao || 'Sem Localização')}</span>
                   <span>
                     <strong>Responsável:</strong>{' '}
                     {task.responsavel_id

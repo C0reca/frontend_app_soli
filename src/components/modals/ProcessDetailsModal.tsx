@@ -550,7 +550,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                         Alterar
                       </Button>
                     </div>
-                    <p className="text-sm">{(process as any).onde_estao || 'Não definido'}</p>
+                    <p className="text-sm">{(process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || 'Não definido')}</p>
                   </div>
                 </div>
               </div>
