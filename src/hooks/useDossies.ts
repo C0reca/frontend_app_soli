@@ -72,6 +72,7 @@ export const useDossies = (entidadeId?: number) => {
   });
 
   // Um dossiê por entidade: GET /dossies/entidade/{id} (uma chamada só; backend devolve null se não houver)
+  // staleTime alto (5 min) para evitar refetches simultâneos de muitas entidades que esgotam o pool
   const singleQuery = useQuery({
     queryKey: ['dossie', 'entidade', entidadeId],
     queryFn: async () => {
@@ -86,6 +87,8 @@ export const useDossies = (entidadeId?: number) => {
       }
     },
     enabled: !!entidadeId,
+    staleTime: 5 * 60 * 1000,  // 5 min — dossiês mudam raramente
+    gcTime: 10 * 60 * 1000,    // 10 min — manter em cache mais tempo
   });
 
   // Quando temos entidadeId: usar só o single (1 pedido). Lista = [dossie] ou []
