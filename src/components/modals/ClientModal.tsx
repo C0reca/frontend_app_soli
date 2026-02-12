@@ -218,36 +218,26 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   const normalizeData = (data: any): any => {
     const normalized: any = {};
-    
-    // Campos de data que devem ser null se vazios
     const dateFields = ['data_nascimento', 'validade_cc', 'data_constituicao'];
-    
-    // Processar todos os campos
+    const emailFields = ['email', 'representante_email'];
+
     Object.keys(data).forEach(key => {
       const value = data[key];
-      
-      // Campos de data: converter strings vazias para null ou undefined (remover do payload)
       if (dateFields.includes(key)) {
-        if (value === '' || value === null || value === undefined) {
-          // Não incluir campos de data vazios no payload
-          return;
-        }
+        if (value === '' || value === null || value === undefined) return;
         normalized[key] = value;
-      }
-      // Campo incapacidade: converter strings vazias, 0 ou undefined para null
-      else if (key === 'incapacidade') {
-        if (value === '' || value === null || value === undefined || value === 0) {
+      } else if (key === 'incapacidade') {
+        normalized[key] = value === '' || value === null || value === undefined || value === 0 ? null : Number(value);
+      } else if (emailFields.includes(key)) {
+        if (value === '' || value === null || value === undefined || (typeof value === 'string' && !value.trim())) {
           normalized[key] = null;
         } else {
-          normalized[key] = Number(value);
+          normalized[key] = value;
         }
-      }
-      // Outros campos: manter como estão
-      else {
+      } else {
         normalized[key] = value;
       }
     });
-    
     return normalized;
   };
 
