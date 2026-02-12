@@ -35,6 +35,7 @@ export interface IRSCreate {
 }
 
 export interface IRSUpdate {
+  ano?: number;
   fase?: 1 | 2;
   estado?: 'Por Pagar' | 'Pago' | 'Isento' | 'Aguarda Documentos' | 'Contencioso Administrativo' | 'Em Análise' | 'Verificado' | 'Concluído';
   estado_entrega?: 'Enviado' | 'Levantado Pelo Cliente';

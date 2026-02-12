@@ -228,6 +228,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
     try {
       if (isEditing && irs) {
         const updateData: IRSUpdate = {
+          ano: data.ano,
           fase: data.fase,
           estado: data.estado,
           estado_entrega: data.estado_entrega,
@@ -550,7 +551,6 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                 <Select
                   value={watch('ano')?.toString() || new Date().getFullYear().toString()}
                   onValueChange={(value) => setValue('ano', parseInt(value))}
-                  disabled={isEditing}
                 >
                   <SelectTrigger>
                     <SelectValue />
