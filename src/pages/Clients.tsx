@@ -17,8 +17,8 @@ export const Clients: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<'all' | 'singular' | 'coletivo'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
-  const [sortBy, setSortBy] = useState<'id' | 'createdAt' | 'nome' | 'email' | 'nif' | 'status'>('id');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<'id' | 'createdAt' | 'nome' | 'email' | 'nif' | 'status'>('createdAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
