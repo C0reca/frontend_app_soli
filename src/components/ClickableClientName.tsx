@@ -60,11 +60,14 @@ export const ClickableClientName: React.FC<ClickableClientNameProps> = ({
       >
         {isLoading ? 'A carregar...' : displayName}
       </button>
-      <ClientDetailsModal
-        isOpen={isClientDetailsOpen}
-        onClose={() => setIsClientDetailsOpen(false)}
-        client={selectedClient}
-      />
+      {/* Só montamos o modal quando está aberto para evitar N instâncias de useDossies */}
+      {isClientDetailsOpen && (
+        <ClientDetailsModal
+          isOpen={isClientDetailsOpen}
+          onClose={() => setIsClientDetailsOpen(false)}
+          client={selectedClient}
+        />
+      )}
     </>
   );
 };

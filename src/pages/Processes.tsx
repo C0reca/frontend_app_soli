@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
@@ -31,6 +31,8 @@ export const Processes: React.FC = () => {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archived, setArchived] = useState<Process[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
   const [filters, setFilters] = useState({
     status: 'all',
     responsavel: 'all',
@@ -85,6 +87,18 @@ export const Processes: React.FC = () => {
     
     return matchesSearch && matchesStatus && matchesResponsavel && matchesTipo && matchesArquivados;
   });
+
+  // Paginação: resetar página quando filtros/pesquisa mudam
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filters, showArchived]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProcesses.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedProcesses = filteredProcesses.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -180,6 +194,7 @@ export const Processes: React.FC = () => {
       showArquivados: false,
     });
     setSearchTerm('');
+    setCurrentPage(1);
   };
 
   return (
@@ -355,12 +370,15 @@ export const Processes: React.FC = () => {
         <CardHeader>
           <CardTitle>Lista de Processos {showArchived ? '(Arquivados)' : ''}</CardTitle>
           <CardDescription>
-            Total de {filteredProcesses.length} processos encontrados
+            {filteredProcesses.length} processos encontrados
+            {filteredProcesses.length > pageSize && (
+              <> &mdash; a mostrar {(safePage - 1) * pageSize + 1}&ndash;{Math.min(safePage * pageSize, filteredProcesses.length)}</>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            {filteredProcesses.map((process) => (
+            {paginatedProcesses.map((process) => (
               <Card key={process.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleView(process)}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -434,6 +452,67 @@ export const Processes: React.FC = () => {
               </Card>
             ))}
            </div>
+
+           {/* Paginação */}
+           {totalPages > 1 && (
+             <div className="flex items-center justify-between pt-4 border-t mt-4">
+               <p className="text-sm text-muted-foreground">
+                 Página {safePage} de {totalPages}
+               </p>
+               <div className="flex items-center space-x-2">
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setCurrentPage(1)}
+                   disabled={safePage <= 1}
+                 >
+                   Primeira
+                 </Button>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                   disabled={safePage <= 1}
+                 >
+                   <ChevronLeft className="h-4 w-4" />
+                 </Button>
+                 {/* Números de página */}
+                 {(() => {
+                   const pages: number[] = [];
+                   const start = Math.max(1, safePage - 2);
+                   const end = Math.min(totalPages, safePage + 2);
+                   for (let i = start; i <= end; i++) pages.push(i);
+                   return pages.map(p => (
+                     <Button
+                       key={p}
+                       variant={p === safePage ? 'default' : 'outline'}
+                       size="sm"
+                       onClick={() => setCurrentPage(p)}
+                       className="min-w-[36px]"
+                     >
+                       {p}
+                     </Button>
+                   ));
+                 })()}
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                   disabled={safePage >= totalPages}
+                 >
+                   <ChevronRight className="h-4 w-4" />
+                 </Button>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setCurrentPage(totalPages)}
+                   disabled={safePage >= totalPages}
+                 >
+                   Última
+                 </Button>
+               </div>
+             </div>
+           )}
          </CardContent>
        </Card>
 

@@ -19,16 +19,16 @@ function getApiBase(): string {
 }
 
 /**
- * Garante que o path termina com / (exigido em produção).
- * Ex.: clientes -> clientes/, clientes/1 -> clientes/1/, clientes?limit=1 -> clientes/?limit=1
+ * Remove trailing slash para evitar 307 redirects do FastAPI.
+ * As rotas do backend estão definidas sem trailing slash.
  */
-function ensureTrailingSlash(path: string): string {
+function stripTrailingSlash(path: string): string {
   if (!path) return path;
   const i = path.indexOf('?');
   const pathOnly = i >= 0 ? path.slice(0, i) : path;
   const query = i >= 0 ? path.slice(i) : '';
-  if (!pathOnly.endsWith('/')) {
-    return pathOnly + '/' + query;
+  if (pathOnly.length > 1 && pathOnly.endsWith('/')) {
+    return pathOnly.slice(0, -1) + query;
   }
   return path;
 }
@@ -43,7 +43,7 @@ const api = axios.create({
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const base = getApiBase().replace(/\/$/, '');
   let path = (config.url || '').replace(/^\//, '').replace(/^api\/?/, '');
-  path = ensureTrailingSlash(path);
+  path = stripTrailingSlash(path);
   const fullUrl = path ? `${base}/${path}` : `${base}/`;
   config.url = fullUrl;
   config.baseURL = '';
