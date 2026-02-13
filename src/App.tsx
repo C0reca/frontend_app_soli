@@ -17,7 +17,7 @@ import { DocumentTemplates } from "@/pages/DocumentTemplates";
 import { Documents } from "@/pages/Documents";
 import { Calendar } from "@/pages/Calendar";
 import { RegistosPrediais } from "@/pages/RegistosPrediais";
-// import { Caixa } from "@/pages/Caixa";
+import { Caixa } from "@/pages/Caixa";
 import { Dossies } from "@/pages/Dossies";
 import { IRS } from "@/pages/IRS";
 import NotFound from "./pages/NotFound";
@@ -26,7 +26,7 @@ import { MinimizeDock } from "@/components/MinimizeDock";
 import { MinimizeRenderer } from "@/components/MinimizeRenderer";
 import { AdminImport } from "@/pages/AdminImport";
 import { ServicosExternos } from "@/pages/ServicosExternos";
-// import { ContaCorrente } from "@/pages/ContaCorrente";
+import { ContaCorrente } from "@/pages/ContaCorrente";
 import { Profile } from "@/pages/Profile";
 import { Notifications } from "@/pages/Notifications";
 import { ErroReports } from "@/pages/ErroReports";
@@ -100,8 +100,8 @@ const AppRoutes = () => {
         <Route path="document-templates" element={<DocumentTemplates />} />
         <Route path="documentos" element={<ManagerRoute><Documents /></ManagerRoute>} />
         <Route path="calendario" element={<Calendar />} />
-        {/* <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} /> */}
-        {/* <Route path="conta-corrente" element={<ManagerRoute><ContaCorrente /></ManagerRoute>} /> */}
+        <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} />
+        <Route path="conta-corrente" element={<ManagerRoute><ContaCorrente /></ManagerRoute>} />
         <Route path="admin-import" element={<AdminRoute><AdminImport /></AdminRoute>} />
         <Route path="servicos-externos" element={<ServicosExternos />} />
         <Route path="perfil" element={<Profile />} />
