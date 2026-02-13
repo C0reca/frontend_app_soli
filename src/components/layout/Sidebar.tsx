@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
   // { icon: Wallet, label: 'Caixa', path: '/caixa', managerOrAdmin: true },
   // { icon: Landmark, label: 'Conta Corrente', path: '/conta-corrente', managerOrAdmin: true },
   { icon: FileTemplate, label: 'Templates', path: '/templates', adminOnly: true },
-  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates', managerOrAdmin: true },
+  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
   { icon: FileText, label: 'Documentos', path: '/documentos', managerOrAdmin: true },
   { icon: Upload, label: 'Importação CSV', path: '/admin-import', adminOnly: true },
   { icon: Bug, label: 'Reportes', path: '/erro-reports', adminOnly: true },

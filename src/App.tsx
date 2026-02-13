@@ -97,7 +97,7 @@ const AppRoutes = () => {
         <Route path="tarefas" element={<Tasks />} />
         <Route path="registos-prediais" element={<RegistosPrediais />} />
         <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />
-        <Route path="document-templates" element={<ManagerRoute><DocumentTemplates /></ManagerRoute>} />
+        <Route path="document-templates" element={<DocumentTemplates />} />
         <Route path="documentos" element={<ManagerRoute><Documents /></ManagerRoute>} />
         <Route path="calendario" element={<Calendar />} />
         {/* <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} /> */}

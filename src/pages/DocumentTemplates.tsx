@@ -12,6 +12,12 @@ import {
   Trash2,
   FileDown,
   Loader2,
+  Info,
+  FileUp,
+  Variable,
+  FileOutput,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useDocumentTemplates, DocumentTemplateListItem } from '@/hooks/useDocumentTemplates';
 import { TemplateEditorPage } from '@/components/document-templates/TemplateEditorPage';
@@ -26,6 +32,7 @@ export const DocumentTemplates: React.FC = () => {
   const [mode, setMode] = useState<PageMode>({ type: 'list' });
   const [detailsTemplate, setDetailsTemplate] = useState<DocumentTemplateListItem | null>(null);
   const [applyTemplate, setApplyTemplate] = useState<DocumentTemplateListItem | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   if (mode.type === 'editor') {
     return (
@@ -77,11 +84,78 @@ export const DocumentTemplates: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Templates de Documentos</h1>
           <p className="text-gray-600">Crie e reutilize modelos de documentos com campos dinâmicos</p>
         </div>
-        <Button onClick={() => setMode({ type: 'editor', templateId: null })}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Template
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowInfo(!showInfo)}
+            className="text-blue-600"
+          >
+            <Info className="mr-1.5 h-4 w-4" />
+            {showInfo ? 'Ocultar ajuda' : 'Como funciona?'}
+            {showInfo ? <ChevronUp className="ml-1 h-3.5 w-3.5" /> : <ChevronDown className="ml-1 h-3.5 w-3.5" />}
+          </Button>
+          <Button onClick={() => setMode({ type: 'editor', templateId: null })}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Template
+          </Button>
+        </div>
       </div>
+
+      {/* Painel informativo */}
+      {showInfo && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-start gap-3 mb-4">
+              <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">O que são os Templates de Documentos?</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Os Templates de Documentos permitem criar modelos reutilizáveis para gerar documentos como contratos,
+                  procurações, requerimentos e outros. Cada template pode conter <strong>variáveis dinâmicas</strong> que
+                  são automaticamente preenchidas com os dados do processo, entidade ou sistema no momento da geração.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+              <div className="flex items-start gap-2.5 bg-white rounded-lg p-3 border border-blue-100">
+                <FileUp className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">1. Criar ou Importar</p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Crie um template do zero no editor visual ou importe um ficheiro Word (.docx, .doc) ou PDF existente.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 bg-white rounded-lg p-3 border border-blue-100">
+                <Variable className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">2. Adicionar Variáveis</p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Arraste variáveis do painel lateral para o documento: dados da entidade, processo, funcionário ou datas do sistema.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 bg-white rounded-lg p-3 border border-blue-100">
+                <FileOutput className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">3. Gerar Documento</p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Escolha um processo e gere um documento Word (.docx) com todos os campos preenchidos automaticamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-blue-100">
+              <p className="text-xs text-gray-500">
+                <strong>Variáveis disponíveis:</strong> Entidade (nome, NIF, morada, contactos...) · Processo (título, tipo, estado, datas...) · Funcionário (nome, cargo...) · Entidades secundárias · Sistema (data de hoje, hora, dia da semana...)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-4">
         <div className="relative flex-1">
