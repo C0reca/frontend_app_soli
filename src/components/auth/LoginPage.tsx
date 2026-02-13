@@ -42,7 +42,7 @@ export const LoginPage: React.FC = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Gestão de Processos</CardTitle>
           <CardDescription className="text-center">
-            Entre com suas credenciais para acessar o sistema
+            Introduza as suas credenciais para aceder ao sistema
           </CardDescription>
         </CardHeader>
         <CardContent>

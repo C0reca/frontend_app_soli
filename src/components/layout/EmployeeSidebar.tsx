@@ -9,10 +9,12 @@ import {
   FileText,
   LogOut,
   Calendar, Building, Wallet, Truck,
-  Receipt
+  Receipt,
+  Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { ChangelogBadge } from '@/components/ChangelogBadge';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -24,6 +26,7 @@ const navItems = [
   { icon: CheckSquare, label: 'Compromissos', path: '/tarefas' },
   { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
+  { icon: Megaphone, label: 'Novidades', path: '/changelog' },
 ];
 
 export const EmployeeSidebar: React.FC = () => {
@@ -55,6 +58,7 @@ export const EmployeeSidebar: React.FC = () => {
             >
               <Icon className="mr-3 h-5 w-5" />
               {item.label}
+              {item.path === '/changelog' && <ChangelogBadge />}
             </NavLink>
           );
         })}

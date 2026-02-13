@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +12,27 @@ import { pt } from 'date-fns/locale';
 import { normalizeString } from '@/lib/utils';
 
 export const Dossies: React.FC = () => {
+  const navigate = useNavigate();
   const { dossies, isLoading } = useDossies();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDossie, setSelectedDossie] = useState<Dossie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  React.useEffect(() => {
+    const abrir = searchParams.get('abrir');
+    if (abrir && dossies.length > 0) {
+      const d = dossies.find((x: Dossie) => String(x.id) === abrir);
+      if (d) {
+        setSelectedDossie(d);
+        setViewMode('details');
+      }
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('abrir');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, dossies]);
 
   const filteredDossies = dossies.filter((dossie) => {
     const termNormalized = normalizeString(searchTerm);
@@ -100,7 +117,14 @@ export const Dossies: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {processos.map((processo: any) => (
-                    <Card key={processo.id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={processo.id}
+                      role="button"
+                      tabIndex={0}
+                      className="hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      onClick={() => navigate(`/processos?abrir=${processo.id}`)}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/processos?abrir=${processo.id}`)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -120,6 +144,7 @@ export const Dossies: React.FC = () => {
                               </span>
                             </div>
                           </div>
+                          <Eye className="h-4 w-4 text-muted-foreground shrink-0 ml-2" aria-hidden />
                         </div>
                       </CardContent>
                     </Card>
@@ -179,7 +204,7 @@ export const Dossies: React.FC = () => {
               <p>Nenhum arquivo encontrado.</p>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredDossies.map((dossie) => (
                 <Card
                   key={dossie.id}
@@ -192,24 +217,18 @@ export const Dossies: React.FC = () => {
                         <div className="flex items-center space-x-2 mb-2">
                           <h3 className="text-lg font-semibold">{getDossieDisplayLabel(dossie)}</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div className="space-y-2 text-sm text-gray-600">
                           <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              <span className="font-medium">Entidade:</span>{' '}
-                              {getEntidadeNomeFromDossie(dossie)}
-                            </span>
+                            <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span><span className="font-medium">Entidade:</span> {getEntidadeNomeFromDossie(dossie)}</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              <span className="font-medium">Processos:</span>{' '}
-                              {getProcessosCount(dossie)}
-                            </span>
+                            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span><span className="font-medium">Processos:</span> {getProcessosCount(dossie)}</span>
                           </div>
-                          <div className="col-span-2">
+                          <div className="flex items-center space-x-2">
                             <span className="text-xs text-muted-foreground">
-                              Criado em: {format(new Date(dossie.criado_em), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
+                              <span className="font-medium text-gray-600">Criado em:</span> {format(new Date(dossie.criado_em), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
                             </span>
                           </div>
                         </div>

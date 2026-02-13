@@ -1,5 +1,5 @@
 import React from 'react';
-import { Client } from '@/hooks/useClients';
+import { Client, getEffectiveTipo } from '@/hooks/useClients';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
 import api from '@/services/api';
 
@@ -45,7 +45,7 @@ export const ClickableClientName: React.FC<ClickableClientNameProps> = ({
     }
   };
 
-  const displayName = children || clientName || (clientProp ? (clientProp.tipo === 'coletivo' ? clientProp.nome_empresa : clientProp.nome) : 'N/A');
+  const displayName = children || clientName || (clientProp ? (getEffectiveTipo(clientProp) === 'coletivo' ? (clientProp as any).nome_empresa : (clientProp as any).nome) : 'N/A');
 
   if (!clientId && !clientProp) {
     return <span className={className}>{displayName}</span>;

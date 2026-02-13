@@ -94,6 +94,14 @@ export interface CorporateClient extends BaseClient {
 
 export type Client = IndividualClient | CorporateClient;
 
+/** Tipo efetivo da entidade: infere 'coletivo' quando nome_empresa está preenchido mesmo se tipo for null */
+export function getEffectiveTipo(client: Client): 'singular' | 'coletivo' {
+  if (client.tipo === 'coletivo') return 'coletivo';
+  const nomeEmpresa = (client as CorporateClient).nome_empresa;
+  if (nomeEmpresa != null && String(nomeEmpresa).trim() !== '') return 'coletivo';
+  return 'singular';
+}
+
 export const useClients = () => {
   const queryClient = useQueryClient();
 

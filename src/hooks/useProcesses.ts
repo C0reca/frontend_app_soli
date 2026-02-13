@@ -28,6 +28,8 @@ export interface Process {
     id: number;
     nome: string;
   };
+  privado?: boolean;
+  autorizados?: { id: number; nome: string }[];
 }
 
 export const useProcesses = () => {
@@ -47,7 +49,7 @@ export const useProcesses = () => {
   });
 
   const createProcess = useMutation({
-    mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
+    mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; onde_estao?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
       const response = await api.post('/processos', process);
       return response.data;
     },
@@ -149,12 +151,29 @@ export const useProcesses = () => {
     }
   });
 
+  const updateProcessVisibility = useMutation({
+    mutationFn: async ({ processoId, privado, autorizados_ids }: { processoId: number; privado: boolean; autorizados_ids?: number[] }) => {
+      const res = await api.put(`/processos/${processoId}/visibilidade`, { privado, autorizados_ids: autorizados_ids ?? [] });
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['processes'] });
+      queryClient.invalidateQueries({ queryKey: ['processo', variables.processoId] });
+      toast({ title: 'Sucesso', description: 'Visibilidade do processo atualizada.' });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail ?? 'Erro ao atualizar visibilidade.';
+      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+    },
+  });
+
   return {
     processes,
     isLoading,
     error,
     createProcess,
     updateProcess,
+    updateProcessVisibility,
     deleteProcess,
     getArchived,
     unarchiveProcess,

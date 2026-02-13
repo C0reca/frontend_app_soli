@@ -17,13 +17,18 @@ import { TaskModal } from '@/components/modals/TaskModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
 import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEmployees } from '@/hooks/useEmployees';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Client, useClients } from '@/hooks/useClients';
 import { ProcessoEntidadesSecundariasTab } from '@/components/ProcessoEntidadesSecundariasTab';
+import { GenerateFromTemplateModal } from '@/components/modals/GenerateFromTemplateModal';
+// import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -83,12 +88,24 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [allDocuments, setAllDocuments] = React.useState<any[]>([]);
   const [loadingDocuments, setLoadingDocuments] = React.useState(false);
   const [uploadingDoc, setUploadingDoc] = React.useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState<Client | null>(null);
   const [isClientDetailsOpen, setIsClientDetailsOpen] = React.useState(false);
   const { minimize } = useMinimize();
-  const { updateProcess } = useProcesses();
+  const { updateProcess, updateProcessVisibility } = useProcesses();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { employees } = useEmployees();
+  const canManageVisibility = user?.role === 'admin' || user?.role === 'manager';
+  const [privadoLocal, setPrivadoLocal] = React.useState(false);
+  const [autorizadosIdsLocal, setAutorizadosIdsLocal] = React.useState<number[]>([]);
+  React.useEffect(() => {
+    if (process) {
+      setPrivadoLocal(process.privado ?? false);
+      setAutorizadosIdsLocal(process.autorizados?.map((a: { id: number }) => a.id) ?? []);
+    }
+  }, [process]);
   
   React.useEffect(() => {
     if (process && isOpen) {
@@ -467,6 +484,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 <span>Atrasado</span>
               </Badge>
             )}
+            {(process.privado || privadoLocal) && (
+              <Badge variant="secondary" className="flex items-center space-x-1">
+                <Lock className="h-3 w-3" />
+                <span>Privado</span>
+              </Badge>
+            )}
           </div>
           </div>
 
@@ -475,6 +498,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Compromissos</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
+              {/* <TabsTrigger value="financeiro">Financeiro</TabsTrigger> */}
               <TabsTrigger value="calendar">Calendário</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
@@ -554,6 +578,86 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {canManageVisibility && (
+                <>
+                  <Separator className="my-4" />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1 mb-1">
+                        <Lock className="h-4 w-4" />
+                        <span>Visibilidade</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="privado"
+                          checked={privadoLocal}
+                          onCheckedChange={setPrivadoLocal}
+                        />
+                        <span className="text-sm">Processo privado</span>
+                      </div>
+                    </div>
+                    {privadoLocal && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground block mb-2">Quem pode ver</label>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <Select
+                            value=""
+                            onValueChange={(val) => {
+                              const id = parseInt(val, 10);
+                              if (id && !autorizadosIdsLocal.includes(id)) {
+                                setAutorizadosIdsLocal([...autorizadosIdsLocal, id]);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-[180px] h-8">
+                              <SelectValue placeholder="Adicionar..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {employees
+                                .filter((e: { id: number }) => !autorizadosIdsLocal.includes(e.id))
+                                .map((e: { id: number; nome: string }) => (
+                                  <SelectItem key={e.id} value={String(e.id)}>{e.nome}</SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          {autorizadosIdsLocal.map((id) => {
+                            const emp = employees.find((e: { id: number }) => e.id === id);
+                            return (
+                              <Badge key={id} variant="secondary" className="text-xs font-normal gap-1 pr-1">
+                                {emp?.nome ?? id}
+                                <button
+                                  type="button"
+                                  onClick={() => setAutorizadosIdsLocal(autorizadosIdsLocal.filter((x) => x !== id))}
+                                  className="rounded-full hover:bg-muted/80 p-0.5"
+                                  aria-label="Remover"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        if (!process?.id) return;
+                        updateProcessVisibility.mutate({
+                          processoId: process.id,
+                          privado: privadoLocal,
+                          autorizados_ids: privadoLocal ? autorizadosIdsLocal : [],
+                        });
+                      }}
+                      disabled={updateProcessVisibility.isPending}
+                    >
+                      {updateProcessVisibility.isPending ? 'A guardar...' : 'Guardar'}
+                    </Button>
+                  </div>
+                </>
+              )}
 
               <Separator className="my-6" />
               <div>
@@ -787,6 +891,19 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                     {task.descricao && (
                                       <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{task.descricao}</p>
                                     )}
+                                    {(task.motivo_adiamento ?? '').trim() && (
+                                      <p className="text-xs text-amber-800 mb-2 rounded bg-amber-50 px-2 py-1 border border-amber-200">
+                                        {task.data_antes_adiamento && (
+                                          <span><strong>Data anterior:</strong> {new Date(task.data_antes_adiamento).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}. </span>
+                                        )}
+                                        <strong>Adiado:</strong> {task.motivo_adiamento}
+                                      </p>
+                                    )}
+                                    {task.concluida && (task.notas_conclusao ?? '').trim() && (
+                                      <p className="text-sm text-green-800 mb-2 rounded bg-green-50 px-2 py-1 border border-green-200">
+                                        <strong>O que foi feito:</strong> {task.notas_conclusao}
+                                      </p>
+                                    )}
                                     <div className="flex items-center space-x-4 text-xs text-gray-500">
                                       {task.prioridade && (
                                         <span><strong>Prioridade:</strong> {getTaskPriorityLabel(task.prioridade)}</span>
@@ -838,6 +955,19 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                           {subtask.descricao && (
                                             <p className="text-xs text-gray-600 mb-3 whitespace-pre-wrap">{subtask.descricao}</p>
                                           )}
+                                            {(subtask.motivo_adiamento ?? '').trim() && (
+                                              <p className="text-xs text-amber-800 mb-2 rounded bg-amber-50 px-2 py-1 border border-amber-200">
+                                                {subtask.data_antes_adiamento && (
+                                                  <span><strong>Data anterior:</strong> {new Date(subtask.data_antes_adiamento).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}. </span>
+                                                )}
+                                                <strong>Adiado:</strong> {subtask.motivo_adiamento}
+                                              </p>
+                                            )}
+                                          {subtask.concluida && (subtask.notas_conclusao ?? '').trim() && (
+                                            <p className="text-xs text-green-800 mb-2 rounded bg-green-50 px-2 py-1 border border-green-200">
+                                              <strong>O que foi feito:</strong> {subtask.notas_conclusao}
+                                            </p>
+                                          )}
                                           <div className="flex items-center space-x-4 text-xs text-gray-500">
                                             {subtask.prioridade && (
                                               <span><strong>Prioridade:</strong> {getTaskPriorityLabel(subtask.prioridade)}</span>
@@ -877,6 +1007,14 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 })()}
               </div>
             </TabsContent>
+
+            {/* <TabsContent value="financeiro" className="space-y-6 mt-6">
+              {process && process.cliente_id ? (
+                <ProcessFinanceiroTab processoId={process.id} clienteId={process.cliente_id} />
+              ) : (
+                <p className="text-muted-foreground text-center py-8">Processo sem cliente associado.</p>
+              )}
+            </TabsContent> */}
 
             <TabsContent value="calendar" className="space-y-6 mt-6">
               <h3 className="text-lg font-semibold">Calendário do processo</h3>
@@ -1042,6 +1180,15 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Documentos</h3>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsTemplateModalOpen(true)}
+                    className="gap-1.5 whitespace-nowrap"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Criar a partir de Template
+                  </Button>
                   <Input
                     type="file"
                     onChange={async (e) => {
@@ -1182,6 +1329,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           }
         }}
         processoId={process?.id || null}
+        initialData={{
+          cliente_id: process?.cliente_id ?? null,
+          processo_id: process?.id ?? null,
+        }}
       />
       <LogProcessoModal 
         isOpen={isLogModalOpen} 
@@ -1222,6 +1373,23 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         onClose={() => setIsClientDetailsOpen(false)}
         client={selectedClient}
       />
+      {process && (
+        <GenerateFromTemplateModal
+          isOpen={isTemplateModalOpen}
+          onClose={() => setIsTemplateModalOpen(false)}
+          processoId={process.id}
+          processoTitulo={process.titulo}
+          onDocumentGenerated={async () => {
+            // Recarregar documentos após gerar
+            try {
+              const allDocs = await api.get(`/documentos/processo-completo/${process.id}`);
+              setAllDocuments(Array.isArray(allDocs.data) ? allDocs.data : []);
+            } catch {
+              // silently fail
+            }
+          }}
+        />
+      )}
     </Dialog>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -33,8 +33,64 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { ClientCombobox } from "@/components/ui/clientcombobox";
-import { Loader2, Minimize2 } from "lucide-react";
+import { Loader2, Minimize2, ChevronRight, ChevronLeft, Plus, X } from "lucide-react";
 import { useMinimize } from '@/contexts/MinimizeContext';
+
+const PROCESS_TYPES_STORAGE_KEY = "app-soli-process-types";
+const PROCESS_TYPES_HIDDEN_KEY = "app-soli-process-types-hidden";
+
+const DEFAULT_PROCESS_TYPES = [
+    "Registo Predial",
+    "Registo Comercial",
+    "Registo Automóvel",
+    "DPA",
+    "RCBE",
+    "Imposto de Selo Óbito",
+    "Habilitação de Herdeiros",
+    "Testamento",
+    "AT",
+    "Procurações",
+    "Tribunal",
+    "Notário",
+];
+
+function loadCustomTypes(): string[] {
+    try {
+        const raw = localStorage.getItem(PROCESS_TYPES_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveCustomTypes(list: string[]) {
+    try {
+        localStorage.setItem(PROCESS_TYPES_STORAGE_KEY, JSON.stringify(list));
+    } catch {
+        //
+    }
+}
+
+function loadHiddenTypes(): string[] {
+    try {
+        const raw = localStorage.getItem(PROCESS_TYPES_HIDDEN_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveHiddenTypes(list: string[]) {
+    try {
+        localStorage.setItem(PROCESS_TYPES_HIDDEN_KEY, JSON.stringify(list));
+    } catch {
+        //
+    }
+}
 
 // Schema base - cliente_id é opcional para edição
 const processSchemaBase = z.object({
@@ -76,14 +132,61 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const { employees = [], isLoading: isEmployeesLoading } = useEmployees();
     const { minimize } = useMinimize();
 
+    const [step, setStep] = useState(0);
+    const isWizard = !process;
+    const totalSteps = 3;
+
+    const [customTypes, setCustomTypes] = useState<string[]>(() => loadCustomTypes());
+    const [hiddenDefaultTypes, setHiddenDefaultTypes] = useState<string[]>(() => loadHiddenTypes());
+    const [newTypeInput, setNewTypeInput] = useState("");
+    const [showManageTypes, setShowManageTypes] = useState(false);
+
+    const visibleTypeList = useMemo(() => {
+        const defaults = DEFAULT_PROCESS_TYPES.filter((t) => !hiddenDefaultTypes.includes(t));
+        return [...defaults, ...customTypes];
+    }, [hiddenDefaultTypes, customTypes]);
+
+    const removeFromList = (label: string) => {
+        if (form.getValues("tipo") === label) {
+            form.setValue("tipo", "");
+        }
+        if (DEFAULT_PROCESS_TYPES.includes(label)) {
+            const next = hiddenDefaultTypes.includes(label) ? hiddenDefaultTypes : [...hiddenDefaultTypes, label];
+            setHiddenDefaultTypes(next);
+            saveHiddenTypes(next);
+        } else {
+            const next = customTypes.filter((t) => t !== label);
+            setCustomTypes(next);
+            saveCustomTypes(next);
+        }
+    };
+
+    const addCustomType = () => {
+        const value = newTypeInput.trim();
+        if (!value || visibleTypeList.some((t) => t.toLowerCase() === value.toLowerCase())) return;
+        const next = [...customTypes, value];
+        setCustomTypes(next);
+        saveCustomTypes(next);
+        setNewTypeInput("");
+    };
+
+    const restoreDefaultTypes = () => {
+        setHiddenDefaultTypes([]);
+        saveHiddenTypes([]);
+        setCustomTypes([]);
+        saveCustomTypes([]);
+    };
+
     const [selectedClienteId, setSelectedClienteId] = React.useState<number | undefined>();
-    const selectedCliente = React.useMemo(() => {
+    const selectedCliente = useMemo(() => {
         if (!selectedClienteId) return null;
         return clients.find(c => c.id === selectedClienteId) || null;
     }, [selectedClienteId, clients]);
 
     // Obter o dossiê único da entidade selecionada (uma chamada só; backend devolve null se não tiver arquivo)
-    const { dossie: dossieEntidade, isLoading: isDossieLoading } = useDossies(selectedCliente?.id);
+    const { dossie: dossieEntidade, isLoading: isDossieLoading, createDossie } = useDossies(selectedCliente?.id);
+
+    const [createdDossieId, setCreatedDossieId] = useState<number | null>(null);
 
     const isEditing = !!process;
     const schema = isEditing ? processSchemaUpdate : processSchemaCreate;
@@ -116,6 +219,24 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         }
     }, [dossieId, selectedCliente, clienteId, form]);
 
+    const showNoDossiePrompt = Boolean(
+        isWizard && step === 0 && selectedClienteId && !isDossieLoading && dossieEntidade == null
+    );
+
+    useEffect(() => {
+        if (step !== 0) setCreatedDossieId(null);
+    }, [step]);
+
+    // Associar automaticamente o dossiê da entidade ao processo (arquivo selecionado automaticamente)
+    useEffect(() => {
+        if (!isWizard || !selectedClienteId) return;
+        if (dossieEntidade?.id != null) {
+            form.setValue("dossie_id", dossieEntidade.id);
+        } else {
+            form.setValue("dossie_id", undefined);
+        }
+    }, [isWizard, selectedClienteId, dossieEntidade?.id, form]);
+
     useEffect(() => {
         if (process) {
             form.reset({
@@ -124,7 +245,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 tipo: process.tipo || "",
                 onde_estao: (process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || undefined),
                 cliente_id: process.cliente_id || undefined,
-                dossie_id: (process as any).dossie_id || undefined,
+                dossie_id: (process as any).dossie_id ?? undefined,
                 funcionario_id: process.funcionario_id || undefined,
                 estado: process.estado,
             });
@@ -148,6 +269,10 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         }
     }, [process, form, initialData]);
 
+    useEffect(() => {
+        if (isOpen && !process) setStep(0);
+    }, [isOpen, process]);
+
     const onSubmit = async (data: ProcessFormData) => {
         try {
             if (process) {
@@ -156,7 +281,16 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                     ...data,
                 });
             } else {
-                await createProcess.mutateAsync(data);
+                await createProcess.mutateAsync({
+                    titulo: data.titulo ?? "",
+                    descricao: data.descricao,
+                    tipo: data.tipo,
+                    onde_estao: data.onde_estao,
+                    cliente_id: data.cliente_id,
+                    dossie_id: data.dossie_id,
+                    funcionario_id: data.funcionario_id,
+                    estado: data.estado ?? "pendente",
+                });
             }
             onClose();
         } catch (error) {
@@ -203,6 +337,216 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 ) : (
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            {isWizard && (
+                                <div className="flex items-center gap-2 py-2">
+                                    {Array.from({ length: totalSteps }, (_, i) => i).map((i) => (
+                                        <span key={i} className="flex items-center">
+                                            <div
+                                                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                                                    step === i ? "bg-primary text-primary-foreground" : step > i ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                                                }`}
+                                            >
+                                                {step > i ? "✓" : i + 1}
+                                            </div>
+                                            {i < totalSteps - 1 && <div className="h-px flex-1 bg-border max-w-[40px]" />}
+                                        </span>
+                                    ))}
+                                    <span className="ml-2 text-sm text-muted-foreground">Passo {step + 1} de {totalSteps}</span>
+                                </div>
+                            )}
+
+                            {/* Passo 1: Entidade e Arquivo */}
+                            {(!isWizard || step === 0) && (
+                                <div className="space-y-4">
+                                    {showNoDossiePrompt ? (
+                                        <div className="space-y-4 rounded-md border p-4 bg-muted/30">
+                                            <p className="text-sm">
+                                                A entidade <strong>{selectedCliente?.nome || selectedCliente?.nome_empresa || "selecionada"}</strong> não tem dossiê. Deseja criar um?
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const nome = selectedCliente ? (selectedCliente.nome || selectedCliente.nome_empresa || "Entidade") : "Entidade";
+                                                        createDossie
+                                                            .mutateAsync({ entidade_id: selectedClienteId!, nome: `Arquivo - ${nome}` })
+                                                            .then((data: { id?: number }) => {
+                                                                if (data?.id) {
+                                                                    form.setValue("dossie_id", data.id);
+                                                                    setCreatedDossieId(data.id);
+                                                                }
+                                                            })
+                                                            .catch(() => {});
+                                                    }}
+                                                    disabled={createDossie.isPending}
+                                                >
+                                                    {createDossie.isPending ? "A criar..." : "Sim, criar"}
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        form.setValue("cliente_id", undefined);
+                                                        form.setValue("dossie_id", undefined);
+                                                        setSelectedClienteId(undefined);
+                                                        setCreatedDossieId(null);
+                                                    }}
+                                                >
+                                                    Não, voltar à escolha da entidade
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                    {createdDossieId != null && (
+                                        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+                                            Dossiê criado. ID atribuído: <strong>{createdDossieId}</strong>
+                                        </div>
+                                    )}
+                            <FormField
+                                control={form.control}
+                                name="cliente_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>
+                                            {isEditing ? 'Cliente' : 'Entidade *'}
+                                        </FormLabel>
+                                        <ClientCombobox
+                                            clients={clients ?? []}
+                                            value={field.value}
+                                            onChange={(value) => {
+                                                field.onChange(value);
+                                                setSelectedClienteId(value);
+                                                setCreatedDossieId(null);
+                                            }}
+                                            isLoading={isClientsLoading}
+                                            insideDialog
+                                        />
+                                        <FormMessage />
+                                        {isWizard && selectedCliente && dossieEntidade && (
+                                            <p className="text-xs text-muted-foreground">
+                                                O arquivo da entidade será associado automaticamente ao processo.
+                                            </p>
+                                        )}
+                                    </FormItem>
+                                )}
+                            />
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Passo 2: Tipo de processo */}
+                            {(!isWizard || step === 1) && (
+                                <div className="space-y-4">
+                                    {isWizard ? (
+                                        <>
+                                            <FormField
+                                                control={form.control}
+                                                name="tipo"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Tipo de processo *</FormLabel>
+                                                        <Select
+                                                            onValueChange={field.onChange}
+                                                            value={field.value && visibleTypeList.includes(field.value) ? field.value : undefined}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Selecione o tipo de processo" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {visibleTypeList.map((t) => (
+                                                                    <SelectItem key={t} value={t}>
+                                                                        {t}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setShowManageTypes((v) => !v)}
+                                            >
+                                                {showManageTypes ? "Ocultar lista de tipos" : "Gerir tipos"}
+                                            </Button>
+                                            {showManageTypes && (
+                                                <div className="space-y-3 rounded-md border p-3 bg-muted/30">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-sm font-medium text-muted-foreground">Gerir lista de tipos</p>
+                                                        <Button type="button" variant="ghost" size="sm" onClick={restoreDefaultTypes}>
+                                                            Restaurar lista predefinida
+                                                        </Button>
+                                                    </div>
+                                                    <div className="rounded-md border bg-background max-h-[180px] overflow-y-auto">
+                                                        <ul className="divide-y divide-border">
+                                                            {visibleTypeList.length === 0 ? (
+                                                                <li className="px-3 py-2 text-sm text-muted-foreground">
+                                                                    Nenhum tipo na lista. Adicione um abaixo.
+                                                                </li>
+                                                            ) : (
+                                                                visibleTypeList.map((t) => (
+                                                                    <li
+                                                                        key={t}
+                                                                        className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                                                                    >
+                                                                        <span className="truncate">{t}</span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => removeFromList(t)}
+                                                                            className="shrink-0 rounded p-1 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                                                                            aria-label={`Remover ${t}`}
+                                                                        >
+                                                                            <X className="h-4 w-4" />
+                                                                        </button>
+                                                                    </li>
+                                                                ))
+                                                            )}
+                                                        </ul>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            placeholder="Novo tipo (ex: Outro)"
+                                                            value={newTypeInput}
+                                                            onChange={(e) => setNewTypeInput(e.target.value)}
+                                                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomType())}
+                                                            className="flex-1"
+                                                        />
+                                                        <Button type="button" variant="outline" size="sm" onClick={addCustomType}>
+                                                            <Plus className="h-4 w-4 mr-1" />
+                                                            Adicionar
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <FormField
+                                            control={form.control}
+                                            name="tipo"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Tipo</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Digite o tipo do processo" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Passo 3: Título, descrição, localização, estado */}
+                            {(!isWizard || step === 2) && (
+                                <div className="space-y-4">
                             <FormField
                                 control={form.control}
                                 name="titulo"
@@ -225,20 +569,6 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         <FormLabel>Descrição</FormLabel>
                                         <FormControl>
                                             <Textarea placeholder="Digite a descrição do processo" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="tipo"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tipo</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Digite o tipo do processo" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -288,124 +618,6 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 )}
                             />
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="cliente_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>
-                                                {isEditing ? 'Cliente' : 'Cliente *'}
-                                            </FormLabel>
-                                            <ClientCombobox
-                                                clients={clients ?? []}
-                                                value={field.value}
-                                                onChange={(value) => {
-                                                    field.onChange(value);
-                                                    setSelectedClienteId(value);
-                                                    // Limpar dossiê se mudar de entidade
-                                                    form.setValue("dossie_id", undefined);
-                                                }}
-                                                isLoading={isClientsLoading}
-                                            />
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {selectedCliente ? (
-                                    <FormField
-                                        key="field-dossie"
-                                        control={form.control}
-                                        name="dossie_id"
-                                        render={({ field }) => {
-                                            const rawVal = field.value;
-                                            const selectValue = rawVal != null && Number.isFinite(Number(rawVal))
-                                                ? `dossie-${Number(rawVal)}`
-                                                : "__none__";
-                                            return (
-                                            <FormItem>
-                                                <FormLabel>Arquivo (Opcional)</FormLabel>
-                                                <Select
-                                                    onValueChange={(value) => {
-                                                        if (!value || value === "__none__" || value === "__empty__") {
-                                                            field.onChange(undefined);
-                                                            return;
-                                                        }
-                                                        const dossieId = value.startsWith("dossie-") ? parseInt(value.slice(7), 10) : parseInt(value, 10);
-                                                        if (!Number.isNaN(dossieId)) {
-                                                            field.onChange(dossieId);
-                                                            if (selectedCliente) form.setValue("cliente_id", selectedCliente.id);
-                                                        }
-                                                    }}
-                                                    value={selectValue}
-                                                    disabled={isDossieLoading}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={dossieEntidade ? "Selecione o arquivo (opcional)" : "Entidade sem arquivo"} />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="__none__">Nenhum arquivo</SelectItem>
-                                                        {dossieEntidade &&
-                                                            dossieEntidade.id != null &&
-                                                            String(dossieEntidade.id).trim() !== "" && (
-                                                                <SelectItem key={dossieEntidade.id} value={`dossie-${dossieEntidade.id}`}>
-                                                                    {dossieEntidade.nome ?? dossieEntidade.numero ?? `Arquivo #${dossieEntidade.id}`} {dossieEntidade.numero && dossieEntidade.nome ? `(${dossieEntidade.numero})` : ""}
-                                                                </SelectItem>
-                                                            )}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                                <p className="text-xs text-muted-foreground">
-                                                    Associar o processo ao arquivo da entidade (opcional)
-                                                </p>
-                                            </FormItem>
-                                            );
-                                        }}
-                                    />
-                                ) : (
-                                    <FormField
-                                        key="field-funcionario"
-                                        control={form.control}
-                                        name="funcionario_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Responsável</FormLabel>
-                                            <Select
-                                                onValueChange={(value) => {
-                                                    const id = value && value !== "__none__" && value !== "__empty__" ? parseInt(value, 10) : undefined;
-                                                    field.onChange(id);
-                                                }}
-                                                value={field.value != null ? String(field.value) : "__none__"}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecione um funcionário" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="__none__">Nenhum</SelectItem>
-                                                    {employees
-                                                        .filter((e) => e.id != null && String(e.id).trim() !== "")
-                                                        .map((employee) => (
-                                                            <SelectItem
-                                                                key={employee.id}
-                                                                value={String(employee.id)}
-                                                            >
-                                                                {employee.nome}
-                                                            </SelectItem>
-                                                        ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                    />
-                                )}
-                            </div>
-
                             <FormField
                                 control={form.control}
                                 name="estado"
@@ -431,19 +643,56 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                     </FormItem>
                                 )}
                             />
+                                </div>
+                            )}
 
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={onClose}>
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={createProcess.isPending || updateProcess.isPending}
-                                >
-                                    {createProcess.isPending || updateProcess.isPending
-                                        ? "Salvando..."
-                                        : "Salvar"}
-                                </Button>
+                            <DialogFooter className="gap-2 sm:gap-0">
+                                {isWizard && step > 0 ? (
+                                    <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        Anterior
+                                    </Button>
+                                ) : (
+                                    <Button type="button" variant="outline" onClick={onClose}>
+                                        Cancelar
+                                    </Button>
+                                )}
+                                {isWizard && step < totalSteps - 1 ? (
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            if (step === 0) {
+                                                const cid = form.getValues("cliente_id");
+                                                if (cid == null || cid === 0) {
+                                                    form.setError("cliente_id", { type: "manual", message: "Selecione a entidade." });
+                                                    return;
+                                                }
+                                            }
+                                            if (step === 1) {
+                                                const tipo = form.getValues("tipo");
+                                                if (!tipo || !tipo.trim()) {
+                                                    form.setError("tipo", { type: "manual", message: "Selecione ou adicione um tipo de processo." });
+                                                    return;
+                                                }
+                                            }
+                                            setStep(step + 1);
+                                        }}
+                                    >
+                                        Seguinte
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        disabled={createProcess.isPending || updateProcess.isPending}
+                                    >
+                                        {createProcess.isPending || updateProcess.isPending
+                                            ? "Salvando..."
+                                            : process
+                                                ? "Salvar"
+                                                : "Criar processo"}
+                                    </Button>
+                                )}
                             </DialogFooter>
                         </form>
                     </Form>

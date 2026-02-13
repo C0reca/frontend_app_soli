@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye, Archive } from 'lucide-react';
+import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye, Archive, X } from 'lucide-react';
 import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
 import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
@@ -171,134 +171,129 @@ export const RegistosPrediais: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Card 
-          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'concluido' ? 'ring-2 ring-green-500' : ''}`}
-          onClick={() => {
-            if (filterEstado === 'concluido') {
-              setFilterEstado(null);
-              setShowConcluidos(false);
-            } else {
-              setFilterEstado('concluido');
-              setShowConcluidos(true);
-            }
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-              Concluídos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {registos.filter((r: any) => r.estado_key === 'concluido').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'registo' ? 'ring-2 ring-blue-500' : ''}`}
-          onClick={() => setFilterEstado(filterEstado === 'registo' ? null : 'registo')}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="mr-2 h-5 w-5 text-blue-600" />
-              Registos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {registos.filter((r: any) => r.estado_key === 'registo').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'provisorios' ? 'ring-2 ring-yellow-500' : ''}`}
-          onClick={() => setFilterEstado(filterEstado === 'provisorios' ? null : 'provisorios')}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="mr-2 h-5 w-5 text-yellow-600" />
-              Provisórios
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {registos.filter((r: any) => r.estado_key === 'provisorios').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'recusado' ? 'ring-2 ring-red-500' : ''}`}
-          onClick={() => setFilterEstado(filterEstado === 'recusado' ? null : 'recusado')}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <XCircle className="mr-2 h-5 w-5 text-red-600" />
-              Recusados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {registos.filter((r: any) => r.estado_key === 'recusado').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-lg transition-shadow ${filterEstado === 'desistencia' ? 'ring-2 ring-gray-500' : ''}`}
-          onClick={() => setFilterEstado(filterEstado === 'desistencia' ? null : 'desistencia')}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <XCircle className="mr-2 h-5 w-5 text-gray-600" />
-              Desistências
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-600">
-              {registos.filter((r: any) => r.estado_key === 'desistencia').length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Lista de Registos Prediais</CardTitle>
-              <CardDescription>
-                Total de {registos.length} registos cadastrados
-                {!showConcluidos && (
-                  <span className="ml-2">
-                    ({registos.filter((r: any) => r.estado_key !== 'concluido').length} ativos)
-                  </span>
-                )}
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowConcluidos(!showConcluidos)}
+      {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (filterEstado === 'concluido') {
+                  setFilterEstado(null);
+                  setShowConcluidos(false);
+                } else {
+                  setFilterEstado('concluido');
+                  setShowConcluidos(true);
+                }
+              }}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'concluido' ? 'ring-2 ring-green-500' : ''}`}
             >
-              <Archive className="mr-2 h-4 w-4" />
-              {showConcluidos ? 'Ocultar Concluídos' : 'Mostrar Concluídos'}
-            </Button>
+              <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                Concluídos
+              </span>
+              <span className="text-lg font-bold text-green-600">
+                {registos.filter((r: any) => r.estado_key === 'concluido').length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterEstado(filterEstado === 'registo' ? null : 'registo')}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'registo' ? 'ring-2 ring-blue-500' : ''}`}
+            >
+              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+                <Building className="h-4 w-4 shrink-0" />
+                Registos
+              </span>
+              <span className="text-lg font-bold text-blue-600">
+                {registos.filter((r: any) => r.estado_key === 'registo').length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterEstado(filterEstado === 'provisorios' ? null : 'provisorios')}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'provisorios' ? 'ring-2 ring-yellow-500' : ''}`}
+            >
+              <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
+                <Clock className="h-4 w-4 shrink-0" />
+                Provisórios
+              </span>
+              <span className="text-lg font-bold text-yellow-600">
+                {registos.filter((r: any) => r.estado_key === 'provisorios').length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterEstado(filterEstado === 'recusado' ? null : 'recusado')}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'recusado' ? 'ring-2 ring-red-500' : ''}`}
+            >
+              <span className="text-xs sm:text-sm font-medium text-red-600 flex items-center gap-1">
+                <XCircle className="h-4 w-4 shrink-0" />
+                Recusados
+              </span>
+              <span className="text-lg font-bold text-red-600">
+                {registos.filter((r: any) => r.estado_key === 'recusado').length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterEstado(filterEstado === 'desistencia' ? null : 'desistencia')}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow col-span-3 sm:col-span-1 ${filterEstado === 'desistencia' ? 'ring-2 ring-gray-500' : ''}`}
+            >
+              <span className="text-xs sm:text-sm font-medium text-gray-600 flex items-center gap-1">
+                <XCircle className="h-4 w-4 shrink-0" />
+                Desistências
+              </span>
+              <span className="text-lg font-bold text-gray-600">
+                {registos.filter((r: any) => r.estado_key === 'desistencia').length}
+              </span>
+            </button>
           </div>
-          <div className="flex items-center space-x-2 mt-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
               <Input
                 placeholder="Buscar registos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-8 h-9 text-sm"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchTerm('');
+                setFilterEstado(null);
+                setShowConcluidos(false);
+              }}
+              className="shrink-0 h-9"
+            >
+              <X className="mr-1.5 h-3.5 w-3.5" />
+              Limpar
+            </Button>
+            <Button
+              variant={showConcluidos ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowConcluidos(!showConcluidos)}
+              className="shrink-0 h-9"
+            >
+              <Archive className="mr-1.5 h-3.5 w-3.5" />
+              {showConcluidos ? 'Ocultar Concluídos' : 'Mostrar Concluídos'}
+            </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Registos Prediais</CardTitle>
+          <CardDescription>
+            {filteredRegistos.length === 0
+              ? 'Nenhum registo encontrado'
+              : `${filteredRegistos.length} registo${filteredRegistos.length !== 1 ? 's' : ''} encontrado${filteredRegistos.length !== 1 ? 's' : ''}`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

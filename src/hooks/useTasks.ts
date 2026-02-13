@@ -3,15 +3,28 @@ import { useCallback } from 'react';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
+export interface Adiamento {
+  id: number;
+  tarefa_id: number;
+  data_anterior: string | null;
+  data_nova: string;
+  motivo: string | null;
+  criado_em: string;
+}
+
 export interface Task {
   id: string;
   titulo: string;
   descricao: string;
+  cliente_id?: number | null;
   processo_id: number | null;
   responsavel_id: number | null;
   autor_id?: number | null;
   prioridade: 'baixa' | 'media' | 'alta' | null;
   concluida: boolean;
+  notas_conclusao?: string | null;
+  motivo_adiamento?: string | null;
+  data_antes_adiamento?: string | null;
   servico_externo?: boolean;
   data_fim: string | null;
   criado_em: string;
@@ -19,6 +32,16 @@ export interface Task {
   parent_id?: number | null;
   subtarefas_count?: number;
   onde_estao?: string | null;
+  adiamentos?: Adiamento[];
+}
+
+function formatApiErrorDetail(detail: unknown, fallback: string): string {
+  if (Array.isArray(detail)) {
+    return detail.map((e: { msg?: string }) => e?.msg || JSON.stringify(e)).join(" ") || fallback;
+  }
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "msg" in detail) return (detail as { msg: string }).msg;
+  return fallback;
 }
 
 export const useTasks = () => {
@@ -55,10 +78,9 @@ export const useTasks = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.detail || "Erro ao criar tarefa.";
       toast({
         title: "Erro",
-        description: errorMessage,
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao criar tarefa."),
         variant: "destructive",
       });
     },
@@ -77,10 +99,9 @@ export const useTasks = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.detail || "Erro ao atualizar tarefa.";
       toast({
         title: "Erro",
-        description: errorMessage,
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao atualizar tarefa."),
         variant: "destructive",
       });
     },
@@ -107,8 +128,10 @@ export const useTasks = () => {
   });
 
   const updateTaskStatus = useMutation({
-    mutationFn: async ({ id, concluida }: { id: string; concluida: boolean }) => {
-      const response = await api.patch(`/tarefas/status/${id}`, { concluida });
+    mutationFn: async ({ id, concluida, notas_conclusao }: { id: string; concluida: boolean; notas_conclusao?: string }) => {
+      const payload: { concluida: boolean; notas_conclusao?: string } = { concluida };
+      if (notas_conclusao != null && notas_conclusao.trim() !== '') payload.notas_conclusao = notas_conclusao.trim();
+      const response = await api.patch(`/tarefas/status/${id}`, payload);
       return response.data;
     },
     onSuccess: () => {
@@ -119,10 +142,9 @@ export const useTasks = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.detail || "Erro ao atualizar status da tarefa.";
       toast({
         title: "Não foi possível concluir",
-        description: errorMessage,
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao atualizar status da tarefa."),
         variant: "destructive",
       });
     },
@@ -141,14 +163,26 @@ export const useTasks = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.detail || 'Erro ao mover para Serviço Externo.';
-      toast({ title: 'Erro', description: errorMessage, variant: 'destructive' });
+      toast({
+        title: 'Erro',
+        description: formatApiErrorDetail(error?.response?.data?.detail, 'Erro ao mover para Serviço Externo.'),
+        variant: 'destructive',
+      });
     }
   });
 
   const getTasksByProcess = useCallback(async (processoId: number) => {
     const response = await api.get(`/tarefas/processo/${processoId}`);
     return response.data;
+  }, []);
+
+  const getTaskById = useCallback(async (taskId: string): Promise<Task | null> => {
+    try {
+      const response = await api.get(`/tarefas/${taskId}`);
+      return response.data;
+    } catch {
+      return null;
+    }
   }, []);
 
   const generateTaskPDF = async (taskId: string) => {
@@ -173,7 +207,7 @@ export const useTasks = () => {
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: error?.response?.data?.detail || "Erro ao gerar PDF da tarefa.",
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao gerar PDF da tarefa."),
         variant: "destructive",
       });
     }
@@ -189,6 +223,7 @@ export const useTasks = () => {
     updateTaskStatus,
     setExternal,
     getTasksByProcess,
+    getTaskById,
     generateTaskPDF,
   };
 };

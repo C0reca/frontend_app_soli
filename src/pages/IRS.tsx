@@ -294,225 +294,66 @@ export const IRS: React.FC = () => {
         </Button>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card Por Pagar - mantém o mesmo tamanho */}
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              estado: 'Por Pagar',
-              estadoEntrega: 'all',
-              ano: 'all',
-              showConcluidos: true,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="mr-2 h-5 w-5 text-yellow-600" />
-              Por Pagar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {porPagarCount}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Cards menores de Estado de Entrega */}
-        <div className="grid grid-cols-4 gap-2 md:col-span-2">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => {
-              setFilters({
-                estado: 'all',
-                estadoEntrega: 'Enviado',
-                ano: 'all',
-                showConcluidos: true,
-              });
-            }}
-          >
-            <CardHeader className="pb-1 pt-3 px-3">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center">
-                  <CheckCircle className="mr-1.5 h-4 w-4 text-blue-600" />
-                  <span>Enviado:</span>
-                </div>
-                <span className="text-lg font-bold text-blue-600">{enviadoCount}</span>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => {
-              setFilters({
-                estado: 'all',
-                estadoEntrega: 'Levantado Pelo Cliente',
-                ano: 'all',
-                showConcluidos: true,
-              });
-            }}
-          >
-            <CardHeader className="pb-1 pt-3 px-3">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center">
-                  <CheckCircle className="mr-1.5 h-4 w-4 text-green-600" />
-                  <span>Levantado:</span>
-                </div>
-                <span className="text-lg font-bold text-green-600">{levantadoCount}</span>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => {
-              setFilters({
-                estado: 'all',
-                estadoEntrega: 'Aguarda Documentos',
-                ano: 'all',
-                showConcluidos: true,
-              });
-            }}
-          >
-            <CardHeader className="pb-1 pt-3 px-3">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center">
-                  <Clock className="mr-1.5 h-4 w-4 text-amber-600" />
-                  <span>Aguarda Doc.:</span>
-                </div>
-                <span className="text-lg font-bold text-amber-600">{aguardaDocCount}</span>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => {
-              setFilters({
-                estado: 'all',
-                estadoEntrega: 'Contencioso Administrativo',
-                ano: 'all',
-                showConcluidos: true,
-              });
-            }}
-          >
-            <CardHeader className="pb-1 pt-3 px-3">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center">
-                  <AlertCircle className="mr-1.5 h-4 w-4 text-orange-600" />
-                  <span>Contencioso:</span>
-                </div>
-                <span className="text-lg font-bold text-orange-600">{contenciosoCount}</span>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <div className="col-span-4 flex gap-2">
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow flex-1"
-              onClick={() => {
-                setFilters({
-                  estado: 'all',
-                  estadoEntrega: 'Em Análise',
-                  ano: 'all',
-                  showConcluidos: true,
-                });
-              }}
+      {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <button
+              type="button"
+              onClick={() => setFilters({ estado: 'Por Pagar', estadoEntrega: 'all', ano: 'all', showConcluidos: true })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
             >
-              <CardHeader className="pb-1 pt-3 px-3">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Clock className="mr-1.5 h-4 w-4 text-yellow-600" />
-                    <span>Em Análise:</span>
-                  </div>
-                  <span className="text-lg font-bold text-yellow-600">{emAnaliseCount}</span>
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow flex-1"
-              onClick={() => {
-                setFilters({
-                  estado: 'all',
-                  estadoEntrega: 'Verificado',
-                  ano: 'all',
-                  showConcluidos: true,
-                });
-              }}
+              <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
+                <Clock className="h-4 w-4 shrink-0" />
+                Por Pagar
+              </span>
+              <span className="text-lg font-bold text-yellow-600">{porPagarCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilters({ estado: 'all', estadoEntrega: 'Enviado', ano: 'all', showConcluidos: true })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
             >
-              <CardHeader className="pb-1 pt-3 px-3">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <div className="flex items-center">
-                    <CheckCircle className="mr-1.5 h-4 w-4 text-green-600" />
-                    <span>Verificado:</span>
-                  </div>
-                  <span className="text-lg font-bold text-green-600">{verificadoCount}</span>
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-shadow flex-1"
-              onClick={() => {
-                setFilters({
-                  estado: 'all',
-                  estadoEntrega: 'Concluído',
-                  ano: 'all',
-                  showConcluidos: true,
-                });
-              }}
+              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                Enviado
+              </span>
+              <span className="text-lg font-bold text-blue-600">{enviadoCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilters({ estado: 'all', estadoEntrega: 'Concluído', ano: 'all', showConcluidos: true })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
             >
-              <CardHeader className="pb-1 pt-3 px-3">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <div className="flex items-center">
-                    <CheckCircle className="mr-1.5 h-4 w-4 text-purple-600" />
-                    <span>Concluído:</span>
-                  </div>
-                  <span className="text-lg font-bold text-purple-600">{concluidoCount}</span>
-                </CardTitle>
-              </CardHeader>
-            </Card>
+              <span className="text-xs sm:text-sm font-medium text-purple-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                Concluído
+              </span>
+              <span className="text-lg font-bold text-purple-600">{concluidoCount}</span>
+            </button>
           </div>
-        </div>
-      </div>
 
-      {/* Filtros e Pesquisa */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="mr-2 h-5 w-5" />
-            Filtros e Pesquisa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Pesquisar por cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
+              <Input
+                placeholder="Pesquisar por cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
             </div>
-            <Button variant="outline" onClick={clearFilters}>
-              <X className="mr-2 h-4 w-4" />
-              Limpar Filtros
+            <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 h-9">
+              <X className="mr-1.5 h-3.5 w-3.5" />
+              Limpar
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Estado</label>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
               <Select value={filters.estado} onValueChange={(value) => setFilters(prev => ({ ...prev, estado: value }))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-[110px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -523,53 +364,40 @@ export const IRS: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Estado de Entrega</label>
-              <Select value={filters.estadoEntrega} onValueChange={(value) => setFilters(prev => ({ ...prev, estadoEntrega: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="sem">Sem Estado</SelectItem>
-                  <SelectItem value="Enviado">Enviado</SelectItem>
-                  <SelectItem value="Levantado Pelo Cliente">Levantado Pelo Cliente</SelectItem>
-                  <SelectItem value="Aguarda Documentos">Aguarda Documentos</SelectItem>
-                  <SelectItem value="Contencioso Administrativo">Contencioso Administrativo</SelectItem>
-                  <SelectItem value="Em Análise">Em Análise</SelectItem>
-                  <SelectItem value="Verificado">Verificado</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Ano</label>
-              <Select value={filters.ano} onValueChange={(value) => setFilters(prev => ({ ...prev, ano: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {anos.map(ano => (
-                    <SelectItem key={ano} value={ano.toString()}>
-                      {ano}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-8">
+            <Select value={filters.estadoEntrega} onValueChange={(value) => setFilters(prev => ({ ...prev, estadoEntrega: value }))}>
+              <SelectTrigger className="w-[150px] h-8 text-xs">
+                <SelectValue placeholder="Estado Entrega" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="sem">Sem Estado</SelectItem>
+                <SelectItem value="Enviado">Enviado</SelectItem>
+                <SelectItem value="Levantado Pelo Cliente">Levantado</SelectItem>
+                <SelectItem value="Aguarda Documentos">Aguarda Doc.</SelectItem>
+                <SelectItem value="Contencioso Administrativo">Contencioso</SelectItem>
+                <SelectItem value="Em Análise">Em Análise</SelectItem>
+                <SelectItem value="Verificado">Verificado</SelectItem>
+                <SelectItem value="Concluído">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filters.ano} onValueChange={(value) => setFilters(prev => ({ ...prev, ano: value }))}>
+              <SelectTrigger className="w-[90px] h-8 text-xs">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {anos.map(ano => (
+                  <SelectItem key={ano} value={ano.toString()}>{ano}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
               <Checkbox
                 id="showConcluidos"
                 checked={filters.showConcluidos}
                 onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidos: checked === true }))}
               />
-              <label htmlFor="showConcluidos" className="text-sm font-medium cursor-pointer">
-                Mostrar IRS concluídos (com recibo)
-              </label>
+              <label htmlFor="showConcluidos" className="cursor-pointer text-xs">Mostrar concluídos</label>
             </div>
           </div>
         </CardContent>

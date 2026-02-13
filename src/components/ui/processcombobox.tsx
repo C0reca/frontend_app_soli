@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Command, CommandInput, CommandItem, CommandList, CommandEmpty } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, normalizeString } from "@/lib/utils";
 import { Check } from "lucide-react";
 
 interface Process {
@@ -22,14 +22,11 @@ export function ProcessCombobox({ processes = [], value, onChange, isLoading }: 
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
-    const normalize = (str: string) =>
-        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
     const filteredProcesses = useMemo(() => {
-        const normSearch = normalize(search);
+        const normSearch = normalizeString(search);
         return (processes ?? []).filter((process) => {
             const titulo = process?.titulo || "";
-            return normalize(titulo).includes(normSearch);
+            return normalizeString(titulo).includes(normSearch);
         });
     }, [processes, search]);
 
@@ -42,7 +39,7 @@ export function ProcessCombobox({ processes = [], value, onChange, isLoading }: 
                     {selectedProcess?.titulo ?? "Selecione um processo"}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" side="bottom" align="start">
                 <Command>
                     <CommandInput
                         placeholder="Pesquisar processo..."

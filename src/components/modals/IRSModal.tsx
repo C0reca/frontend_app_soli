@@ -12,6 +12,7 @@ import { Client, useClients } from '@/hooks/useClients';
 import { Loader2, Plus, ExternalLink, ChevronRight, ChevronLeft, Check, User, CreditCard, FileText, Mail, Printer, MessageCircle } from 'lucide-react';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClientModal } from './ClientModal';
+import { ClientModalResumido } from './ClientModalResumido';
 import { useAgregadoFamiliar } from '@/hooks/useAgregadoFamiliar';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +44,7 @@ interface IRSModalProps {
 }
 
 const LEVANTAR_IRS_DEFAULT = '30 de junho de 2026';
+const IRS_ANO_DEFAULT = new Date().getFullYear() - 1;
 
 const STEPS = [
   { id: 1, title: 'Cliente e Ano', icon: User },
@@ -59,6 +61,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
   const isEditing = !!irs;
   const [currentStep, setCurrentStep] = useState(1);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientFormMode, setClientFormMode] = useState<'resumido' | 'completo'>('resumido');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailAddress, setEmailAddress] = useState('');
   const [createdIRSId, setCreatedIRSId] = useState<number | null>(null);
@@ -113,7 +116,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
         }
       : {
           cliente_id: 0,
-          ano: new Date().getFullYear(),
+          ano: IRS_ANO_DEFAULT,
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
           estado_entrega: undefined,
@@ -140,7 +143,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
       } else {
         reset({
           cliente_id: 0,
-          ano: new Date().getFullYear(),
+          ano: IRS_ANO_DEFAULT,
           fase: '1' as '1' | '2',
           estado: 'Por Pagar',
           estado_entrega: undefined,
@@ -229,9 +232,10 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
   const onSubmit = async (data: IRSFormData) => {
     try {
       if (isEditing && irs) {
+        const temRecibo = !!(irs.numero_recibo && String(irs.numero_recibo).trim());
         const updateData: IRSUpdate = {
           ano: data.ano,
-          fase: data.fase,
+          ...(temRecibo ? {} : { fase: data.fase }),
           estado: data.estado,
           estado_entrega: data.estado_entrega,
           levantar_irs_apos_dia: data.levantar_irs_apos_dia || undefined,
@@ -245,7 +249,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
         }
         onClose();
       } else {
-        const ano = data.ano || new Date().getFullYear();
+        const ano = data.ano || IRS_ANO_DEFAULT;
         const createData: IRSCreate = {
           cliente_id: data.cliente_id,
           ano: ano,
@@ -495,7 +499,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
     const telefoneFormatado = telefoneLimpo.startsWith('+') ? telefoneLimpo : `+351${telefoneLimpo}`;
     
     // Criar mensagem
-    const ano = watch('ano') || new Date().getFullYear();
+    const ano = watch('ano') || IRS_ANO_DEFAULT;
     const fase = watch('fase');
     const mensagem = encodeURIComponent(
       `Olá! Envio o recibo do IRS ${ano}, Fase ${fase}.`
@@ -534,7 +538,10 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setIsClientModalOpen(true)}
+                    onClick={() => {
+                      setClientFormMode('resumido');
+                      setIsClientModalOpen(true);
+                    }}
                     className="flex items-center gap-2 flex-shrink-0 h-10"
                   >
                     <Plus className="w-4 h-4" />
@@ -551,7 +558,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
               <div className="space-y-2">
                 <Label htmlFor="ano">Ano do IRS *</Label>
                 <Select
-                  value={watch('ano')?.toString() || new Date().getFullYear().toString()}
+                  value={watch('ano')?.toString() || IRS_ANO_DEFAULT.toString()}
                   onValueChange={(value) => setValue('ano', parseInt(value))}
                 >
                   <SelectTrigger>
@@ -1024,7 +1031,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
                           onCreateTask({
                             id: createdIRSId,
                             cliente_id: formData.cliente_id,
-                            ano: formData.ano || new Date().getFullYear(),
+                            ano: formData.ano || IRS_ANO_DEFAULT,
                             fase: formData.fase,
                             estado: formData.estado,
                             numero_recibo: undefined
@@ -1043,11 +1050,20 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
         </form>
       </DialogContent>
     </Dialog>
-      <ClientModal
-        isOpen={isClientModalOpen}
-        onClose={() => setIsClientModalOpen(false)}
-        onSuccess={handleClientCreated}
-      />
+      {clientFormMode === 'resumido' ? (
+        <ClientModalResumido
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
+          onSuccess={handleClientCreated}
+          onOpenFullForm={() => setClientFormMode('completo')}
+        />
+      ) : (
+        <ClientModal
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
+          onSuccess={handleClientCreated}
+        />
+      )}
     </>
   );
 };

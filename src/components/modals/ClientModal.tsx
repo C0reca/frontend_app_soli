@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Building, Loader2 } from 'lucide-react';
 import { useClients, Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
 import { IndividualClientForm } from './IndividualClientForm';
@@ -136,16 +136,64 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     if (initialData) {
       return initialData;
     }
+    const effectiveClientTipo = client?.tipo === 'coletivo' ? 'coletivo' : 'singular';
+    const commonFromClient = client ? {
+      email: client.email ?? '',
+      telefone: client.telefone ?? '',
+      morada: client.morada ?? '',
+      codigo_postal: client.codigo_postal ?? '',
+      localidade: client.localidade ?? '',
+      distrito: client.distrito ?? '',
+      pais: client.pais ?? 'Portugal',
+      iban: client.iban ?? '',
+      observacoes: client.observacoes ?? '',
+      status: (client.status || 'active') as 'active' | 'inactive',
+      internalNotes: (client as any).internalNotes ?? '',
+    } : {};
+
     if (client) {
-      // Se for edição e não tiver tipo definido, assume como singular
-      const clientWithDefaults = {
-        ...client,
-        tipo: client.tipo || 'singular',
-        status: client.status || 'active'
-      };
-      return clientWithDefaults;
+      // Edição: ao mudar de tipo, preservar dados mapeando campos
+      if (tipo === 'singular') {
+        return {
+          ...client,
+          ...commonFromClient,
+          tipo: 'singular' as const,
+          // Se estava coletivo → trazer nome da empresa e NIF para nome/NIF da pessoa
+          nome: effectiveClientTipo === 'coletivo' ? (client.nome_empresa ?? client.nome ?? '') : (client.nome ?? ''),
+          nif: effectiveClientTipo === 'coletivo' ? (client.nif_empresa ?? client.nif ?? '') : (client.nif ?? ''),
+          data_nascimento: client.data_nascimento ?? '',
+          estado_civil: client.estado_civil ?? '',
+          profissao: client.profissao ?? '',
+          num_cc: (client as any).num_cc ?? '',
+          validade_cc: client.validade_cc ?? '',
+          num_ss: (client as any).num_ss ?? '',
+          num_sns: (client as any).num_sns ?? '',
+          num_ident_civil: (client as any).num_ident_civil ?? '',
+          nacionalidade: (client as any).nacionalidade ?? '',
+        };
+      } else {
+        return {
+          ...client,
+          ...commonFromClient,
+          tipo: 'coletivo' as const,
+          // Se estava singular → copiar nome/NIF para empresa e usar nome como representante
+          nome_empresa: effectiveClientTipo === 'singular' ? (client.nome ?? (client as any).nome_empresa ?? '') : ((client as any).nome_empresa ?? ''),
+          nif_empresa: effectiveClientTipo === 'singular' ? (client.nif ?? (client as any).nif_empresa ?? '') : ((client as any).nif_empresa ?? ''),
+          representante_nome: effectiveClientTipo === 'singular' ? (client.nome ?? client.representante_nome ?? '') : (client.representante_nome ?? ''),
+          representante_nif: effectiveClientTipo === 'singular' ? (client.nif ?? client.representante_nif ?? '') : (client.representante_nif ?? ''),
+          representante_email: effectiveClientTipo === 'singular' ? (client.email ?? client.representante_email ?? '') : (client.representante_email ?? ''),
+          representante_telemovel: effectiveClientTipo === 'singular' ? (client.telefone ?? client.representante_telemovel ?? '') : (client.representante_telemovel ?? ''),
+          representante_cargo: client.representante_cargo ?? '',
+          forma_juridica: (client as any).forma_juridica ?? '',
+          data_constituicao: (client as any).data_constituicao ?? '',
+          registo_comercial: (client as any).registo_comercial ?? '',
+          cae: (client as any).cae ?? '',
+          capital_social: (client as any).capital_social ?? '',
+          certidao_permanente: (client as any).certidao_permanente ?? '',
+        };
+      }
     }
-    
+
     const baseDefaults = {
       status: 'active' as const,
       internalNotes: '',
@@ -346,30 +394,54 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {!isEditing && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tipo de Cliente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs
-                  value={tipo}
-                  onValueChange={(value) => setTipo(value as 'singular' | 'coletivo')}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tipo de Cliente</CardTitle>
+              {isEditing && (
+                <CardDescription>
+                  Pode alterar o tipo e converter os dados sem perder informação.
+                </CardDescription>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Tabs
+                value={tipo}
+                onValueChange={(value) => setTipo(value as 'singular' | 'coletivo')}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="singular" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Pessoa Singular
+                  </TabsTrigger>
+                  <TabsTrigger value="coletivo" className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Pessoa Coletiva
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setTipo(tipo === 'singular' ? 'coletivo' : 'singular')}
                 >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="singular" className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Pessoa Singular
-                    </TabsTrigger>
-                    <TabsTrigger value="coletivo" className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Pessoa Coletiva
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </CardContent>
-            </Card>
-          )}
+                  {tipo === 'singular' ? (
+                    <>
+                      <Building className="h-4 w-4 mr-2" />
+                      Converter para Pessoa Coletiva (Empresa)
+                    </>
+                  ) : (
+                    <>
+                      <User className="h-4 w-4 mr-2" />
+                      Converter para Pessoa Singular (Particular)
+                    </>
+                  )}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

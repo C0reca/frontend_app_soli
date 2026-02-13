@@ -24,11 +24,11 @@ interface ClientComboboxProps {
     isLoading?: boolean;
     /** Texto do botão quando nenhum cliente está selecionado (ex. "Selecione uma entidade") */
     placeholderEmpty?: string;
-    /** Usar quando o combobox está dentro de um Dialog (evita conflito de foco e z-index) */
+    /** @deprecated Já não é necessário — o Popover base agora tem z-index suficiente */
     insideDialog?: boolean;
 }
 
-export function ClientCombobox({ clients = [], value, onChange, isLoading, placeholderEmpty = "Selecione um cliente", insideDialog = false }: ClientComboboxProps) {
+export function ClientCombobox({ clients = [], value, onChange, isLoading, placeholderEmpty = "Selecione um cliente", insideDialog: _insideDialog = false }: ClientComboboxProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
@@ -65,7 +65,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
                 setOpen(o);
                 if (!o) setSearch("");
             }}
-            modal={!insideDialog}
+            modal={false}
         >
             <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" className="w-full justify-between">
@@ -73,7 +73,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
                 </Button>
             </PopoverTrigger>
             <PopoverContent
-                className={cn("w-[var(--radix-popover-trigger-width)] p-0", insideDialog && "z-[100]")}
+                className="w-[var(--radix-popover-trigger-width)] p-0"
             >
                 <Command shouldFilter={false}>
                     <CommandInput

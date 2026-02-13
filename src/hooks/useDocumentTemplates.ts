@@ -3,116 +3,154 @@ import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 export interface DocumentTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  format: string;
-  size: string;
-  filePath: string;
-  variables: string[];
-  createdAt: string;
-  updatedAt: string;
-  usageCount: number;
+  id: number;
+  nome: string;
+  descricao?: string;
+  categoria: string;
+  conteudo_html: string;
+  variaveis: string[];
+  criado_por?: number;
+  criado_em: string;
+  atualizado_em: string;
+  uso_count: number;
+}
+
+export interface DocumentTemplateListItem {
+  id: number;
+  nome: string;
+  descricao?: string;
+  categoria: string;
+  variaveis: string[];
+  criado_em: string;
+  atualizado_em: string;
+  uso_count: number;
 }
 
 export const useDocumentTemplates = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // List all templates (without HTML content)
   const {
     data: templates = [],
     isLoading,
-    error
-  } = useQuery({
-    queryKey: ['document-templates'],
+    error,
+  } = useQuery<DocumentTemplateListItem[]>({
+    queryKey: ['documento-templates'],
     queryFn: async () => {
-      // Mock data for development
-      const { mockDocumentTemplates } = await import('@/data/mockData');
-      return mockDocumentTemplates;
+      const response = await api.get('/documento-templates');
+      return response.data;
     },
+    staleTime: 5 * 60 * 1000,
   });
 
+  // Create
   const createTemplate = useMutation({
-    mutationFn: async (template: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'>) => {
-      const response = await api.post('/document-templates', template);
+    mutationFn: async (data: {
+      nome: string;
+      descricao?: string;
+      categoria: string;
+      conteudo_html: string;
+      variaveis?: string[];
+    }) => {
+      const response = await api.post('/documento-templates', data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document-templates'] });
-      toast({
-        title: "Sucesso",
-        description: "Template de documento criado com sucesso.",
-      });
+      queryClient.invalidateQueries({ queryKey: ['documento-templates'] });
+      toast({ title: 'Sucesso', description: 'Template criado com sucesso.' });
     },
     onError: () => {
-      toast({
-        title: "Erro",
-        description: "Erro ao criar template de documento.",
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: 'Erro ao criar template.', variant: 'destructive' });
     },
   });
 
+  // Update
   const updateTemplate = useMutation({
-    mutationFn: async ({ id, ...template }: Partial<DocumentTemplate> & { id: string }) => {
-      const response = await api.put(`/document-templates/${id}`, template);
+    mutationFn: async ({ id, ...data }: { id: number } & Partial<DocumentTemplate>) => {
+      const response = await api.put(`/documento-templates/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document-templates'] });
-      toast({
-        title: "Sucesso",
-        description: "Template de documento atualizado com sucesso.",
-      });
+      queryClient.invalidateQueries({ queryKey: ['documento-templates'] });
+      toast({ title: 'Sucesso', description: 'Template atualizado com sucesso.' });
     },
     onError: () => {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar template de documento.",
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: 'Erro ao atualizar template.', variant: 'destructive' });
     },
   });
 
+  // Delete
   const deleteTemplate = useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/document-templates/${id}`);
+    mutationFn: async (id: number) => {
+      await api.delete(`/documento-templates/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document-templates'] });
-      toast({
-        title: "Sucesso",
-        description: "Template de documento excluído com sucesso.",
-      });
+      queryClient.invalidateQueries({ queryKey: ['documento-templates'] });
+      toast({ title: 'Sucesso', description: 'Template eliminado com sucesso.' });
     },
     onError: () => {
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir template de documento.",
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: 'Erro ao eliminar template.', variant: 'destructive' });
     },
   });
 
+  // Generate DOCX
   const generateDocument = useMutation({
-    mutationFn: async ({ templateId, variables }: { templateId: string; variables: Record<string, string> }) => {
-      const response = await api.post(`/document-templates/${templateId}/generate`, { variables });
-      return response.data;
+    mutationFn: async ({
+      templateId,
+      processoId,
+      clienteId,
+    }: {
+      templateId: number;
+      processoId?: number;
+      clienteId?: number;
+    }) => {
+      const response = await api.post(
+        `/documento-templates/${templateId}/gerar`,
+        { processo_id: processoId, cliente_id: clienteId },
+        { responseType: 'blob' },
+      );
+      return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document-templates'] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast({
-        title: "Sucesso",
-        description: "Documento gerado com sucesso a partir do template.",
-      });
+    onSuccess: (response) => {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const disposition = response.headers['content-disposition'] || '';
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch ? filenameMatch[1] : 'documento.docx';
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      queryClient.invalidateQueries({ queryKey: ['documento-templates'] });
+      toast({ title: 'Sucesso', description: 'Documento gerado e guardado com sucesso.' });
     },
     onError: () => {
+      toast({ title: 'Erro', description: 'Erro ao gerar documento.', variant: 'destructive' });
+    },
+  });
+
+  // Import DOCX → HTML
+  const importDocx = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await api.post('/documento-templates/importar-docx', formData, {
+        headers: { 'Content-Type': undefined },
+      });
+      return response.data as { html: string; mensagens: string[] };
+    },
+    onSuccess: () => {
+      toast({ title: 'Sucesso', description: 'Ficheiro importado com sucesso.' });
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
       toast({
-        title: "Erro",
-        description: "Erro ao gerar documento a partir do template.",
-        variant: "destructive",
+        title: 'Erro ao importar',
+        description: detail || 'Erro ao importar ficheiro. Formatos suportados: .docx, .doc, .pdf',
+        variant: 'destructive',
       });
     },
   });
@@ -125,5 +163,19 @@ export const useDocumentTemplates = () => {
     updateTemplate,
     deleteTemplate,
     generateDocument,
+    importDocx,
   };
+};
+
+// Separate hook for fetching a single template with HTML content (for the editor)
+export const useDocumentTemplate = (id: number | null) => {
+  return useQuery<DocumentTemplate>({
+    queryKey: ['documento-templates', id],
+    queryFn: async () => {
+      const response = await api.get(`/documento-templates/${id}`);
+      return response.data;
+    },
+    enabled: !!id,
+    staleTime: 60_000,
+  });
 };

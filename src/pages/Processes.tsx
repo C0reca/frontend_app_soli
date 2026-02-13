@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
@@ -33,7 +34,7 @@ export const Processes: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [archived, setArchived] = useState<Process[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(15);
   const [filters, setFilters] = useState({
     status: 'all',
     responsavel: 'all',
@@ -42,6 +43,22 @@ export const Processes: React.FC = () => {
   });
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
   const [processToArchive, setProcessToArchive] = useState<Process | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  React.useEffect(() => {
+    const abrir = searchParams.get('abrir');
+    if (abrir && processes.length > 0) {
+      const id = parseInt(abrir, 10);
+      const p = (showArchived ? archived : processes).find((x: Process) => x.id === id || String(x.id) === abrir);
+      if (p) {
+        setSelectedProcessDetails(p);
+        setIsDetailsModalOpen(true);
+      }
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('abrir');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, processes, archived, showArchived]);
 
   React.useEffect(() => {
     if (showArchived) {
@@ -219,116 +236,75 @@ export const Processes: React.FC = () => {
         </Button>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              status: 'pendente',
-              responsavel: 'all',
-              tipo: 'all',
-              showArquivados: false,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <AlertCircle className="mr-2 h-5 w-5 text-yellow-600" />
-              Pendente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {pendenteCount}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <button
+              type="button"
+              onClick={() => setFilters({ status: 'pendente', responsavel: 'all', tipo: 'all', showArquivados: false })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
+            >
+              <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                Pendente
+              </span>
+              <span className="text-lg font-bold text-yellow-600">{pendenteCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilters({ status: 'em_curso', responsavel: 'all', tipo: 'all', showArquivados: false })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
+            >
+              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+                <Clock className="h-4 w-4 shrink-0" />
+                Em Curso
+              </span>
+              <span className="text-lg font-bold text-blue-600">{emCursoCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilters({ status: 'concluido', responsavel: 'all', tipo: 'all', showArquivados: false })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
+            >
+              <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                Concluído
+              </span>
+              <span className="text-lg font-bold text-green-600">{concluidoCount}</span>
+            </button>
+          </div>
 
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              status: 'em_curso',
-              responsavel: 'all',
-              tipo: 'all',
-              showArquivados: false,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="mr-2 h-5 w-5 text-blue-600" />
-              Em Curso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {emCursoCount}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
+              <Input
+                placeholder="Buscar processos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              status: 'concluido',
-              responsavel: 'all',
-              tipo: 'all',
-              showArquivados: false,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-              Concluído
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {concluidoCount}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros e Pesquisa */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="mr-2 h-5 w-5" />
-            Filtros e Pesquisa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar processos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Button variant="outline" onClick={clearFilters}>
-              <X className="mr-2 h-4 w-4" />
-              Limpar Filtros
+            <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 h-9">
+              <X className="mr-1.5 h-3.5 w-3.5" />
+              Limpar
             </Button>
-            <Button variant={showArchived ? 'default' : 'outline'} onClick={() => setShowArchived(!showArchived)}>
+            <Button
+              variant={showArchived ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowArchived(!showArchived)}
+              className="shrink-0 h-9"
+            >
+              <ArchiveRestore className="mr-1.5 h-3.5 w-3.5" />
               {showArchived ? 'Ver Ativos' : 'Ver Arquivados'}
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
               <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-[115px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,38 +315,28 @@ export const Processes: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Responsável</label>
-              <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {employees.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tipo</label>
-              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="registo_predial">Registo Predial</SelectItem>
-                  <SelectItem value="certidao_permanente">Certidão Permanente</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {employees.map(emp => (
+                  <SelectItem key={emp.id} value={emp.id.toString()}>{emp.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="registo_predial">Registo Predial</SelectItem>
+                <SelectItem value="certidao_permanente">Certidão Permanente</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -399,6 +365,12 @@ export const Processes: React.FC = () => {
                             {process.tipo}
                           </Badge>
                         )}
+                        {process.privado && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Lock className="h-3 w-3" />
+                            Privado
+                          </Badge>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
@@ -416,7 +388,7 @@ export const Processes: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <span className="font-medium">Responsável:</span> {process.funcionario?.nome || getEmployeeNameById(process.funcionario_id) || `ID: ${process.funcionario_id}`}
+                          <span className="font-medium">Responsável:</span> {process.funcionario?.nome ?? getEmployeeNameById(process.funcionario_id) ?? (process.funcionario_id ? `ID: ${process.funcionario_id}` : 'Não atribuído')}
                         </div>
                         <div className="col-span-2">
                           <span className="font-medium">Localização:</span> {(process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || '-')}
@@ -463,7 +435,7 @@ export const Processes: React.FC = () => {
            </div>
 
            {/* Paginação */}
-           {totalPages > 1 && (
+           {filteredProcesses.length > 0 && (
              <div className="flex items-center justify-between pt-4 border-t mt-4">
                <p className="text-sm text-muted-foreground">
                  Página {safePage} de {totalPages}

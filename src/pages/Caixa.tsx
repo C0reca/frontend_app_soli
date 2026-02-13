@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2, Download } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2, Download, Upload, Link2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,9 @@ import { Label } from '@/components/ui/label';
 import { MovimentoCaixaModal } from '@/components/modals/MovimentoCaixaModal';
 import { FecharCaixaModal } from '@/components/modals/FecharCaixaModal';
 import { useCaixa, MovimentoCaixa } from '@/hooks/useCaixa';
+import { useMovimentosBancarios } from '@/hooks/useReconciliacao';
+import { ReconciliacaoModal } from '@/components/modals/ReconciliacaoModal';
+import type { MovimentoBancario } from '@/types/financeiro';
 import api from '@/services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,6 +31,9 @@ export const Caixa: React.FC = () => {
   const [isFecharModalOpen, setIsFecharModalOpen] = useState(false);
   const [isFecharLoading, setIsFecharLoading] = useState(false);
   const [isExportingExtrato, setIsExportingExtrato] = useState(false);
+  const [reconciliacaoMovimento, setReconciliacaoMovimento] = useState<MovimentoBancario | null>(null);
+  const [filtroReconciliado, setFiltroReconciliado] = useState<string>('');
+  const extratoFileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const {
     movimentos,
@@ -40,6 +46,29 @@ export const Caixa: React.FC = () => {
     fecharCaixa,
     refetch
   } = useCaixa();
+
+  const reconciliadoParam = filtroReconciliado === '' ? undefined : filtroReconciliado === 'true';
+  const { movimentos: movimentosBancarios, isLoading: isLoadingBancarios, importarExtrato, reconciliar, desreconciliar } = useMovimentosBancarios({
+    reconciliado: reconciliadoParam,
+  });
+
+  const handleImportarExtrato = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await importarExtrato.mutateAsync({ file });
+    }
+    e.target.value = '';
+  };
+
+  const handleReconciliar = (movimentoBancarioId: number, transacaoId: number) => {
+    reconciliar.mutate({ movimentoBancarioId, transacaoId });
+  };
+
+  const handleDesreconciliar = (movimentoBancarioId: number) => {
+    if (window.confirm('Remover reconciliacao deste movimento?')) {
+      desreconciliar.mutate(movimentoBancarioId);
+    }
+  };
 
   const selectedFecho = useMemo(() => {
     if (!selectedFechoId) return null;
@@ -333,9 +362,10 @@ const formatTransferType = (value?: string | null) => {
       )}
 
       <Tabs defaultValue="movimentos" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="movimentos">Movimentos</TabsTrigger>
           <TabsTrigger value="fechos">Fechos</TabsTrigger>
+          <TabsTrigger value="reconciliacao">Reconciliacao</TabsTrigger>
         </TabsList>
 
         <TabsContent value="movimentos" className="space-y-4">
@@ -662,7 +692,110 @@ const formatTransferType = (value?: string | null) => {
             </Card>
           )}
         </TabsContent>
+
+        <TabsContent value="reconciliacao" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Reconciliacao Bancaria</CardTitle>
+                  <CardDescription>Importe extratos bancarios e reconcilie com transacoes financeiras</CardDescription>
+                </div>
+                <Button className="gap-2" onClick={() => extratoFileRef.current?.click()} disabled={importarExtrato.isPending}>
+                  <Upload className="h-4 w-4" />
+                  {importarExtrato.isPending ? 'A importar...' : 'Importar Extrato CSV'}
+                </Button>
+                <input ref={extratoFileRef} type="file" accept=".csv" className="hidden" onChange={handleImportarExtrato} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="space-y-1">
+                  <Label>Estado</Label>
+                  <Select value={filtroReconciliado} onValueChange={setFiltroReconciliado}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="false">Pendentes</SelectItem>
+                      <SelectItem value="true">Reconciliados</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {filtroReconciliado && (
+                  <div className="flex items-end">
+                    <Button variant="outline" size="sm" onClick={() => setFiltroReconciliado('')}>Limpar</Button>
+                  </div>
+                )}
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Descricao</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Saldo</TableHead>
+                      <TableHead>Referencia</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acoes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingBancarios ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">A carregar...</TableCell>
+                      </TableRow>
+                    ) : movimentosBancarios.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          Nenhum movimento bancario importado. Importe um extrato CSV para comecar.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      movimentosBancarios.map((mb) => (
+                        <TableRow key={mb.id}>
+                          <TableCell>{formatDate(mb.data)}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{mb.descricao || '-'}</TableCell>
+                          <TableCell className={cn("font-medium", Number(mb.valor) >= 0 ? "text-green-600" : "text-red-600")}>
+                            {formatCurrency(mb.valor)}
+                          </TableCell>
+                          <TableCell>{mb.saldo != null ? formatCurrency(mb.saldo) : '-'}</TableCell>
+                          <TableCell className="text-sm">{mb.referencia || '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant={mb.reconciliado ? 'default' : 'outline'}>
+                              {mb.reconciliado ? 'Reconciliado' : 'Pendente'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {mb.reconciliado ? (
+                              <Button variant="ghost" size="sm" onClick={() => handleDesreconciliar(mb.id)} title="Desreconciliar">
+                                <Unlink className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => setReconciliacaoMovimento(mb)} title="Reconciliar">
+                                <Link2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <ReconciliacaoModal
+        isOpen={!!reconciliacaoMovimento}
+        onClose={() => setReconciliacaoMovimento(null)}
+        movimento={reconciliacaoMovimento}
+        onReconciliar={handleReconciliar}
+      />
 
       <MovimentoCaixaModal
         isOpen={isMovimentoModalOpen}

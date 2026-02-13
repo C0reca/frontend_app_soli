@@ -17,7 +17,7 @@ import { DocumentTemplates } from "@/pages/DocumentTemplates";
 import { Documents } from "@/pages/Documents";
 import { Calendar } from "@/pages/Calendar";
 import { RegistosPrediais } from "@/pages/RegistosPrediais";
-import { Caixa } from "@/pages/Caixa";
+// import { Caixa } from "@/pages/Caixa";
 import { Dossies } from "@/pages/Dossies";
 import { IRS } from "@/pages/IRS";
 import NotFound from "./pages/NotFound";
@@ -26,6 +26,12 @@ import { MinimizeDock } from "@/components/MinimizeDock";
 import { MinimizeRenderer } from "@/components/MinimizeRenderer";
 import { AdminImport } from "@/pages/AdminImport";
 import { ServicosExternos } from "@/pages/ServicosExternos";
+// import { ContaCorrente } from "@/pages/ContaCorrente";
+import { Profile } from "@/pages/Profile";
+import { Notifications } from "@/pages/Notifications";
+import { ErroReports } from "@/pages/ErroReports";
+import { Changelog } from "@/pages/Changelog";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,11 +59,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
-  
+
   if (user?.role !== 'admin') {
     return <Navigate to="/clientes" replace />;
   }
-  
+
+  return <>{children}</>;
+};
+
+const ManagerRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+
+  if (user?.role !== 'admin' && user?.role !== 'manager') {
+    return <Navigate to="/clientes" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -81,12 +97,17 @@ const AppRoutes = () => {
         <Route path="tarefas" element={<Tasks />} />
         <Route path="registos-prediais" element={<RegistosPrediais />} />
         <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />
-        <Route path="document-templates" element={<AdminRoute><DocumentTemplates /></AdminRoute>} />
-        <Route path="documentos" element={<Documents />} />
+        <Route path="document-templates" element={<ManagerRoute><DocumentTemplates /></ManagerRoute>} />
+        <Route path="documentos" element={<ManagerRoute><Documents /></ManagerRoute>} />
         <Route path="calendario" element={<Calendar />} />
-        <Route path="caixa" element={<Caixa />} />
+        {/* <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} /> */}
+        {/* <Route path="conta-corrente" element={<ManagerRoute><ContaCorrente /></ManagerRoute>} /> */}
         <Route path="admin-import" element={<AdminRoute><AdminImport /></AdminRoute>} />
         <Route path="servicos-externos" element={<ServicosExternos />} />
+        <Route path="perfil" element={<Profile />} />
+        <Route path="notificacoes" element={<Notifications />} />
+        <Route path="erro-reports" element={<AdminRoute><ErroReports /></AdminRoute>} />
+        <Route path="changelog" element={<Changelog />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -99,13 +120,15 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <MinimizeProvider>
-            <AppRoutes />
-            <MinimizeDock />
-            <MinimizeRenderer />
-          </MinimizeProvider>
-        </BrowserRouter>
+        <ErrorBoundary>
+          <BrowserRouter>
+            <MinimizeProvider>
+              <AppRoutes />
+              <MinimizeDock />
+              <MinimizeRenderer />
+            </MinimizeProvider>
+          </BrowserRouter>
+        </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

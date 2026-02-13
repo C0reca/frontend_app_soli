@@ -6,12 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Normaliza uma string removendo acentos e convertendo para minúsculas
- * Útil para pesquisas que devem funcionar com e sem acentos
+ * Normaliza uma string para pesquisa: remove acentos, converte para minúsculas e remove espaços.
+ * Permite pesquisar com e sem acentos, maiúsculas/minúsculas e com ou sem espaços.
  * @param str - String a ser normalizada
- * @returns String normalizada sem acentos e em minúsculas
+ * @returns String normalizada (sem acentos, minúscula, sem espaços)
  */
 export function normalizeString(str: string): string {
   if (!str) return '';
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, '');
 }

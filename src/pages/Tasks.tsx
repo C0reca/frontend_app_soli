@@ -1,27 +1,41 @@
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2 } from 'lucide-react';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, CalendarClock } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useProcesses } from '@/hooks/useProcesses';
 import { TaskModal } from '@/components/modals/TaskModal';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { normalizeString } from '@/lib/utils';
+import type { Process } from '@/hooks/useProcesses';
 
 export const Tasks: React.FC = () => {
-  const { tasks, isLoading, deleteTask, updateTaskStatus, setExternal } = useTasks();
+  const { tasks, isLoading, deleteTask, updateTaskStatus, updateTask, setExternal } = useTasks();
   const { employees } = useEmployees();
   const { processes } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInFullContent, setSearchInFullContent] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [concludeDialogOpen, setConcludeDialogOpen] = useState(false);
+  const [taskToConclude, setTaskToConclude] = useState<Task | null>(null);
+  const [concludeNotes, setConcludeNotes] = useState('');
+  const [postponeDialogOpen, setPostponeDialogOpen] = useState(false);
+  const [taskToPostpone, setTaskToPostpone] = useState<Task | null>(null);
+  const [postponeDate, setPostponeDate] = useState('');
+  const [postponeMotivo, setPostponeMotivo] = useState('');
   const [filters, setFilters] = useState({
     status: 'all',
     responsavel: 'all',
@@ -30,6 +44,40 @@ export const Tasks: React.FC = () => {
     atrasadas: false,
     showConcluidas: false,
   });
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  React.useEffect(() => {
+    const abrir = searchParams.get('abrir');
+    if (abrir && tasks.length > 0) {
+      const t = tasks.find((x: Task) => String(x.id) === abrir);
+      if (t) {
+        setSelectedTaskDetails(t);
+        setIsDetailsModalOpen(true);
+      }
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('abrir');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, tasks]);
+
+  const getProcessForTask = (task: Task): Process | undefined =>
+    task.processo_id ? processes.find((p) => p.id === task.processo_id) : undefined;
+
+  const getSearchableTextForTask = (task: Task, includeFullContent: boolean): string => {
+    const processo = getProcessForTask(task);
+    const parts: string[] = [
+      task.titulo ?? '',
+      processo?.titulo ?? '',
+      processo?.cliente?.nome ?? '',
+      processo?.dossie?.entidade?.nome ?? '',
+      processo?.dossie?.entidade?.nome_empresa ?? '',
+      processo?.dossie?.numero ?? '',
+    ];
+    if (includeFullContent && (task.descricao ?? '').trim()) {
+      parts.push(task.descricao!);
+    }
+    return parts.join(' ');
+  };
 
   // Helper functions
   const isOverdue = (dataFim: string | null, concluida: boolean) => {
@@ -52,8 +100,9 @@ export const Tasks: React.FC = () => {
 
   // Helper function to check if a task matches filters (excluding concluida check for subtasks)
   const taskMatchesFilters = (task: Task, checkConcluida: boolean = true) => {
-    const matchesSearch = task.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchableText = getSearchableTextForTask(task, searchInFullContent);
+    const matchesSearch = !searchTerm.trim() ||
+      normalizeString(searchableText).includes(normalizeString(searchTerm));
     
     if (checkConcluida) {
       const isConcluida = task.concluida;
@@ -94,16 +143,17 @@ export const Tasks: React.FC = () => {
 
   const visibleMainTaskIds = new Set(filteredMainTasks.map((t) => String(t.id)));
 
-  // Incluir TODAS as subtarefas dos compromissos visíveis, para o número "Sub-compromissos: N" bater com as linhas
+  // Incluir subtarefas pendentes dos compromissos visíveis (sub tarefas concluídas não aparecem)
   const shouldShowConcluidas = filters.showConcluidas || filters.status === 'concluidas';
   const filteredSubtasks = tasks.filter((task) => {
     if (!task.parent_id) return false;
+    if (task.concluida) return false; // subtarefas concluídas não aparecem
     const parentId = String(task.parent_id);
     const parentTask = tasks.find((t) => String(t.id) === parentId);
     if (!parentTask) return false;
-    // Pai visível na lista principal → mostrar todas as suas subtarefas (sem filtrar por status/prioridade)
+    // Pai visível na lista principal → mostrar subtarefas pendentes
     if (visibleMainTaskIds.has(parentId)) return true;
-    // Pai concluído mas a mostrar concluídas → mostrar todas as suas subtarefas
+    // Pai concluído mas a mostrar concluídas → mostrar subtarefas pendentes
     if (parentTask.concluida && shouldShowConcluidas) return true;
     return false;
   });
@@ -261,19 +311,31 @@ export const Tasks: React.FC = () => {
                   </Button>
                 )}
                 {!task.concluida ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleStatusChange(task.id, true); }}
-                    className="text-green-600 hover:text-green-700"
-                  >
-                    <CheckSquare className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleStatusChange(task, true); }}
+                      className="text-green-600 hover:text-green-700"
+                      title="Concluir"
+                    >
+                      <CheckSquare className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handlePostponeClick(task); }}
+                      className="text-amber-600 hover:text-amber-700"
+                      title="Adiar tarefa"
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleStatusChange(task.id, false); }}
+                    onClick={(e) => { e.stopPropagation(); handleStatusChange(task, false); }}
                     className="text-yellow-600 hover:text-yellow-700"
                   >
                     <Clock className="h-4 w-4" />
@@ -346,11 +408,52 @@ export const Tasks: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: string, concluida: boolean) => {
-    await updateTaskStatus.mutateAsync({ id, concluida });
+  const handleStatusChange = (task: Task, concluida: boolean) => {
+    if (concluida) {
+      setTaskToConclude(task);
+      setConcludeNotes('');
+      setConcludeDialogOpen(true);
+    } else {
+      updateTaskStatus.mutateAsync({ id: task.id, concluida: false });
+    }
+  };
+
+  const handleConfirmConclude = async () => {
+    if (!taskToConclude) return;
+    await updateTaskStatus.mutateAsync({
+      id: taskToConclude.id,
+      concluida: true,
+      notas_conclusao: concludeNotes.trim() || undefined,
+    });
+    setConcludeDialogOpen(false);
+    setTaskToConclude(null);
+    setConcludeNotes('');
+  };
+
+  const handlePostponeClick = (task: Task) => {
+    const current = task.data_fim ? new Date(task.data_fim) : new Date();
+    setTaskToPostpone(task);
+    setPostponeDate(current.toISOString().slice(0, 10));
+    setPostponeMotivo(task.motivo_adiamento ?? '');
+    setPostponeDialogOpen(true);
+  };
+
+  const handleConfirmPostpone = async () => {
+    if (!taskToPostpone || !postponeDate.trim()) return;
+    await updateTask.mutateAsync({
+      id: taskToPostpone.id,
+      data_fim: postponeDate.trim() + 'T12:00:00',
+      motivo_adiamento: postponeMotivo.trim() || undefined,
+    });
+    setPostponeDialogOpen(false);
+    setTaskToPostpone(null);
+    setPostponeDate('');
+    setPostponeMotivo('');
   };
 
   const clearFilters = () => {
+    setSearchTerm('');
+    setSearchInFullContent(false);
     setFilters({
       status: 'all',
       responsavel: 'all',
@@ -401,120 +504,74 @@ export const Tasks: React.FC = () => {
         </Button>
       </div>
 
-      {/* Search and Filters */}
+      {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <button
+              type="button"
+              onClick={() => setFilters({ status: 'pendentes', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: false, showConcluidas: true })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
+            >
+              <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                Pendentes
+              </span>
+              <span className="text-lg font-bold text-yellow-600">{tasks.filter((t: Task) => !t.concluida).length}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilters({ status: 'all', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: true, showConcluidas: true })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
+            >
+              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+                <Clock className="h-4 w-4 shrink-0" />
+                Atrasadas
+              </span>
+              <span className="text-lg font-bold text-blue-600">{tasks.filter((t: Task) => isOverdue(t.data_fim, t.concluida)).length}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilters({ status: 'concluidas', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: false, showConcluidas: true })}
+              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
+            >
+              <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
+                <CheckSquare className="h-4 w-4 shrink-0" />
+                Concluídas
+              </span>
+              <span className="text-lg font-bold text-green-600">{tasks.filter((t: Task) => t.concluida).length}</span>
+            </button>
+          </div>
 
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              status: 'pendentes',
-              responsavel: 'all',
-              prioridade: 'all',
-              tipo: 'all',
-              atrasadas: false,
-              showConcluidas: true,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <AlertCircle className="mr-2 h-5 w-5 text-yellow-600" />
-              Pendentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {tasks.filter((t: Task) => !t.concluida).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              status: 'all',
-              responsavel: 'all',
-              prioridade: 'all',
-              tipo: 'all',
-              atrasadas: true,
-              showConcluidas: true,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="mr-2 h-5 w-5 text-blue-600" />
-              Atrasadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {tasks.filter((t: Task) => isOverdue(t.data_fim, t.concluida)).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            setFilters({
-              status: 'concluidas',
-              responsavel: 'all',
-              prioridade: 'all',
-              tipo: 'all',
-              atrasadas: false,
-              showConcluidas: true,
-            });
-          }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <CheckSquare className="mr-2 h-5 w-5 text-green-600" />
-              Concluídas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {tasks.filter((t: Task) => t.concluida).length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="mr-2 h-5 w-5" />
-            Filtros e Pesquisa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
               <Input
-                  placeholder="Pesquisar tarefas..."
+                placeholder="Pesquisar por nome, entidade, processo ou número do arquivo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-8 h-9 text-sm"
               />
             </div>
-          </div>
-            <Button variant="outline" onClick={clearFilters}>
-              <X className="mr-2 h-4 w-4" />
-              Limpar Filtros
+            <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 h-9">
+              <X className="mr-1.5 h-3.5 w-3.5" />
+              Limpar
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="searchInFullContent"
+                checked={searchInFullContent}
+                onCheckedChange={(checked) => setSearchInFullContent(!!checked)}
+              />
+              <label htmlFor="searchInFullContent" className="cursor-pointer">Pesquisar na descrição</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
               <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-[110px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -523,79 +580,59 @@ export const Tasks: React.FC = () => {
                   <SelectItem value="concluidas">Concluídas</SelectItem>
                 </SelectContent>
               </Select>
-                      </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Responsável</label>
-              <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {employees.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-                      </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Prioridade</label>
-              <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="media">Média</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-                    </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tipo</label>
-              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="reuniao">Reunião</SelectItem>
-                  <SelectItem value="telefonema">Telefonema</SelectItem>
-                  <SelectItem value="tarefa">Compromisso</SelectItem>
-                </SelectContent>
-              </Select>
-                     </div>
-
-            <div className="flex items-center space-x-2">
+            </div>
+            <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {employees.map(emp => (
+                  <SelectItem key={emp.id} value={emp.id.toString()}>{emp.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
+              <SelectTrigger className="w-[95px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="baixa">Baixa</SelectItem>
+                <SelectItem value="media">Média</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
+              <SelectTrigger className="w-[110px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="reuniao">Reunião</SelectItem>
+                <SelectItem value="telefonema">Telefonema</SelectItem>
+                <SelectItem value="tarefa">Compromisso</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
               <Checkbox
                 id="atrasadas"
                 checked={filters.atrasadas}
                 onCheckedChange={(checked) => setFilters(prev => ({ ...prev, atrasadas: !!checked }))}
               />
-              <label htmlFor="atrasadas" className="text-sm font-medium">
-                Apenas atrasadas
-              </label>
+              <label htmlFor="atrasadas" className="cursor-pointer whitespace-nowrap">Atrasadas</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="showConcluidas"
+                checked={filters.showConcluidas}
+                onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidas: !!checked }))}
+              />
+              <label htmlFor="showConcluidas" className="cursor-pointer whitespace-nowrap">Mostrar concluídos</label>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="showConcluidas"
-              checked={filters.showConcluidas}
-              onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidas: !!checked }))}
-            />
-            <label htmlFor="showConcluidas" className="text-sm font-medium">
-              Mostrar compromissos concluídos (arquivados)
-            </label>
-                   </div>
-                 </CardContent>
-               </Card>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -622,6 +659,77 @@ export const Tasks: React.FC = () => {
          onClose={handleCloseDetailsModal}
          task={selectedTaskDetails}
        />
+
+       <Dialog open={concludeDialogOpen} onOpenChange={setConcludeDialogOpen}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle>Concluir tarefa</DialogTitle>
+             <DialogDescription>
+               Descreva brevemente o que foi feito ou o motivo do encerramento (opcional). Este texto ficará registado no histórico do processo.
+             </DialogDescription>
+           </DialogHeader>
+           <div className="space-y-2 py-2">
+             <Label htmlFor="conclude-notes">Descrição</Label>
+             <Textarea
+               id="conclude-notes"
+               placeholder="Ex.: Documentos entregues no cartório. Cliente notificado."
+               value={concludeNotes}
+               onChange={(e) => setConcludeNotes(e.target.value)}
+               rows={4}
+               className="resize-none"
+             />
+           </div>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => { setConcludeDialogOpen(false); setTaskToConclude(null); setConcludeNotes(''); }}>
+               Cancelar
+             </Button>
+             <Button onClick={handleConfirmConclude} disabled={updateTaskStatus.isPending}>
+               Concluir
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+
+       <Dialog open={postponeDialogOpen} onOpenChange={setPostponeDialogOpen}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle>Adiar tarefa</DialogTitle>
+             <DialogDescription>
+               Indique a nova data de conclusão e, se quiser, o motivo do adiamento.
+             </DialogDescription>
+           </DialogHeader>
+           <div className="space-y-4 py-2">
+             <div className="space-y-2">
+               <Label htmlFor="postpone-date-list">Nova data</Label>
+               <Input
+                 id="postpone-date-list"
+                 type="date"
+                 value={postponeDate}
+                 onChange={(e) => setPostponeDate(e.target.value)}
+               />
+             </div>
+             <div className="space-y-2">
+               <Label htmlFor="postpone-motivo-list">Motivo do adiamento (opcional)</Label>
+               <Textarea
+                 id="postpone-motivo-list"
+                 placeholder="Ex.: Aguardar documentação do cliente."
+                 value={postponeMotivo}
+                 onChange={(e) => setPostponeMotivo(e.target.value)}
+                 rows={3}
+                 className="resize-none"
+               />
+             </div>
+           </div>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => { setPostponeDialogOpen(false); setTaskToPostpone(null); setPostponeDate(''); setPostponeMotivo(''); }}>
+               Cancelar
+             </Button>
+             <Button onClick={handleConfirmPostpone} disabled={updateTask.isPending || !postponeDate.trim()}>
+               Adiar
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
      </div>
    );
  };

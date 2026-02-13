@@ -24,12 +24,15 @@ interface ClienteContactosTabProps {
   clienteId?: number;
   contactosLocais?: ClienteContacto[];
   onContactosChange?: (contactos: ClienteContacto[]) => void;
+  /** Quando true, renderiza dentro de um Card uniforme com as outras secções */
+  uniformCard?: boolean;
 }
 
 export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({ 
   clienteId, 
   contactosLocais,
-  onContactosChange 
+  onContactosChange,
+  uniformCard = false,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -228,6 +231,144 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
   const telefones = contactos.filter(c => c.tipo === 'telefone');
   const emails = contactos.filter(c => c.tipo === 'email');
 
+  const addButton = (
+    <Button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAdd();
+      }}
+      size="sm"
+    >
+      <Plus className="h-4 w-4 mr-2" />
+      Adicionar Contacto
+    </Button>
+  );
+
+  const renderContactRow = (contacto: ClienteContacto, globalIndex: number) => (
+    <div key={contacto.id || globalIndex} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{contacto.valor}</span>
+          {contacto.principal && (
+            <Badge variant="outline" className="text-xs px-1.5 py-0">Principal</Badge>
+          )}
+        </div>
+        {contacto.descricao && (
+          <p className="text-xs text-muted-foreground mt-0.5">{contacto.descricao}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(globalIndex); }}>
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(globalIndex); }}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const content = isLoading ? (
+    <div className="text-center py-6 text-sm text-muted-foreground">A carregar...</div>
+  ) : contactos.length === 0 ? (
+    <div className="rounded-lg border bg-muted/50 p-6 text-center text-sm text-muted-foreground">
+      Nenhum contacto adicionado ainda.
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {telefones.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            Telefones
+          </h4>
+          <div className="space-y-2">
+            {telefones.map((c) => renderContactRow(c, contactos.indexOf(c)))}
+          </div>
+        </div>
+      )}
+      {emails.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Emails
+          </h4>
+          <div className="space-y-2">
+            {emails.map((c) => renderContactRow(c, contactos.indexOf(c)))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  if (uniformCard) {
+    return (
+      <>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Phone className="h-5 w-5" />
+                Contactos
+              </CardTitle>
+              {addButton}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {content}
+          </CardContent>
+        </Card>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            if (!open && !createMutation.isPending && !updateMutation.isPending) {
+              setIsDialogOpen(false);
+              resetForm();
+            }
+          }}
+        >
+          <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>{editingIndex !== null ? 'Editar Contacto' : 'Adicionar Contacto'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="tipo">Tipo</Label>
+                <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value as 'telefone' | 'email' })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="telefone">Telefone</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="valor">{formData.tipo === 'telefone' ? 'Telefone' : 'Email'} *</Label>
+                <Input id="valor" type={formData.tipo === 'email' ? 'email' : 'tel'} value={formData.valor} onChange={(e) => setFormData({ ...formData, valor: e.target.value })} placeholder={formData.tipo === 'telefone' ? '+351 123 456 789' : 'email@exemplo.com'} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descricao">Descrição (opcional)</Label>
+                <Input id="descricao" value={formData.descricao || ''} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} placeholder="Ex: Casa, Trabalho, Principal" />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="principal" checked={formData.principal} onChange={(e) => setFormData({ ...formData, principal: e.target.checked })} className="rounded" />
+                <Label htmlFor="principal" className="cursor-pointer">Marcar como principal</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>Cancelar</Button>
+              <Button onClick={(e) => handleSave(e as any)} disabled={createMutation.isPending || updateMutation.isPending}>
+                {editingIndex !== null ? 'Guardar' : 'Adicionar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -235,154 +376,9 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
           <h3 className="text-base font-semibold">Contactos</h3>
           <p className="text-xs text-muted-foreground">Gerir todos os contactos do cliente</p>
         </div>
-        <Button 
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleAdd();
-          }} 
-          size="sm"
-          className="text-sm"
-        >
-          <Plus className="h-3 w-3 mr-1" />
-          Adicionar Contacto
-        </Button>
+        {addButton}
       </div>
-
-      {isLoading ? (
-        <div className="text-center py-6 text-sm text-muted-foreground">A carregar...</div>
-      ) : contactos.length === 0 ? (
-        <Card>
-          <CardContent className="py-6 text-center text-sm text-muted-foreground">
-            Nenhum contacto adicionado ainda.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {telefones.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center space-x-2">
-                  <Phone className="h-4 w-4" />
-                  <span>Telefones</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {telefones.map((contacto, index) => {
-                    const globalIndex = contactos.indexOf(contacto);
-                    return (
-                      <div key={contacto.id || globalIndex} className="flex items-center justify-between p-2 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{contacto.valor}</span>
-                            {contacto.principal && (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0">Principal</Badge>
-                            )}
-                          </div>
-                          {contacto.descricao && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{contacto.descricao}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleEdit(globalIndex);
-                            }}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDelete(globalIndex);
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {emails.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center space-x-2">
-                  <Mail className="h-4 w-4" />
-                  <span>Emails</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {emails.map((contacto, index) => {
-                    const globalIndex = contactos.indexOf(contacto);
-                    return (
-                      <div key={contacto.id || globalIndex} className="flex items-center justify-between p-2 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{contacto.valor}</span>
-                            {contacto.principal && (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0">Principal</Badge>
-                            )}
-                          </div>
-                          {contacto.descricao && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{contacto.descricao}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleEdit(globalIndex);
-                            }}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDelete(globalIndex);
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+      {content}
 
       <Dialog 
         open={isDialogOpen} 

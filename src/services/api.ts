@@ -63,6 +63,14 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    if (error.response?.status === 403) {
+      const detail = error.response?.data?.detail || '';
+      if (typeof detail === 'string' && detail.includes('IP')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login?erro=ip';
+      }
+    }
     return Promise.reject(error);
   }
 );

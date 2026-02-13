@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Client, IndividualClient } from '@/hooks/useClients';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { ClientModal } from '@/components/modals/ClientModal';
+import { ClientModalResumido } from '@/components/modals/ClientModalResumido';
 import { useToast } from '@/hooks/use-toast';
 
 interface AgregadoFamiliarTabProps {
@@ -49,6 +50,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
   const [selectedClienteId, setSelectedClienteId] = useState<number | undefined>();
   const [tipoRelacao, setTipoRelacao] = useState<'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma'>('conjuge');
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientFormMode, setClientFormMode] = useState<'resumido' | 'completo'>('resumido');
   
   // Estados para o modal de atualização de morada
   const [isMoradaModalOpen, setIsMoradaModalOpen] = useState(false);
@@ -734,6 +736,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    setClientFormMode('resumido');
                     setIsClientModalOpen(true);
                   }}
                   className="flex items-center gap-2"
@@ -796,11 +799,20 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
         </DialogContent>
       </Dialog>
 
-      <ClientModal
-        isOpen={isClientModalOpen}
-        onClose={() => setIsClientModalOpen(false)}
-        onSuccess={handleClientCreated}
-      />
+      {clientFormMode === 'resumido' ? (
+        <ClientModalResumido
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
+          onSuccess={handleClientCreated}
+          onOpenFullForm={() => setClientFormMode('completo')}
+        />
+      ) : (
+        <ClientModal
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
+          onSuccess={handleClientCreated}
+        />
+      )}
 
       {/* Modal de Atualização de Password */}
       <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>

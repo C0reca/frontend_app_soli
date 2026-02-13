@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CalendarIcon, ExternalLink, RefreshCw } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useRegistosPrediais } from '@/hooks/useRegistosPrediais';
@@ -11,7 +10,6 @@ import { useEmployees } from '@/hooks/useEmployees';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -36,13 +34,11 @@ export const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const { tasks } = useTasks();
   const { processes } = useProcesses();
   const { registos } = useRegistosPrediais();
   const { employees } = useEmployees();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   const employeeColors = useMemo(() => {
     const fallback = ['#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899'];
@@ -136,38 +132,12 @@ export const Calendar: React.FC = () => {
 
   const selectedDateEvents = events.filter(event => isSameDay(event.date, selectedDate));
 
-  const connectGoogleCalendar = async () => {
-    try {
-      toast({ title: 'Google Calendar', description: 'Funcionalidade de sincronização em desenvolvimento.' });
-    } catch (error) {
-      toast({ title: 'Erro', description: 'Erro ao conectar com Google Calendar.', variant: 'destructive' });
-    }
-  };
-
-  const syncCalendar = async () => {
-    try {
-      toast({ title: 'Sincronização', description: 'Dados sincronizados com sucesso.' });
-    } catch (error) {
-      toast({ title: 'Erro', description: 'Erro ao sincronizar dados.', variant: 'destructive' });
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <CalendarIcon className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Calendário</h1>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={connectGoogleCalendar} className="flex items-center space-x-2">
-            <ExternalLink className="h-4 w-4" />
-            <span>Google Calendar</span>
-          </Button>
-          <Button onClick={syncCalendar} className="flex items-center space-x-2">
-            <RefreshCw className="h-4 w-4" />
-            <span>Sincronizar</span>
-          </Button>
         </div>
       </div>
 

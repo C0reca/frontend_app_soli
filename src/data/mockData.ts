@@ -3,7 +3,6 @@ import { Employee } from '@/hooks/useEmployees';
 import { Process } from '@/hooks/useProcesses';
 import { Task } from '@/hooks/useTasks';
 import { Template } from '@/hooks/useTemplates';
-import { Document } from '@/hooks/useDocuments';
 import { DashboardKPIs } from '@/hooks/useDashboard';
 
 export const mockClients: Client[] = [
@@ -183,30 +182,7 @@ export const mockTemplates: Template[] = [
   }
 ];
 
-export const mockDocuments: Document[] = [
-  {
-    id: '1',
-    name: 'Contrato Cliente A.pdf',
-    type: 'PDF',
-    size: '2.5 MB',
-    uploadedBy: 'Ana Costa',
-    uploadedAt: '2024-03-01T10:30:00Z',
-    process: 'Processo Cliente A',
-    status: 'active',
-    version: 1
-  },
-  {
-    id: '2',
-    name: 'Proposta Cliente B.docx',
-    type: 'DOCX',
-    size: '1.2 MB',
-    uploadedBy: 'Carlos Oliveira',
-    uploadedAt: '2024-03-05T15:45:00Z',
-    process: 'Processo Cliente B',
-    status: 'active',
-    version: 1
-  }
-];
+export const mockDocuments: any[] = [];
 
 export const mockDocumentTemplates = [
   {
