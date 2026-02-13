@@ -34,6 +34,27 @@ interface UpdateEmployeePayload extends Partial<CreateEmployeePayload> {
   senha?: string;
 }
 
+export interface EmployeeListItem {
+  id: number;
+  nome: string;
+  cor?: string;
+}
+
+/**
+ * Hook leve para dropdowns de seleção de funcionário.
+ * Usa GET /funcionarios/lista — acessível a qualquer utilizador autenticado.
+ */
+export const useEmployeeList = () => {
+  return useQuery<EmployeeListItem[]>({
+    queryKey: ['employees-list'],
+    queryFn: async () => {
+      const response = await api.get('/funcionarios/lista');
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 min
+  });
+};
+
 export const useEmployees = () => {
   const queryClient = useQueryClient();
 

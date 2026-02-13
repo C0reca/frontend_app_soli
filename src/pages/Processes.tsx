@@ -16,14 +16,14 @@ import { ProcessLocationModal } from '@/components/modals/ProcessLocationModal';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { normalizeString } from '@/lib/utils';
 
 
 export const Processes: React.FC = () => {
   const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess } = useProcesses();
   const { clients } = useClients();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

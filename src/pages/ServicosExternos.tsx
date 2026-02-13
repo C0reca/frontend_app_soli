@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { CheckSquare } from 'lucide-react';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses } from '@/hooks/useProcesses';
 import { Task } from '@/hooks/useTasks';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
@@ -22,7 +22,7 @@ export const ServicosExternos: React.FC = () => {
   const { toast } = useToast();
   const [items, setItems] = useState<ExternoTask[]>([]);
   const [loading, setLoading] = useState(false);
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { processes } = useProcesses();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge';
 import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin, CalendarClock, Folder, UserPlus } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   onClose,
   task,
 }) => {
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { processes } = useProcesses();
   const { generateTaskPDF, updateTaskStatus, updateTask, tasks, getTaskById } = useTasks();
   const queryClient = useQueryClient();

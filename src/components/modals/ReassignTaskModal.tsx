@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, UserPlus } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { useToast } from '@/hooks/use-toast';
 
 interface ReassignTaskModalProps {
@@ -25,7 +25,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
   onSuccess,
 }) => {
   const { createTask, updateTask, updateTaskStatus } = useTasks();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { toast } = useToast();
   const [novoResponsavelId, setNovoResponsavelId] = useState<number | null>(null);
   const [subtarefasParaMover, setSubtarefasParaMover] = useState<Set<string>>(new Set());

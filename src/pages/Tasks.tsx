@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, CalendarClock } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses } from '@/hooks/useProcesses';
 import { TaskModal } from '@/components/modals/TaskModal';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
@@ -21,7 +21,7 @@ import type { Process } from '@/hooks/useProcesses';
 
 export const Tasks: React.FC = () => {
   const { tasks, isLoading, deleteTask, updateTaskStatus, updateTask, setExternal } = useTasks();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { processes } = useProcesses();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInFullContent, setSearchInFullContent] = useState(false);

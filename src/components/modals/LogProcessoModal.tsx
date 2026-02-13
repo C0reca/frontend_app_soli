@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLogsProcesso, LogProcessoCreate } from '@/hooks/useLogsProcesso';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { Minimize2, Upload, X, FileIcon } from 'lucide-react';
 import api from '@/services/api';
@@ -38,7 +38,7 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
   log = null,
 }) => {
   const { createLog, updateLog, getTiposLog } = useLogsProcesso();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { minimize } = useMinimize();
   const isEditing = !!log;
   const [docs, setDocs] = useState<{id:number; nome_original:string}[]>([]);

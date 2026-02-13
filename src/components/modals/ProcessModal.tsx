@@ -22,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useProcesses, Process } from "@/hooks/useProcesses";
 import { useClients } from "@/hooks/useClients";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useEmployeeList } from "@/hooks/useEmployees";
 import { useDossies } from "@/hooks/useDossies";
 import {
     Form,
@@ -129,7 +129,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                           }) => {
     const { createProcess, updateProcess } = useProcesses();
     const { clients = [], isLoading: isClientsLoading } = useClients();
-    const { employees = [], isLoading: isEmployeesLoading } = useEmployees();
+    const { data: employees = [], isLoading: isEmployeesLoading } = useEmployeeList();
     const { minimize } = useMinimize();
 
     const [step, setStep] = useState(0);

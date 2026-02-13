@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useClients } from '@/hooks/useClients';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ProcessCombobox } from '@/components/ui/processcombobox';
@@ -51,7 +51,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
   const { createTask, updateTask } = useTasks();
   const { processes, isLoading: isProcessesLoading } = useProcesses();
   const { clients = [], isLoading: isClientsLoading } = useClients();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { user } = useAuth();
   const { minimize } = useMinimize();
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);

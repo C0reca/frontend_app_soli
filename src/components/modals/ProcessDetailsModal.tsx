@@ -22,13 +22,13 @@ import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Client, useClients } from '@/hooks/useClients';
 import { ProcessoEntidadesSecundariasTab } from '@/components/ProcessoEntidadesSecundariasTab';
 import { GenerateFromTemplateModal } from '@/components/modals/GenerateFromTemplateModal';
-// import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
+import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -96,7 +96,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const canManageVisibility = user?.role === 'admin' || user?.role === 'manager';
   const [privadoLocal, setPrivadoLocal] = React.useState(false);
   const [autorizadosIdsLocal, setAutorizadosIdsLocal] = React.useState<number[]>([]);
@@ -494,11 +494,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Compromissos</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
-              {/* <TabsTrigger value="financeiro">Financeiro</TabsTrigger> */}
+              <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
               <TabsTrigger value="calendar">Calendário</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
@@ -1008,13 +1008,13 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               </div>
             </TabsContent>
 
-            {/* <TabsContent value="financeiro" className="space-y-6 mt-6">
+            <TabsContent value="financeiro" className="space-y-6 mt-6">
               {process && process.cliente_id ? (
                 <ProcessFinanceiroTab processoId={process.id} clienteId={process.cliente_id} />
               ) : (
                 <p className="text-muted-foreground text-center py-8">Processo sem cliente associado.</p>
               )}
-            </TabsContent> */}
+            </TabsContent>
 
             <TabsContent value="calendar" className="space-y-6 mt-6">
               <h3 className="text-lg font-semibold">Calendário do processo</h3>

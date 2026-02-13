@@ -6,7 +6,7 @@ import { CalendarIcon } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useProcesses } from '@/hooks/useProcesses';
 import { useRegistosPrediais } from '@/hooks/useRegistosPrediais';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useEmployeeList } from '@/hooks/useEmployees';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,7 +37,7 @@ export const Calendar: React.FC = () => {
   const { tasks } = useTasks();
   const { processes } = useProcesses();
   const { registos } = useRegistosPrediais();
-  const { employees } = useEmployees();
+  const { data: employees = [] } = useEmployeeList();
   const { user } = useAuth();
 
   const employeeColors = useMemo(() => {
