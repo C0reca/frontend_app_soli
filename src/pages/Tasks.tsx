@@ -222,7 +222,7 @@ export const Tasks: React.FC = () => {
                 <div className="flex items-center space-x-4 text-xs text-gray-500">
                   <span><strong>Processo:</strong> {task.processo_id ? (() => {
                     const processo = processes.find(p => p.id === task.processo_id);
-                    return processo ? `${processo.id} - ${processo.titulo}` : task.processo_id;
+                    return processo ? processo.titulo : task.processo_id;
                   })() : 'N/A'}</span>
                   <span><strong>Localização:</strong> {task.onde_estao === 'Tarefas' ? 'Pendentes' : (task.onde_estao || 'Sem Localização')}</span>
                   <span>
