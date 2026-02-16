@@ -4,21 +4,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Folder, Building, FileText } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Folder, Building, FileText, Trash2, ArrowRightLeft } from 'lucide-react';
 import { useDossies, Dossie, getDossieDisplayLabel, getEntidadeNomeFromDossie } from '@/hooks/useDossies';
+import { useClients } from '@/hooks/useClients';
+import { useAuth } from '@/contexts/AuthContext';
 import { DossieModal } from '@/components/modals/DossieModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { normalizeString } from '@/lib/utils';
 
 export const Dossies: React.FC = () => {
   const navigate = useNavigate();
-  const { dossies, isLoading } = useDossies();
+  const { dossies, isLoading, changeEntidade, deleteDossie } = useDossies();
+  const { clients } = useClients();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDossie, setSelectedDossie] = useState<Dossie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Admin: change entity dialog
+  const [isChangeEntidadeOpen, setIsChangeEntidadeOpen] = useState(false);
+  const [newEntidadeId, setNewEntidadeId] = useState<number | ''>('');
+  const [entidadeSearchTerm, setEntidadeSearchTerm] = useState('');
+
+  // Admin: delete confirmation dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   React.useEffect(() => {
     const abrir = searchParams.get('abrir');
@@ -59,6 +89,45 @@ export const Dossies: React.FC = () => {
     return processos.length;
   };
 
+  const handleChangeEntidade = () => {
+    if (!selectedDossie || !newEntidadeId) return;
+    changeEntidade.mutate(
+      { dossieId: selectedDossie.id, entidadeId: Number(newEntidadeId) },
+      {
+        onSuccess: (data) => {
+          setSelectedDossie(data);
+          setIsChangeEntidadeOpen(false);
+          setNewEntidadeId('');
+          setEntidadeSearchTerm('');
+        },
+      }
+    );
+  };
+
+  const handleDeleteDossie = () => {
+    if (!selectedDossie) return;
+    deleteDossie.mutate(selectedDossie.id, {
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        setSelectedDossie(null);
+        setViewMode('list');
+      },
+    });
+  };
+
+  // Entidades disponíveis para mudança (excluir a atual)
+  const availableEntidades = clients
+    .filter((c: any) => {
+      if (selectedDossie && Number(c.id) === selectedDossie.entidade_id) return false;
+      const nome = c.nome || c.nome_empresa || '';
+      if (entidadeSearchTerm) {
+        return normalizeString(nome).includes(normalizeString(entidadeSearchTerm))
+          || String(c.id).includes(entidadeSearchTerm.trim());
+      }
+      return true;
+    })
+    .slice(0, 50);
+
   if (viewMode === 'details' && selectedDossie) {
     const processos = (selectedDossie as any).processos || [];
     return (
@@ -81,10 +150,36 @@ export const Dossies: React.FC = () => {
                   Arquivo associado à entidade
                 </CardDescription>
               </div>
-              <Button onClick={(e) => handleEdit(selectedDossie, e)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
+              <div className="flex items-center space-x-2">
+                {isAdmin && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setNewEntidadeId('');
+                        setEntidadeSearchTerm('');
+                        setIsChangeEntidadeOpen(true);
+                      }}
+                    >
+                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      Alterar Entidade
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      disabled={(selectedDossie.processos?.length ?? 0) > 0}
+                      title={(selectedDossie.processos?.length ?? 0) > 0 ? 'Remova os processos primeiro para apagar o arquivo' : undefined}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Apagar
+                    </Button>
+                  </>
+                )}
+                <Button onClick={(e) => handleEdit(selectedDossie, e)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -154,6 +249,74 @@ export const Dossies: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin: Dialog para alterar entidade */}
+        <Dialog open={isChangeEntidadeOpen} onOpenChange={setIsChangeEntidadeOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Alterar Entidade do Arquivo</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                A entidade dos processos dentro do arquivo também será alterada.
+              </p>
+              <Input
+                placeholder="Pesquisar entidade por nome ou ID..."
+                value={entidadeSearchTerm}
+                onChange={(e) => setEntidadeSearchTerm(e.target.value)}
+              />
+              <div className="max-h-60 overflow-y-auto border rounded-md">
+                {availableEntidades.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-4 text-center">Nenhuma entidade encontrada.</p>
+                ) : (
+                  availableEntidades.map((c: any) => (
+                    <div
+                      key={c.id}
+                      className={`p-3 cursor-pointer hover:bg-accent border-b last:border-b-0 ${Number(c.id) === newEntidadeId ? 'bg-accent' : ''}`}
+                      onClick={() => setNewEntidadeId(Number(c.id))}
+                    >
+                      <span className="font-medium">{c.nome || c.nome_empresa}</span>
+                      <span className="text-xs text-muted-foreground ml-2">#{c.id}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsChangeEntidadeOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleChangeEntidade}
+                disabled={!newEntidadeId || changeEntidade.isPending}
+              >
+                {changeEntidade.isPending ? 'A alterar...' : 'Confirmar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Admin: Dialog de confirmação para apagar */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Apagar Arquivo</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem a certeza que deseja apagar o arquivo <strong>{getDossieDisplayLabel(selectedDossie)}</strong>?
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteDossie}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteDossie.isPending ? 'A apagar...' : 'Apagar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

@@ -151,6 +151,31 @@ export const useDossies = (entidadeId?: number) => {
     },
   });
 
+  const changeEntidade = useMutation({
+    mutationFn: async ({ dossieId, entidadeId }: { dossieId: number; entidadeId: number }) => {
+      const response = await api.put(`/dossies/${dossieId}/entidade`, { entidade_id: entidadeId });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['dossies'] });
+      if (data?.entidade_id) {
+        queryClient.invalidateQueries({ queryKey: ['dossie', 'entidade', data.entidade_id] });
+      }
+      toast({
+        title: "Sucesso",
+        description: "Entidade do arquivo alterada com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      toast({
+        title: "Erro",
+        description: detail || "Erro ao alterar entidade do arquivo.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteDossie = useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/dossies/${id}`);
@@ -181,6 +206,7 @@ export const useDossies = (entidadeId?: number) => {
     errorDossie,
     createDossie,
     updateDossie,
+    changeEntidade,
     deleteDossie,
   };
 };
