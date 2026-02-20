@@ -71,7 +71,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
         responsavel_id: novoResponsavelId,
         prioridade: task.prioridade,
         concluida: false,
-        data_fim: task.data_fim,
+        data_fim: task.data_fim && new Date(task.data_fim) >= new Date(new Date().toDateString()) ? task.data_fim : new Date().toISOString(),
         autor_id: task.autor_id ?? null,
         parent_id: parentId,
         tipo: (task as any).tipo ?? null,
