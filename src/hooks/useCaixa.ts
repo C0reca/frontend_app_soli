@@ -8,6 +8,7 @@ export interface MovimentoCaixa {
   descricao: string;
   data: string;
   hora?: string | null;
+  cliente_id?: number | null;
   processo_id?: number | null;
   tipo_transferencia: 'mb' | 'dinheiro' | 'transferencia';
 }
@@ -57,6 +58,7 @@ export interface CreateMovimentoData {
   data: string;
   hora?: string;
   associado_a_processo: boolean;
+  cliente_id?: number | null;
   processo_id?: string | number | null;
   tipo_transferencia: 'mb' | 'dinheiro' | 'transferencia';
 }
@@ -70,6 +72,7 @@ const normalizarMovimento = (movimento: any): MovimentoCaixa => ({
   descricao: movimento.descricao,
   data: movimento.data,
   hora: movimento.hora ?? (movimento.data ? new Date(movimento.data).toISOString().split('T')[1]?.slice(0, 5) : null),
+  cliente_id: movimento.cliente_id ?? null,
   processo_id: movimento.processo_id ?? null,
   tipo_transferencia: movimento.tipo_transferencia ?? 'dinheiro',
 });

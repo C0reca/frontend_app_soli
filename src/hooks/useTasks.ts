@@ -28,10 +28,12 @@ export interface Task {
   servico_externo?: boolean;
   data_fim: string | null;
   criado_em: string;
-  tipo?: 'reuniao' | 'telefonema' | 'tarefa' | null;
+  tipo?: 'reuniao' | 'telefonema' | 'tarefa' | 'correspondencia_ctt' | null;
   parent_id?: number | null;
   subtarefas_count?: number;
   onde_estao?: string | null;
+  custo?: number | null;
+  despesa_criada?: boolean;
   adiamentos?: Adiamento[];
 }
 
@@ -159,16 +161,40 @@ export const useTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast({
         title: 'Sucesso',
-        description: variables.servico_externo ? 'Movido para Serviço Externo.' : 'Removido de Serviço Externo.',
+        description: variables.servico_externo ? 'Movido para Diligência Externa.' : 'Removido de Diligência Externa.',
       });
     },
     onError: (error: any) => {
       toast({
         title: 'Erro',
-        description: formatApiErrorDetail(error?.response?.data?.detail, 'Erro ao mover para Serviço Externo.'),
+        description: formatApiErrorDetail(error?.response?.data?.detail, 'Erro ao mover para Diligência Externa.'),
         variant: 'destructive',
       });
     }
+  });
+
+  const criarDespesa = useMutation({
+    mutationFn: async (tarefaId: string | number) => {
+      const response = await api.post(`/tarefas/${tarefaId}/criar-despesa`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['transacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
+      queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      toast({
+        title: "Sucesso",
+        description: "Despesa criada com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao criar despesa."),
+        variant: "destructive",
+      });
+    },
   });
 
   const getTasksByProcess = useCallback(async (processoId: number) => {
@@ -222,6 +248,7 @@ export const useTasks = () => {
     deleteTask,
     updateTaskStatus,
     setExternal,
+    criarDespesa,
     getTasksByProcess,
     getTaskById,
     generateTaskPDF,

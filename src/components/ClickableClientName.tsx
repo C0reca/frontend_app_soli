@@ -45,7 +45,8 @@ export const ClickableClientName: React.FC<ClickableClientNameProps> = ({
     }
   };
 
-  const displayName = children || clientName || (clientProp ? (getEffectiveTipo(clientProp) === 'coletivo' ? (clientProp as any).nome_empresa : (clientProp as any).nome) : 'N/A');
+  const rawName = children || clientName || (clientProp ? (getEffectiveTipo(clientProp) === 'coletivo' ? (clientProp as any).nome_empresa : (clientProp as any).nome) : 'N/A');
+  const displayName = typeof rawName === 'string' ? rawName.toUpperCase() : rawName;
 
   if (!clientId && !clientProp) {
     return <span className={className}>{displayName}</span>;

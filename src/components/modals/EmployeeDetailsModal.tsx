@@ -37,7 +37,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                 {employee.role === 'admin'
                   ? 'Admin'
                   : employee.role === 'manager'
-                    ? 'Manager'
+                    ? 'Gerente'
                     : 'Funcionario'}
               </Badge>
               <Badge variant={employee.is_active ? 'default' : 'destructive'} className="flex items-center gap-1">

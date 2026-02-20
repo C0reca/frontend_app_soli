@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -457,20 +458,20 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Estado *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o estado" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Provisórios">Provisórios</SelectItem>
-                      <SelectItem value="Registo">Registo</SelectItem>
-                      <SelectItem value="Concluído">Concluído</SelectItem>
-                      <SelectItem value="Desistência">Desistência</SelectItem>
-                      <SelectItem value="Recusado">Recusado</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <DynamicSelect
+                      categoria="estado_registo_predial"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Selecione o estado"
+                      fallbackOptions={[
+                        { value: "pendente", label: "Pendente" },
+                        { value: "em_curso", label: "Em Curso" },
+                        { value: "concluido", label: "Concluído" },
+                        { value: "recusado", label: "Recusado" },
+                      ]}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

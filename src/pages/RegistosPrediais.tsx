@@ -10,9 +10,11 @@ import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
 import { RegistoPredialDetailsModal } from '@/components/modals/RegistoPredialDetailsModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
+import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 
 export const RegistosPrediais: React.FC = () => {
+  const { canCreate, canEdit } = usePermissions();
   const { registos, isLoading, deleteRegisto, updateRegisto } = useRegistosPrediais();
   const { clients } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
@@ -165,10 +167,12 @@ export const RegistosPrediais: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Registos Prediais</h1>
           <p className="text-gray-600">Gerencie os registos prediais</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Registo
-        </Button>
+        {canCreate("registos_prediais") && (
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Registo
+          </Button>
+        )}
       </div>
 
       {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}

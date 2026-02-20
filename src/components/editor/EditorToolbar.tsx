@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Editor } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -22,12 +22,52 @@ import {
   Quote,
   Upload,
   Table,
+  Palette,
+  Type,
 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+
+const FONT_FAMILIES = [
+  { label: 'Predefinida', value: '' },
+  { label: 'Arial', value: 'Arial' },
+  { label: 'Times New Roman', value: 'Times New Roman' },
+  { label: 'Calibri', value: 'Calibri' },
+  { label: 'Courier New', value: 'Courier New' },
+  { label: 'Georgia', value: 'Georgia' },
+  { label: 'Verdana', value: 'Verdana' },
+];
+
+const FONT_SIZES = [
+  { label: 'Predefinido', value: '' },
+  { label: '8pt', value: '8pt' },
+  { label: '9pt', value: '9pt' },
+  { label: '10pt', value: '10pt' },
+  { label: '11pt', value: '11pt' },
+  { label: '12pt', value: '12pt' },
+  { label: '14pt', value: '14pt' },
+  { label: '16pt', value: '16pt' },
+  { label: '18pt', value: '18pt' },
+  { label: '20pt', value: '20pt' },
+  { label: '24pt', value: '24pt' },
+  { label: '28pt', value: '28pt' },
+  { label: '36pt', value: '36pt' },
+];
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -36,6 +76,10 @@ interface EditorToolbarProps {
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, onImportDocx }) => {
   if (!editor) return null;
+
+  const currentColor = editor.getAttributes('textStyle')?.color || '#000000';
+  const currentFontFamily = editor.getAttributes('textStyle')?.fontFamily || '';
+  const currentFontSize = editor.getAttributes('textStyle')?.fontSize || '';
 
   const ToolbarButton: React.FC<{
     onClick: () => void;
@@ -75,6 +119,134 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, onImportDo
       >
         <Redo className="h-4 w-4" />
       </ToolbarButton>
+
+      <Separator orientation="vertical" className="mx-1 h-6" />
+
+      {/* Font Family */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <Select
+              value={currentFontFamily || '_default'}
+              onValueChange={(value) => {
+                if (value && value !== '_default') {
+                  editor.chain().focus().setFontFamily(value).run();
+                } else {
+                  editor.chain().focus().unsetFontFamily().run();
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 w-[120px] text-xs">
+                <SelectValue placeholder="Fonte" />
+              </SelectTrigger>
+              <SelectContent>
+                {FONT_FAMILIES.map((f) => (
+                  <SelectItem key={f.value || '_default'} value={f.value || '_default'} className="text-xs" style={{ fontFamily: f.value || 'inherit' }}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">
+          Tipo de letra
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Font Size */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <Select
+              value={currentFontSize || '_default'}
+              onValueChange={(value) => {
+                if (value && value !== '_default') {
+                  editor.chain().focus().setFontSize(value).run();
+                } else {
+                  editor.chain().focus().unsetFontSize().run();
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 w-[80px] text-xs">
+                <SelectValue placeholder="Tamanho" />
+              </SelectTrigger>
+              <SelectContent>
+                {FONT_SIZES.map((s) => (
+                  <SelectItem key={s.value || '_default'} value={s.value || '_default'} className="text-xs">
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">
+          Tamanho da letra
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Color Picker */}
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <div className="relative">
+                  <Type className="h-4 w-4" />
+                  <div
+                    className="absolute -bottom-0.5 left-0.5 right-0.5 h-1 rounded-sm"
+                    style={{ backgroundColor: currentColor }}
+                  />
+                </div>
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            Cor do texto
+          </TooltipContent>
+        </Tooltip>
+        <PopoverContent className="w-auto p-3" side="bottom" align="start">
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-8 gap-1">
+              {[
+                '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#ffffff',
+                '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff',
+                '#9900ff', '#ff00ff', '#e6b8af', '#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3',
+                '#c9daf8', '#cfe2f3', '#d9d2e9', '#ead1dc',
+              ].map((color) => (
+                <button
+                  key={color}
+                  className="h-5 w-5 rounded border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                  style={{ backgroundColor: color }}
+                  onClick={() => {
+                    editor.chain().focus().setColor(color).run();
+                  }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t">
+              <label className="text-xs text-gray-500">Personalizada:</label>
+              <input
+                type="color"
+                value={currentColor}
+                onChange={(e) => {
+                  editor.chain().focus().setColor(e.target.value).run();
+                }}
+                className="h-6 w-8 cursor-pointer border-0 p-0"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs px-2"
+                onClick={() => editor.chain().focus().unsetColor().run()}
+              >
+                Limpar
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <Separator orientation="vertical" className="mx-1 h-6" />
 
@@ -217,7 +389,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, onImportDo
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              Importar ficheiro Word ou PDF
+              Importar ficheiro Word, RTF, ODT ou PDF
             </TooltipContent>
           </Tooltip>
         </>

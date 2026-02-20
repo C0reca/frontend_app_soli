@@ -15,6 +15,7 @@ import { TaskModal } from '@/components/modals/TaskModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 
 export const IRS: React.FC = () => {
@@ -42,6 +43,7 @@ export const IRS: React.FC = () => {
   const { clients } = useClients();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { canCreate, canEdit } = usePermissions();
 
   // Calcular estatísticas
   const porPagarCount = irsList.filter((irs: IRS) => irs.estado === 'Por Pagar').length;
@@ -288,10 +290,12 @@ export const IRS: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">IRS</h1>
           <p className="text-gray-600">Gestão de IRS</p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo IRS
-        </Button>
+        {canCreate("irs") && (
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo IRS
+          </Button>
+        )}
       </div>
 
       {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}

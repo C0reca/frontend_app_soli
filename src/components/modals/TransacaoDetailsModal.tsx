@@ -76,6 +76,8 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
   const getTipoLabel = (tipo?: string) => {
     switch (tipo) {
       case 'custo': return 'Custo';
+      case 'honorario': return 'Honorário';
+      case 'despesa': return 'Despesa';
       case 'pagamento': return 'Pagamento';
       case 'reembolso': return 'Reembolso';
       default: return tipo || '-';
@@ -84,8 +86,10 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
 
   const getTipoBadgeColor = (tipo?: string) => {
     switch (tipo) {
-      case 'custo': return 'bg-red-100 text-red-800';
-      case 'pagamento': return 'bg-green-100 text-green-800';
+      case 'custo':
+      case 'despesa': return 'bg-red-100 text-red-800';
+      case 'pagamento':
+      case 'honorario': return 'bg-green-100 text-green-800';
       case 'reembolso': return 'bg-blue-100 text-blue-800';
       default: return '';
     }

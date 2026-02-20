@@ -32,7 +32,6 @@ interface CalendarEvent {
 
 export const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const { tasks } = useTasks();
   const { processes } = useProcesses();
@@ -57,7 +56,7 @@ export const Calendar: React.FC = () => {
     setVisibleEmployees(next);
   }, [employees]);
 
-  useEffect(() => {
+  const events = useMemo(() => {
     const calendarEvents: CalendarEvent[] = [];
 
     tasks?.forEach(task => {
@@ -112,8 +111,8 @@ export const Calendar: React.FC = () => {
       }
     });
 
-    setEvents(calendarEvents);
-  }, [tasks, processes, registos, user]);
+    return calendarEvents;
+  }, [tasks, processes, registos, user, employees]);
 
   const fcEvents = useMemo(() => {
     return events

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { useLogsProcesso, LogProcessoCreate } from '@/hooks/useLogsProcesso';
 import { useEmployeeList } from '@/hooks/useEmployees';
 import { useMinimize } from '@/contexts/MinimizeContext';
@@ -233,21 +234,19 @@ export const LogProcessoModal: React.FC<LogProcessoModalProps> = ({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Tipo de Atividade</label>
-            <Select
+            <DynamicSelect
+              categoria="tipo_log"
               value={form.watch('tipo')}
               onValueChange={(value) => form.setValue('tipo', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="telefone">Telefonema</SelectItem>
-                <SelectItem value="reuniao">Reunião</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="documento">Documento</SelectItem>
-                <SelectItem value="observacao">Observação</SelectItem>
-              </SelectContent>
-            </Select>
+              placeholder="Selecione o tipo"
+              fallbackOptions={[
+                { value: "telefone", label: "Telefonema" },
+                { value: "reuniao", label: "Reunião" },
+                { value: "email", label: "Email" },
+                { value: "documento", label: "Documento" },
+                { value: "observacao", label: "Observação" },
+              ]}
+            />
             {form.formState.errors.tipo && (
               <p className="text-sm text-red-600 mt-1">{form.formState.errors.tipo.message}</p>
             )}

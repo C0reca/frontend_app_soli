@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { useForm } from 'react-hook-form';
 import { useDocumentTemplates, DocumentTemplate } from '@/hooks/useDocumentTemplates';
 
@@ -81,18 +82,19 @@ export const DocumentTemplateModal: React.FC<DocumentTemplateModalProps> = ({
 
           <div>
             <Label htmlFor="category">Categoria</Label>
-            <Select onValueChange={(value) => setValue('category', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Contrato">Contrato</SelectItem>
-                <SelectItem value="Relatório">Relatório</SelectItem>
-                <SelectItem value="Proposta">Proposta</SelectItem>
-                <SelectItem value="Fatura">Fatura</SelectItem>
-                <SelectItem value="Outros">Outros</SelectItem>
-              </SelectContent>
-            </Select>
+            <DynamicSelect
+              categoria="categoria_template"
+              value={watch('category') || ''}
+              onValueChange={(value) => setValue('category', value)}
+              placeholder="Selecione uma categoria"
+              fallbackOptions={[
+                { value: "contrato", label: "Contrato" },
+                { value: "procuracao", label: "Procuração" },
+                { value: "requerimento", label: "Requerimento" },
+                { value: "declaracao", label: "Declaração" },
+                { value: "outro", label: "Outro" },
+              ]}
+            />
           </div>
 
           <div>

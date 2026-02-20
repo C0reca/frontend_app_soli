@@ -414,7 +414,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -464,7 +464,14 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         <div className="space-y-6">
           <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold">{process.titulo}</h2>
+            <div className="flex items-center gap-2">
+              {process.referencia && (
+                <Badge variant="secondary" className="font-mono text-sm">
+                  {process.referencia}
+                </Badge>
+              )}
+              <h2 className="text-2xl font-bold">{process.titulo}</h2>
+            </div>
             {process.descricao && (
               <p className="text-muted-foreground mt-2">{process.descricao}</p>
             )}

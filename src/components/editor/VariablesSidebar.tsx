@@ -7,11 +7,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Search, GripVertical, User, FolderOpen, Folder, Briefcase, Calendar } from 'lucide-react';
+import { Search, GripVertical, User, Users, FolderOpen, Folder, Briefcase, Calendar } from 'lucide-react';
 import { TEMPLATE_VARIABLES, TemplateVariableGroup } from '@/constants/templateVariables';
 
 const GROUP_ICONS: Record<string, React.ReactNode> = {
   entidade: <User className="h-4 w-4" />,
+  entidade_sec: <Users className="h-4 w-4" />,
   processo: <FolderOpen className="h-4 w-4" />,
   dossie: <Folder className="h-4 w-4" />,
   funcionario: <Briefcase className="h-4 w-4" />,
@@ -20,11 +21,16 @@ const GROUP_ICONS: Record<string, React.ReactNode> = {
 
 const GROUP_COLORS: Record<string, string> = {
   entidade: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+  entidade_sec: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100',
   processo: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
   dossie: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
   funcionario: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100',
   sistema: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
 };
+
+function getGroupKey(prefixo: string): string {
+  return prefixo.startsWith('entidade_sec_') ? 'entidade_sec' : prefixo;
+}
 
 interface VariablesSidebarProps {
   onVariableClick: (variablePath: string, label: string) => void;
@@ -73,12 +79,14 @@ export const VariablesSidebar: React.FC<VariablesSidebarProps> = ({ onVariableCl
       </div>
 
       <ScrollArea className="flex-1">
-        <Accordion type="multiple" defaultValue={TEMPLATE_VARIABLES.map((g) => g.prefixo)} className="px-2">
-          {filteredGroups.map((group) => (
+        <Accordion type="multiple" defaultValue={TEMPLATE_VARIABLES.filter((g) => !g.prefixo.startsWith('entidade_sec_')).map((g) => g.prefixo)} className="px-2">
+          {filteredGroups.map((group) => {
+            const groupKey = getGroupKey(group.prefixo);
+            return (
             <AccordionItem key={group.prefixo} value={group.prefixo} className="border-b-0">
               <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
                 <div className="flex items-center gap-2">
-                  {GROUP_ICONS[group.prefixo]}
+                  {GROUP_ICONS[groupKey]}
                   <span>{group.grupo}</span>
                   <span className="text-xs text-gray-400">({group.campos.length})</span>
                 </div>
@@ -87,7 +95,7 @@ export const VariablesSidebar: React.FC<VariablesSidebarProps> = ({ onVariableCl
                 <div className="space-y-1">
                   {group.campos.map((campo) => {
                     const variablePath = `${group.prefixo}.${campo.campo}`;
-                    const colorClass = GROUP_COLORS[group.prefixo] || 'bg-gray-50 text-gray-700';
+                    const colorClass = GROUP_COLORS[groupKey] || 'bg-gray-50 text-gray-700';
                     return (
                       <div
                         key={variablePath}
@@ -108,7 +116,8 @@ export const VariablesSidebar: React.FC<VariablesSidebarProps> = ({ onVariableCl
                 </div>
               </AccordionContent>
             </AccordionItem>
-          ))}
+            );
+          })}
         </Accordion>
       </ScrollArea>
     </div>

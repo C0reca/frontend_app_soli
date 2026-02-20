@@ -16,10 +16,12 @@ import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 import type { Process } from '@/hooks/useProcesses';
 
 export const Tasks: React.FC = () => {
+  const { canCreate, canEdit } = usePermissions();
   const { tasks, isLoading, deleteTask, updateTaskStatus, updateTask, setExternal } = useTasks();
   const { data: employees = [] } = useEmployeeList();
   const { processes } = useProcesses();
@@ -68,6 +70,7 @@ export const Tasks: React.FC = () => {
     const parts: string[] = [
       task.titulo ?? '',
       processo?.titulo ?? '',
+      processo?.referencia ?? '',
       processo?.cliente?.nome ?? '',
       processo?.dossie?.entidade?.nome ?? '',
       processo?.dossie?.entidade?.nome_empresa ?? '',
@@ -198,17 +201,15 @@ export const Tasks: React.FC = () => {
                   {task.processo_id && (() => {
                     const processo = processes.find(p => p.id === task.processo_id);
                     if (!processo) return null;
-                    
+
                     // Tentar obter nome do cliente de diferentes formas
                     let clienteNome: string | null = null;
                     if (processo.cliente) {
-                      // Cliente pode ter nome (singular) ou nome_empresa (coletivo)
                       clienteNome = (processo.cliente as any).nome || (processo.cliente as any).nome_empresa || null;
                     } else if (processo.cliente_id) {
-                      // Se não tiver cliente carregado, mostrar apenas o ID
                       clienteNome = `Cliente #${processo.cliente_id}`;
                     }
-                    
+
                     return clienteNome ? (
                       <span className="text-sm text-muted-foreground font-normal">- {clienteNome}</span>
                     ) : null;
@@ -223,8 +224,9 @@ export const Tasks: React.FC = () => {
                   <span><strong>Processo:</strong> {task.processo_id ? (() => {
                     const processo = processes.find(p => p.id === task.processo_id);
                     if (!processo) return task.processo_id;
-                    const arquivoId = processo.dossie_id || processo.dossie?.id;
-                    return arquivoId ? `${arquivoId} - ${processo.titulo}` : processo.titulo;
+                    return processo.referencia
+                      ? `${processo.referencia} - ${processo.titulo}`
+                      : processo.titulo;
                   })() : 'N/A'}</span>
                   <span><strong>Localização:</strong> {task.onde_estao === 'Tarefas' ? 'Pendentes' : (task.onde_estao || 'Sem Localização')}</span>
                   <span>
@@ -266,7 +268,7 @@ export const Tasks: React.FC = () => {
                 </Badge>
                 {task.servico_externo && (
                   <Badge variant="outline" className="text-xs border-purple-500 text-purple-700">
-                    Serviço Externo
+                    Diligência Externa
                   </Badge>
                 )}
               </div>
@@ -298,7 +300,7 @@ export const Tasks: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); setExternal.mutate({ id: task.id, servico_externo: true }); }}
-                    title="Mover para Serviço Externo"
+                    title="Mover para Diligência Externa"
                   >
                     <Share2 className="h-4 w-4" />
                   </Button>
@@ -307,7 +309,7 @@ export const Tasks: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); setExternal.mutate({ id: task.id, servico_externo: false }); }}
-                    title="Remover de Serviço Externo"
+                    title="Remover de Diligência Externa"
                   >
                     <Share2 className="h-4 w-4 rotate-180" />
                   </Button>
@@ -500,10 +502,12 @@ export const Tasks: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Compromissos</h1>
           <p className="text-gray-600">Gerencie os compromissos dos processos</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Compromisso
-        </Button>
+        {canCreate("tarefas") && (
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Compromisso
+          </Button>
+        )}
       </div>
 
       {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
@@ -614,6 +618,7 @@ export const Tasks: React.FC = () => {
                 <SelectItem value="reuniao">Reunião</SelectItem>
                 <SelectItem value="telefonema">Telefonema</SelectItem>
                 <SelectItem value="tarefa">Compromisso</SelectItem>
+                <SelectItem value="correspondencia_ctt">Correspondência CTT</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2">

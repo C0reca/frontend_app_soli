@@ -124,7 +124,7 @@ export const Employees: React.FC = () => {
                       {employee.role === 'admin'
                         ? 'Admin'
                         : employee.role === 'manager'
-                          ? 'Manager'
+                          ? 'Gerente'
                           : 'Funcionario'}
                     </Badge>
                   </TableCell>

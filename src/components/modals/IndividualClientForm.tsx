@@ -2,7 +2,7 @@ import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,6 +137,8 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                   id="nome"
                   {...register('nome')}
                   placeholder="Nome completo"
+                  style={{ textTransform: 'uppercase' }}
+                  onChange={(e) => { e.target.value = e.target.value.toUpperCase(); register('nome').onChange(e); }}
                 />
                 {errors.nome && (
                   <p className="text-sm text-red-600">{errors.nome.message?.toString()}</p>
@@ -230,22 +232,20 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="estado_civil">Estado civil</Label>
-                <Select
+                <DynamicSelect
+                  categoria="estado_civil"
                   value={watch('estado_civil')}
                   onValueChange={(value) => setValue('estado_civil', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single">Solteiro(a)</SelectItem>
-                    <SelectItem value="married">Casado(a)</SelectItem>
-                    <SelectItem value="uniao_facto">União de Facto</SelectItem>
-                    <SelectItem value="divorced">Divorciado(a)</SelectItem>
-                    <SelectItem value="separacao_facto">Separação de Facto</SelectItem>
-                    <SelectItem value="widowed">Viúvo(a)</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione"
+                  fallbackOptions={[
+                    { value: "single", label: "Solteiro(a)" },
+                    { value: "married", label: "Casado(a)" },
+                    { value: "uniao_facto", label: "União de Facto" },
+                    { value: "divorced", label: "Divorciado(a)" },
+                    { value: "separacao_facto", label: "Separação de Facto" },
+                    { value: "widowed", label: "Viúvo(a)" },
+                  ]}
+                />
               </div>
 
               <div className="space-y-2">
@@ -393,18 +393,14 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 <Label htmlFor="senha_financas">Senha Finanças</Label>
                 <Input
                   id="senha_financas"
-                  type="password"
                   {...form.register('senha_financas')}
-                  placeholder="••••••••"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="senha_ss">Senha Segurança Social</Label>
                 <Input
                   id="senha_ss"
-                  type="password"
                   {...form.register('senha_ss')}
-                  placeholder="••••••••"
                 />
               </div>
             </div>

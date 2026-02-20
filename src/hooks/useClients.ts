@@ -3,6 +3,19 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 
+export interface Representante {
+  id: number;
+  empresa_id: number;
+  cliente_id?: number | null;
+  nome?: string;
+  nif?: string;
+  email?: string;
+  telemovel?: string;
+  cargo?: string;
+  criado_em?: string;
+  atualizado_em?: string;
+}
+
 // Base client interface (id pode ser number da API ou string)
 export interface BaseClient {
   id: string | number;
@@ -76,13 +89,16 @@ export interface CorporateClient extends BaseClient {
   cae?: string;
   capital_social?: string;
   
-  // Representante Legal
+  // Representante Legal (campos legados, mantidos para retrocompatibilidade)
   representante_nome?: string;
   representante_nif?: string;
   representante_email?: string;
   representante_telemovel?: string;
   representante_cargo?: string;
-  
+
+  // Representantes legais (nova relação)
+  representantes?: Representante[];
+
   // Documentos e outros
   iban?: string;
   certidao_permanente?: string;
@@ -139,10 +155,6 @@ export const useClients = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
-    onError: (error: any) => {
-      // Error handling will be done in the component
-      throw error;
-    },
   });
 
   const updateClient = useMutation({
@@ -152,10 +164,6 @@ export const useClients = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-    },
-    onError: (error: any) => {
-      // Error handling will be done in the component
-      throw error;
     },
   });
 
@@ -175,5 +183,65 @@ export const useClients = () => {
     createClient,
     updateClient,
     deleteClient,
+  };
+};
+
+export interface DuplicateGroup {
+  nif: string;
+  clientes: Client[];
+}
+
+export const useDuplicateClients = () => {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['clients-duplicates'],
+    queryFn: async () => {
+      const response = await api.get('/clientes/duplicados');
+      return (response?.data || []) as DuplicateGroup[];
+    },
+    retry: 1,
+  });
+
+  const mergeClients = useMutation({
+    mutationFn: async (payload: { manter_id: number; remover_ids: number[]; dados_finais: Record<string, any>; contactos_extra?: { tipo: string; valor: string }[] }) => {
+      const response = await api.post('/clientes/merge', payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-duplicates'] });
+    },
+  });
+
+  return {
+    duplicates: data || [],
+    isLoading,
+    error,
+    mergeClients,
+  };
+};
+
+export interface NameDuplicateGroup {
+  score: number;
+  scores: Record<string, number>;
+  clientes: Client[];
+}
+
+export const useNameDuplicateClients = (threshold: number = 75) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['clients-duplicates-name', threshold],
+    queryFn: async () => {
+      const response = await api.get(`/clientes/duplicados-nome?threshold=${threshold / 100}`);
+      return (response?.data || []) as NameDuplicateGroup[];
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return {
+    nameDuplicates: data || [],
+    isLoading,
+    error,
   };
 };

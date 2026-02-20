@@ -8,6 +8,7 @@ import { useAgregadoFamiliar, AgregadoFamiliar } from '@/hooks/useAgregadoFamili
 import { useClients } from '@/hooks/useClients';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -753,23 +754,20 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
             </div>
             <div className="space-y-2">
               <Label>Relação *</Label>
-              <Select
+              <DynamicSelect
+                categoria="tipo_relacao_familiar"
                 value={tipoRelacao}
                 onValueChange={(value) => setTipoRelacao(value as 'conjuge' | 'filho' | 'filha' | 'pai' | 'mae' | 'irmao' | 'irma')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="conjuge">Cônjuge</SelectItem>
-                  <SelectItem value="filho">Filho</SelectItem>
-                  <SelectItem value="filha">Filha</SelectItem>
-                  <SelectItem value="pai">Pai</SelectItem>
-                  <SelectItem value="mae">Mãe</SelectItem>
-                  <SelectItem value="irmao">Irmão</SelectItem>
-                  <SelectItem value="irma">Irmã</SelectItem>
-                </SelectContent>
-              </Select>
+                placeholder="Selecionar..."
+                fallbackOptions={[
+                  { value: "conjuge", label: "Cônjuge" },
+                  { value: "filho", label: "Filho(a)" },
+                  { value: "pai", label: "Pai" },
+                  { value: "mae", label: "Mãe" },
+                  { value: "irmao", label: "Irmão/Irmã" },
+                  { value: "outro", label: "Outro" },
+                ]}
+              />
             </div>
           </div>
           <DialogFooter>

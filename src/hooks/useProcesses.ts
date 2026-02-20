@@ -12,6 +12,8 @@ export interface Process {
   criado_em: string;
   cliente_id?: number; // Mantido para compatibilidade
   dossie_id?: number; // Nova relação com dossiê
+  numero_no_dossie?: number;
+  referencia?: string;
   funcionario_id?: number;
   arquivado?: boolean;
   cliente?: {

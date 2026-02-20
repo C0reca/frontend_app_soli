@@ -27,7 +27,7 @@ import { Loader2 } from 'lucide-react';
 
 const ROLE_OPTIONS: { value: EmployeeRole; label: string }[] = [
   { value: 'admin', label: 'Admin' },
-  { value: 'manager', label: 'Manager' },
+  { value: 'manager', label: 'Gerente' },
   { value: 'funcionario', label: 'Funcionario' },
 ];
 

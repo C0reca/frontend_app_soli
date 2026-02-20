@@ -19,7 +19,7 @@ export interface Dossie {
 export function getEntidadeNomeFromDossie(dossie: Dossie): string {
   const entidade = dossie.entidade;
   if (!entidade) return 'N/A';
-  return entidade.nome || entidade.nome_empresa || 'N/A';
+  return (entidade.nome || entidade.nome_empresa || 'N/A').toUpperCase();
 }
 
 /** Representação do arquivo: "id - nome da entidade" */

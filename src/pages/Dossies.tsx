@@ -275,7 +275,7 @@ export const Dossies: React.FC = () => {
                       className={`p-3 cursor-pointer hover:bg-accent border-b last:border-b-0 ${Number(c.id) === newEntidadeId ? 'bg-accent' : ''}`}
                       onClick={() => setNewEntidadeId(Number(c.id))}
                     >
-                      <span className="font-medium">{c.nome || c.nome_empresa}</span>
+                      <span className="font-medium">{(c.nome || c.nome_empresa || '').toUpperCase()}</span>
                       <span className="text-xs text-muted-foreground ml-2">#{c.id}</span>
                     </div>
                   ))

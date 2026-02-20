@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,7 +31,7 @@ const taskSchema = z.object({
   concluida: z.boolean(),
   data_fim: z.string().nullable().optional(),
   autor_id: z.number().nullable().optional(),
-  tipo: z.enum(['reuniao','telefonema','tarefa']).nullable().optional(),
+  tipo: z.enum(['reuniao','telefonema','tarefa','correspondencia_ctt']).nullable().optional(),
   parent_id: z.number().nullable().optional(),
   onde_estao: z.string().optional(),
   custo: z.coerce.number().nullable().optional(),
@@ -255,50 +256,81 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
             {/* Passo 1: Entidade e Processo (só no wizard, não para subtarefas nem criação a partir do processo) ou sempre na edição */}
             {(!isWizard || (step === 0 && !isSubtask && !isFromProcess)) && (
               <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="cliente_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Entidade *</FormLabel>
-                      <FormControl>
-                        <ClientCombobox
-                          clients={clients}
-                          value={field.value ?? undefined}
-                          onChange={(value) => {
-                            field.onChange(value);
-                            const currentProcessId = form.getValues('processo_id');
-                            if (currentProcessId != null && processes?.find((p) => p.id === currentProcessId)?.cliente_id !== value) {
-                              form.setValue('processo_id', null);
-                            }
-                          }}
-                          isLoading={isClientsLoading}
-                          placeholderEmpty="Selecione uma entidade"
-                          insideDialog
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="processo_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Processo</FormLabel>
-                      <FormControl>
-                        <ProcessCombobox
-                          processes={processesOfEntity}
-                          value={selectedClienteId != null ? (field.value ?? null) : null}
-                          onChange={(value) => field.onChange(value)}
-                          isLoading={isProcessesLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Subtarefas em edição: mostrar entidade/processo como read-only (herdam do pai) */}
+                {task && task.parent_id ? (
+                  <div className="space-y-3 rounded-md border bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">Herdado do compromisso principal (não editável)</p>
+                    <div>
+                      <Label className="text-sm font-medium">Entidade</Label>
+                      <p className="text-sm mt-0.5">
+                        {(() => {
+                          const cid = form.getValues('cliente_id');
+                          if (!cid) return 'Sem entidade';
+                          const c = clients.find((cl: any) => cl.id === cid);
+                          return c ? (c as any).nome || (c as any).nome_empresa || `ID ${cid}` : `ID ${cid}`;
+                        })()}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Processo</Label>
+                      <p className="text-sm mt-0.5">
+                        {(() => {
+                          const pid = form.getValues('processo_id');
+                          if (!pid) return 'Sem processo';
+                          const p = processes.find((pr: any) => pr.id === pid);
+                          return p ? (p.referencia ? `${p.referencia} - ${p.titulo}` : p.titulo) : `ID ${pid}`;
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="cliente_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Entidade *</FormLabel>
+                          <FormControl>
+                            <ClientCombobox
+                              clients={clients}
+                              value={field.value ?? undefined}
+                              onChange={(value) => {
+                                field.onChange(value);
+                                const currentProcessId = form.getValues('processo_id');
+                                if (currentProcessId != null && processes?.find((p) => p.id === currentProcessId)?.cliente_id !== value) {
+                                  form.setValue('processo_id', null);
+                                }
+                              }}
+                              isLoading={isClientsLoading}
+                              placeholderEmpty="Selecione uma entidade"
+                              insideDialog
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="processo_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Processo</FormLabel>
+                          <FormControl>
+                            <ProcessCombobox
+                              processes={processesOfEntity}
+                              value={selectedClienteId != null ? (field.value ?? null) : null}
+                              onChange={(value) => field.onChange(value)}
+                              isLoading={isProcessesLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
               </div>
             )}
 
@@ -397,18 +429,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Prioridade *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Prioridade" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="baixa">Baixa</SelectItem>
-                            <SelectItem value="media">Média</SelectItem>
-                            <SelectItem value="alta">Alta</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <DynamicSelect
+                            categoria="prioridade_tarefa"
+                            value={field.value || undefined}
+                            onValueChange={field.onChange}
+                            placeholder="Prioridade"
+                            fallbackOptions={[
+                              { value: "baixa", label: "Baixa" },
+                              { value: "media", label: "Média" },
+                              { value: "alta", label: "Alta" },
+                            ]}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -419,18 +452,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Tipo" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="reuniao">Reunião</SelectItem>
-                            <SelectItem value="telefonema">Telefonema</SelectItem>
-                            <SelectItem value="tarefa">Compromisso</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <DynamicSelect
+                            categoria="tipo_tarefa"
+                            value={field.value || undefined}
+                            onValueChange={field.onChange}
+                            placeholder="Tipo"
+                            fallbackOptions={[
+                              { value: "reuniao", label: "Reunião" },
+                              { value: "telefonema", label: "Telefonema" },
+                              { value: "tarefa", label: "Compromisso" },
+                              { value: "correspondencia_ctt", label: "Correspondência CTT" },
+                            ]}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -483,41 +518,37 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Localização</FormLabel>
-                        <Select
-                          onValueChange={(v) => {
-                            const value = v === "--------" || v === "" ? null : v;
-                            field.onChange(value);
-                          }}
-                          value={field.value || "--------"}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Localização" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="--------">--------</SelectItem>
-                            <SelectItem value="Casa">Casa</SelectItem>
-                            <SelectItem value="Cartorio">Cartorio</SelectItem>
-                            <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
-                            <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
-                            <SelectItem value="Armário DPA">Armário DPA</SelectItem>
-                            <SelectItem value="PEPEX">PEPEX</SelectItem>
-                            <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
-                            <SelectItem value="Reuniões">Reuniões</SelectItem>
-                            <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>
-                            <SelectItem value="Serviço Finanças">Serviço Finanças</SelectItem>
-                            <SelectItem value="Imposto Selo / Participações">Imposto Selo / Participações</SelectItem>
-                            <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
-                            <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
-                            <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
-                            <SelectItem value="Decorre Prazo">Decorre Prazo</SelectItem>
-                            <SelectItem value="Pendentes">Pendentes</SelectItem>
-                            <SelectItem value="Injunções">Injunções</SelectItem>
-                            <SelectItem value="Execuções">Execuções</SelectItem>
-                            <SelectItem value="Inventário Judicial">Inventário Judicial</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <DynamicSelect
+                            categoria="onde_estao"
+                            value={field.value || undefined}
+                            onValueChange={(v) => {
+                              field.onChange(v);
+                            }}
+                            placeholder="Localização"
+                            fallbackOptions={[
+                              { value: "Casa", label: "Casa" },
+                              { value: "Cartorio", label: "Cartorio" },
+                              { value: "Camara/GaiaUrb", label: "Camara/GaiaUrb" },
+                              { value: "DPA Agendado", label: "DPA Agendado" },
+                              { value: "Armário DPA", label: "Armário DPA" },
+                              { value: "PEPEX", label: "PEPEX" },
+                              { value: "Conservatoria Civil/Comercial", label: "Conservatoria Civil/Comercial" },
+                              { value: "Reuniões", label: "Reuniões" },
+                              { value: "Conservatoria Predial", label: "Conservatoria Predial" },
+                              { value: "Serviço Finanças", label: "Serviço Finanças" },
+                              { value: "Imposto Selo / Participações", label: "Imposto Selo / Participações" },
+                              { value: "Serviço Finanças Pendentes", label: "Serviço Finanças Pendentes" },
+                              { value: "Aguarda Doc Cliente/Informações", label: "Aguarda Doc Cliente/Informações" },
+                              { value: "Aguarda Doc", label: "Aguarda Doc" },
+                              { value: "Decorre Prazo", label: "Decorre Prazo" },
+                              { value: "Pendentes", label: "Pendentes" },
+                              { value: "Injunções", label: "Injunções" },
+                              { value: "Execuções", label: "Execuções" },
+                              { value: "Inventário Judicial", label: "Inventário Judicial" },
+                            ]}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

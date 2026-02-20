@@ -33,7 +33,6 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
 
   const pendingSubtasks = subtasks.filter((st) => !st.concluida);
   const currentResponsavelId = task?.responsavel_id ? Number(task.responsavel_id) : null;
-  const employeesExcluindoAtual = employees.filter((e) => e.id !== currentResponsavelId);
 
   const resetForm = () => {
     setNovoResponsavelId(null);
@@ -59,11 +58,6 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
       toast({ title: 'Erro', description: 'Selecione a nova pessoa responsável.', variant: 'destructive' });
       return;
     }
-    if (novoResponsavelId === currentResponsavelId) {
-      toast({ title: 'Erro', description: 'O novo responsável deve ser diferente do atual.', variant: 'destructive' });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const taskId = typeof task.id === 'string' ? task.id : String(task.id);
@@ -141,9 +135,9 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
                 <SelectValue placeholder="Selecione a pessoa" />
               </SelectTrigger>
               <SelectContent>
-                {employeesExcluindoAtual.map((emp) => (
+                {employees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id.toString()}>
-                    {emp.nome}
+                    {emp.nome}{emp.id === currentResponsavelId ? ' (atual)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

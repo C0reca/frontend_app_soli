@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, Plus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -336,13 +337,18 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="tipo">Tipo</Label>
-                <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value as 'telefone' | 'email' })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="telefone">Telefone</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DynamicSelect
+                  categoria="tipo_contacto"
+                  value={formData.tipo}
+                  onValueChange={(value) => setFormData({ ...formData, tipo: value as 'telefone' | 'email' })}
+                  placeholder="Selecionar..."
+                  fallbackOptions={[
+                    { value: "email", label: "Email" },
+                    { value: "telefone", label: "Telefone" },
+                    { value: "telemovel", label: "Telemóvel" },
+                    { value: "outro", label: "Outro" },
+                  ]}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="valor">{formData.tipo === 'telefone' ? 'Telefone' : 'Email'} *</Label>
@@ -397,18 +403,18 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo</Label>
-              <Select
+              <DynamicSelect
+                categoria="tipo_contacto"
                 value={formData.tipo}
                 onValueChange={(value) => setFormData({ ...formData, tipo: value as 'telefone' | 'email' })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="telefone">Telefone</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                </SelectContent>
-              </Select>
+                placeholder="Selecionar..."
+                fallbackOptions={[
+                  { value: "email", label: "Email" },
+                  { value: "telefone", label: "Telefone" },
+                  { value: "telemovel", label: "Telemóvel" },
+                  { value: "outro", label: "Outro" },
+                ]}
+              />
             </div>
 
             <div className="space-y-2">

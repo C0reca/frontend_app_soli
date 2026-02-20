@@ -143,7 +143,7 @@ export const DossieModal: React.FC<DossieModalProps> = ({
     (c) => String(c.id) === String(entidadeIdValue)
   );
   const labelEntidade = selectedEntidade
-    ? (selectedEntidade.nome ?? (selectedEntidade as { nome_empresa?: string }).nome_empresa ?? `#${selectedEntidade.id}`)
+    ? (selectedEntidade.nome ?? (selectedEntidade as { nome_empresa?: string }).nome_empresa ?? `#${selectedEntidade.id}`).toUpperCase()
     : 'Selecione uma entidade';
 
   return (
@@ -195,10 +195,11 @@ export const DossieModal: React.FC<DossieModalProps> = ({
                         <CommandList>
                           <CommandEmpty>Nenhuma entidade encontrada.</CommandEmpty>
                           {entidadesFiltradas.map((c) => {
-                            const nome =
+                            const nome = (
                               c.nome ??
                               (c as { nome_empresa?: string }).nome_empresa ??
-                              `#${c.id}`;
+                              `#${c.id}`
+                            ).toUpperCase();
                             const nif =
                               (c as { tipo?: string }).tipo === 'coletivo'
                                 ? (c as { nif_empresa?: string }).nif_empresa

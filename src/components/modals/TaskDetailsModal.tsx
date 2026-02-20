@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin, CalendarClock, Folder, UserPlus } from 'lucide-react';
+import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin, CalendarClock, Folder, UserPlus, DollarSign } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses, Process } from '@/hooks/useProcesses';
@@ -31,7 +31,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 }) => {
   const { data: employees = [] } = useEmployeeList();
   const { processes } = useProcesses();
-  const { generateTaskPDF, updateTaskStatus, updateTask, tasks, getTaskById } = useTasks();
+  const { generateTaskPDF, updateTaskStatus, updateTask, tasks, getTaskById, criarDespesa } = useTasks();
   const queryClient = useQueryClient();
   const [currentTask, setCurrentTask] = useState<Task | null>(task);
   const { data: taskDetail } = useQuery({
@@ -48,6 +48,10 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [concludeNotesDialogOpen, setConcludeNotesDialogOpen] = useState(false);
   const [concludeNotes, setConcludeNotes] = useState('');
+  const [pendingSubtasksDialogOpen, setPendingSubtasksDialogOpen] = useState(false);
+  const [concludingSubtasks, setConcludingSubtasks] = useState(false);
+  const [concludedSubtaskIds, setConcludedSubtaskIds] = useState<Set<string>>(new Set());
+  const [concludingSubtaskId, setConcludingSubtaskId] = useState<string | null>(null);
   const [postponeDialogOpen, setPostponeDialogOpen] = useState(false);
   const [postponeDate, setPostponeDate] = useState('');
   const [postponeMotivo, setPostponeMotivo] = useState('');
@@ -180,16 +184,65 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
       : <AlertCircle className="h-4 w-4 text-yellow-600" />;
   };
 
+  const pendingSubtasks = subtasks.filter(st => !st.concluida);
+
   const handleStatusToggle = () => {
     if (!currentTask) return;
     const newStatus = !currentTask.concluida;
     if (newStatus) {
+      // Check for pending subtasks before opening conclude dialog
+      if (pendingSubtasks.length > 0) {
+        setConcludedSubtaskIds(new Set());
+        setPendingSubtasksDialogOpen(true);
+        return;
+      }
       setConcludeNotes('');
       setConcludeNotesDialogOpen(true);
     } else {
       updateTaskStatus.mutateAsync({ id: currentTask.id, concluida: false }).then(() => {
         setCurrentTask({ ...currentTask, concluida: false });
       }).catch(() => {});
+    }
+  };
+
+  const handleConcludeSubtasksFirst = async () => {
+    if (!currentTask) return;
+    setConcludingSubtasks(true);
+    try {
+      const remaining = pendingSubtasks.filter(st => !concludedSubtaskIds.has(st.id));
+      for (const st of remaining) {
+        await updateTaskStatus.mutateAsync({ id: st.id, concluida: true });
+      }
+      const res = await api.get(`/tarefas/${currentTask.id}/subtarefas`);
+      setSubtasks(res.data);
+      setPendingSubtasksDialogOpen(false);
+      setConcludeNotes('');
+      setConcludeNotesDialogOpen(true);
+    } catch {} finally {
+      setConcludingSubtasks(false);
+    }
+  };
+
+  const handleConcludeOneSubtask = async (subtaskId: string) => {
+    if (!currentTask) return;
+    setConcludingSubtaskId(subtaskId);
+    try {
+      await updateTaskStatus.mutateAsync({ id: subtaskId, concluida: true });
+      const newSet = new Set(concludedSubtaskIds);
+      newSet.add(subtaskId);
+      setConcludedSubtaskIds(newSet);
+      // Refresh subtasks
+      const res = await api.get(`/tarefas/${currentTask.id}/subtarefas`);
+      setSubtasks(res.data);
+      // If all subtasks are now concluded, auto-proceed to conclude notes
+      const stillPending = pendingSubtasks.filter(st => !newSet.has(st.id));
+      if (stillPending.length === 0) {
+        setPendingSubtasksDialogOpen(false);
+        setConcludeNotes('');
+        setConcludeNotesDialogOpen(true);
+      }
+    } catch {} finally {
+      setConcludingSubtaskId(null);
     }
   };
 
@@ -258,7 +311,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <DialogDescription className="sr-only">Detalhes do compromisso: {displayTask.titulo}</DialogDescription>
           <div className="flex items-center justify-between">
@@ -431,13 +484,16 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       ? (() => {
                           const processo = processes.find((p) => p.id === displayTask!.processo_id);
                           if (!processo) return String(displayTask!.processo_id);
+                          const label = processo.referencia
+                            ? `${processo.referencia} - ${processo.titulo}`
+                            : processo.titulo;
                           return (
                             <button
                               type="button"
                               onClick={() => processo && setSelectedProcess(processo)}
                               className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors text-left"
                             >
-                              {processo.titulo}
+                              {label}
                             </button>
                           );
                         })()
@@ -482,7 +538,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       ? (() => {
                           const processo = processes.find((p) => p.id === displayTask!.processo_id);
                           if (!processo?.dossie) return 'N/A';
-                          return processo.dossie.numero ?? processo.dossie.id ?? 'N/A';
+                          return processo.referencia ?? processo.dossie.numero ?? processo.dossie.id ?? 'N/A';
                         })()
                       : 'N/A'}
                   </p>
@@ -547,13 +603,29 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   <p className="text-sm text-gray-900">{(displayTask as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((displayTask as any).onde_estao || 'Sem Localização')}</p>
                 </div>
               </div>
-              {(displayTask as any).custo != null && Number((displayTask as any).custo) > 0 && (
+              {displayTask.custo != null && Number(displayTask.custo) > 0 && (
                 <div className="flex items-center space-x-2">
+                  <DollarSign className="h-4 w-4 text-gray-400" />
                   <div>
                     <label className="text-sm font-medium text-gray-500">Custo</label>
-                    <p className="text-sm text-gray-900 font-medium">
-                      {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(Number((displayTask as any).custo))}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-900 font-medium">
+                        {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(Number(displayTask.custo))}
+                      </p>
+                      {displayTask.despesa_criada ? (
+                        <Badge className="bg-green-100 text-green-800 text-xs">Despesa criada</Badge>
+                      ) : displayTask.processo_id ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-6"
+                          onClick={() => criarDespesa.mutate(displayTask.id)}
+                          disabled={criarDespesa.isPending}
+                        >
+                          Criar Despesa
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               )}
@@ -657,6 +729,84 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         onClose={() => setSelectedProcess(null)}
         process={selectedProcess}
       />
+    </Dialog>
+
+    <Dialog open={pendingSubtasksDialogOpen} onOpenChange={setPendingSubtasksDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sub-compromissos pendentes</DialogTitle>
+          <DialogDescription>
+            Esta tarefa tem {pendingSubtasks.length} sub-compromisso{pendingSubtasks.length > 1 ? 's' : ''} por concluir:
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-2 max-h-64 overflow-y-auto">
+          {pendingSubtasks.map(st => {
+            const responsavel = st.responsavel_id ? employees.find(e => e.id === st.responsavel_id) : null;
+            const processo = st.processo_id ? processes.find(p => p.id === st.processo_id) : null;
+            const isOverdue = st.data_fim && new Date(st.data_fim) < new Date();
+            const isConcluded = concludedSubtaskIds.has(st.id);
+            const isConcluding = concludingSubtaskId === st.id;
+            return (
+              <div key={st.id} className={`text-sm border rounded p-3 space-y-1 ${isConcluded ? 'border-green-300 bg-green-50 opacity-60' : isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
+                <div className="flex items-center gap-2">
+                  {isConcluded
+                    ? <CheckSquare className="h-4 w-4 text-green-600 shrink-0" />
+                    : <AlertCircle className={`h-4 w-4 shrink-0 ${isOverdue ? 'text-red-500' : 'text-yellow-500'}`} />
+                  }
+                  <span className={`font-medium flex-1 ${isConcluded ? 'line-through text-gray-400' : ''}`}>{st.titulo}</span>
+                  {!isConcluded && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs shrink-0"
+                      disabled={isConcluding || concludingSubtasks}
+                      onClick={() => handleConcludeOneSubtask(st.id)}
+                    >
+                      {isConcluding ? 'A concluir...' : 'Concluir'}
+                    </Button>
+                  )}
+                  {isConcluded && <Badge className="bg-green-100 text-green-800 text-xs">Concluída</Badge>}
+                  {!isConcluded && isOverdue && <Badge variant="destructive" className="text-xs">Atrasada</Badge>}
+                  {!isConcluded && st.prioridade === 'alta' && <Badge className="bg-red-100 text-red-800 text-xs">Alta</Badge>}
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 pl-6">
+                  {st.data_fim && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(st.data_fim).toLocaleDateString('pt-PT')}
+                    </span>
+                  )}
+                  {responsavel && (
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {responsavel.nome}
+                    </span>
+                  )}
+                  {processo && (
+                    <span className="flex items-center gap-1">
+                      <Folder className="h-3 w-3" />
+                      {processo.titulo}
+                    </span>
+                  )}
+                  {st.tipo && (
+                    <span className="capitalize">{st.tipo.replace('_', ' ')}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setPendingSubtasksDialogOpen(false)}>
+            Cancelar
+          </Button>
+          {pendingSubtasks.filter(st => !concludedSubtaskIds.has(st.id)).length > 0 && (
+            <Button onClick={handleConcludeSubtasksFirst} disabled={concludingSubtasks || !!concludingSubtaskId}>
+              {concludingSubtasks ? 'A concluir...' : `Concluir tudo (${pendingSubtasks.filter(st => !concludedSubtaskIds.has(st.id)).length})`}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
 
     <Dialog open={concludeNotesDialogOpen} onOpenChange={setConcludeNotesDialogOpen}>

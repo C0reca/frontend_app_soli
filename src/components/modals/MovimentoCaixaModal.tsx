@@ -25,10 +25,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ClientCombobox } from '@/components/ui/clientcombobox';
+import { ProcessCombobox } from '@/components/ui/processcombobox';
+import { useClients } from '@/hooks/useClients';
+import { useProcesses, Process } from '@/hooks/useProcesses';
 import type { MovimentoCaixa, CreateMovimentoData } from '@/hooks/useCaixa';
 
 const formSchema = z.object({
@@ -47,17 +52,18 @@ const formSchema = z.object({
       message: "Hora inválida. Utilize o formato HH:MM",
     }
   ).optional().nullable(),
-  associado_a_processo: z.boolean().default(false),
+  associado_a_entidade: z.boolean().default(false),
+  cliente_id: z.string().optional(),
   processo_id: z.string().optional(),
   tipo_transferencia: z.enum(['mb', 'dinheiro', 'transferencia']).default('dinheiro'),
 }).refine((data) => {
-  if (data.associado_a_processo && !data.processo_id) {
+  if (data.associado_a_entidade && !data.cliente_id) {
     return false;
   }
   return true;
 }, {
-  message: "ID do processo é obrigatório quando associado a processo",
-  path: ["processo_id"],
+  message: "Selecione uma entidade",
+  path: ["cliente_id"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -79,6 +85,9 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
   initialData = null,
   mode = 'create',
 }) => {
+  const { clients, isLoading: isLoadingClients } = useClients();
+  const { processes, isLoading: isLoadingProcesses } = useProcesses();
+
   const defaultValues = useMemo<FormData>(() => {
     const agora = new Date();
     const dataHoje = agora.toISOString().split('T')[0];
@@ -88,7 +97,8 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
       descricao: '',
       data: dataHoje,
       hora: '',
-      associado_a_processo: false,
+      associado_a_entidade: false,
+      cliente_id: '',
       processo_id: '',
       tipo_transferencia: 'dinheiro',
     };
@@ -99,12 +109,35 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
     defaultValues,
   });
 
-  const isAssociadoAProcesso = form.watch('associado_a_processo');
+  const isAssociadoAEntidade = form.watch('associado_a_entidade');
+  const selectedClienteId = form.watch('cliente_id');
+
+  // Filter processes for the selected client
+  const processosDoCliente = useMemo(() => {
+    if (!selectedClienteId) return [];
+    const cid = Number(selectedClienteId);
+    return (processes || []).filter((p: Process) => {
+      if (p.cliente_id === cid) return true;
+      if (p.dossie?.entidade && (p.dossie as any).entidade_id === cid) return true;
+      return false;
+    });
+  }, [selectedClienteId, processes]);
+
+  // Clear processo_id when client changes
+  useEffect(() => {
+    if (selectedClienteId) {
+      const currentProcessoId = form.getValues('processo_id');
+      if (currentProcessoId) {
+        const stillValid = processosDoCliente.some((p: Process) => String(p.id) === currentProcessoId);
+        if (!stillValid) {
+          form.setValue('processo_id', '');
+        }
+      }
+    }
+  }, [selectedClienteId, processosDoCliente, form]);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
     if (initialData) {
       const dataIso = initialData.data
@@ -117,7 +150,8 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
         descricao: initialData.descricao,
         data: dataIso,
         hora,
-        associado_a_processo: Boolean(initialData.processo_id),
+        associado_a_entidade: Boolean(initialData.cliente_id || initialData.processo_id),
+        cliente_id: initialData.cliente_id ? String(initialData.cliente_id) : '',
         processo_id: initialData.processo_id ? String(initialData.processo_id) : '',
         tipo_transferencia: initialData.tipo_transferencia ?? 'dinheiro',
       });
@@ -127,17 +161,18 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
   }, [isOpen, initialData, form, defaultValues]);
 
   const handleSubmit = async (data: FormData) => {
-      // Remove processo_id se não estiver associado a processo
     const submitData: CreateMovimentoData = {
-        ...data,
+      ...data,
       hora: data.hora ? data.hora : undefined,
-        processo_id: data.associado_a_processo ? data.processo_id : undefined,
-      };
-      
-      await onSave(submitData);
-      
-      form.reset();
-      onSuccess?.();
+      associado_a_processo: Boolean(data.associado_a_entidade && data.processo_id),
+      cliente_id: data.associado_a_entidade && data.cliente_id ? Number(data.cliente_id) : undefined,
+      processo_id: data.associado_a_entidade && data.processo_id ? data.processo_id : undefined,
+    };
+
+    await onSave(submitData);
+
+    form.reset();
+    onSuccess?.();
   };
 
   const handleClose = () => {
@@ -244,18 +279,17 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Transferência *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo de transferência" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="mb">Mb</SelectItem>
-                      <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                      <SelectItem value="transferencia">Transferência</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <DynamicSelect
+                    categoria="tipo_transferencia_caixa"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Selecione o tipo de transferência"
+                    fallbackOptions={[
+                      { value: "dinheiro", label: "Dinheiro" },
+                      { value: "mb", label: "Multibanco" },
+                      { value: "transferencia", label: "Transferência" },
+                    ]}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -281,44 +315,91 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
 
             <FormField
               control={form.control}
-              name="associado_a_processo"
+              name="associado_a_entidade"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (!checked) {
+                          form.setValue('cliente_id', '');
+                          form.setValue('processo_id', '');
+                        }
+                      }}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>
-                      Associar a um processo
+                      Associar a uma entidade
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      Marque se este movimento está relacionado com um processo específico.
+                      Marque se este movimento está relacionado com uma entidade ou processo.
                     </p>
                   </div>
                 </FormItem>
               )}
             />
 
-            {isAssociadoAProcesso && (
-              <FormField
-                control={form.control}
-                name="processo_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ID do Processo *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Digite o ID do processo"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+            {isAssociadoAEntidade && (
+              <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+                {/* Entity selection via ClientCombobox */}
+                <FormField
+                  control={form.control}
+                  name="cliente_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Entidade *</FormLabel>
+                      <FormControl>
+                        <ClientCombobox
+                          clients={clients || []}
+                          value={field.value ? Number(field.value) : undefined}
+                          onChange={(id) => {
+                            field.onChange(String(id));
+                            form.setValue('processo_id', '');
+                          }}
+                          isLoading={isLoadingClients}
+                          placeholderEmpty="Selecione uma entidade"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Optional process selection (only if entity is selected) */}
+                {selectedClienteId && (
+                  <FormField
+                    control={form.control}
+                    name="processo_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Processo (opcional)</FormLabel>
+                        <FormControl>
+                          <ProcessCombobox
+                            processes={processosDoCliente.map((p: Process) => ({
+                              id: p.id,
+                              titulo: p.titulo || `Processo #${p.id}`,
+                            }))}
+                            value={field.value ? Number(field.value) : null}
+                            onChange={(id) => {
+                              field.onChange(id !== null ? String(id) : '');
+                            }}
+                            isLoading={isLoadingProcesses}
+                          />
+                        </FormControl>
+                        {processosDoCliente.length === 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Esta entidade não tem processos associados.
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
+              </div>
             )}
 
             <DialogFooter>

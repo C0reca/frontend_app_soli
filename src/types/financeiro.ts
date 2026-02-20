@@ -2,7 +2,7 @@
 // Transacao Financeira
 // ============================
 
-export type TipoTransacao = 'custo' | 'pagamento' | 'reembolso';
+export type TipoTransacao = 'custo' | 'pagamento' | 'reembolso' | 'honorario' | 'despesa';
 export type EstadoReconciliacao = 'pendente' | 'reconciliado' | 'parcial';
 export type MetodoPagamento = 'dinheiro' | 'mb' | 'transferencia' | 'cheque' | 'outro';
 
@@ -15,7 +15,7 @@ export interface TransacaoAnexo {
 
 export interface TransacaoFinanceira {
   id: number;
-  processo_id: number;
+  processo_id?: number | null;
   cliente_id: number;
   tipo: TipoTransacao;
   valor: number;
@@ -32,11 +32,12 @@ export interface TransacaoFinanceira {
   atualizado_em?: string;
   toconline_doc_id?: string;
   toconline_estado?: string;
+  registo_predial_id?: number | null;
   anexos: TransacaoAnexo[];
 }
 
 export interface TransacaoFinanceiraCreate {
-  processo_id: number;
+  processo_id?: number | null;
   cliente_id: number;
   tipo: TipoTransacao;
   valor: number;
@@ -49,6 +50,7 @@ export interface TransacaoFinanceiraCreate {
   criado_por_id?: number;
   gerar_movimento_caixa?: boolean;
   dias_lembrete?: number;
+  registo_predial_id?: number | null;
 }
 
 export interface TransacaoFinanceiraUpdate {
@@ -131,6 +133,20 @@ export interface EmailCobrancaCreate {
   cliente_id: number;
   destinatario: string;
   processos_ids?: number[];
+  assunto?: string;
+  conteudo?: string;
+}
+
+// ============================
+// TOConline
+// ============================
+
+export interface TOConlineConfig {
+  configurado: boolean;
+  ambiente: string;
+  mensagem?: string;
+  api_key?: string;
+  empresa_id?: string;
 }
 
 export interface EmailCobranca {
@@ -151,6 +167,7 @@ export interface EmailCobranca {
 export interface CobrancaPreview {
   destinatario: string;
   assunto: string;
-  conteudo: string;
+  corpo: string;
+  conteudo?: string;
   valor_total: number;
 }

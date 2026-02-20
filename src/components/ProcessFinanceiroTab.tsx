@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Eye, Trash2, Pencil } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Eye, Trash2, Pencil, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,8 +31,12 @@ const getTipoBadge = (tipo: string) => {
   switch (tipo) {
     case 'custo':
       return <Badge className="bg-red-100 text-red-800">Custo</Badge>;
+    case 'despesa':
+      return <Badge className="bg-red-100 text-red-800">Despesa</Badge>;
     case 'pagamento':
       return <Badge className="bg-green-100 text-green-800">Pagamento</Badge>;
+    case 'honorario':
+      return <Badge className="bg-green-100 text-green-800">Honorário</Badge>;
     case 'reembolso':
       return <Badge className="bg-blue-100 text-blue-800">Reembolso</Badge>;
     default:
@@ -54,6 +58,7 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTransacao, setEditTransacao] = useState<TransacaoFinanceira | null>(null);
   const [viewTransacaoId, setViewTransacaoId] = useState<number | null>(null);
+  const [reembolsoDe, setReembolsoDe] = useState<TransacaoFinanceira | null>(null);
 
   const { transacoes, isLoading, deleteTransacao } = useTransacoes({ processo_id: processoId });
   const { data: resumo } = useResumoFinanceiroProcesso(processoId);
@@ -68,43 +73,35 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
     <div className="space-y-4">
       {/* Resumo */}
       {resumo && (
-        <div className="grid gap-3 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Custos</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold text-red-600">{formatCurrency(resumo.total_custos)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pagamentos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold text-green-600">{formatCurrency(resumo.total_pagamentos)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reembolsos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold text-blue-600">{formatCurrency(resumo.total_reembolsos)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saldo</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">{formatCurrency(resumo.saldo)}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-red-600 flex items-center gap-1">
+              <TrendingDown className="h-4 w-4 shrink-0" />
+              Custos
+            </span>
+            <span className="text-lg font-bold text-red-600">{formatCurrency(resumo.total_custos)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              Pagamentos
+            </span>
+            <span className="text-lg font-bold text-green-600">{formatCurrency(resumo.total_pagamentos)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              Reembolsos
+            </span>
+            <span className="text-lg font-bold text-blue-600">{formatCurrency(resumo.total_reembolsos)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <DollarSign className="h-4 w-4 shrink-0" />
+              Saldo
+            </span>
+            <span className="text-lg font-bold">{formatCurrency(resumo.saldo)}</span>
+          </div>
         </div>
       )}
 
@@ -121,51 +118,51 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Descricao</TableHead>
-              <TableHead>Metodo</TableHead>
-              <TableHead>Reconciliacao</TableHead>
-              <TableHead className="text-right">Acoes</TableHead>
+              <TableHead className="text-sm">Data</TableHead>
+              <TableHead className="text-sm">Tipo</TableHead>
+              <TableHead className="text-sm">Valor</TableHead>
+              <TableHead className="text-sm">Descrição</TableHead>
+              <TableHead className="text-sm text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                   A carregar...
                 </TableCell>
               </TableRow>
             ) : transacoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  Nenhuma transacao registada
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  Nenhuma transação registada
                 </TableCell>
               </TableRow>
             ) : (
               transacoes.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell>{formatDate(t.data)}</TableCell>
-                  <TableCell>{getTipoBadge(t.tipo)}</TableCell>
-                  <TableCell className="font-medium">{formatCurrency(t.valor)}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{t.descricao || '-'}</TableCell>
-                  <TableCell>{getMetodoLabel(t.metodo_pagamento)}</TableCell>
-                  <TableCell>
-                    <Badge variant={t.estado_reconciliacao === 'reconciliado' ? 'default' : 'outline'}>
-                      {t.estado_reconciliacao === 'reconciliado' ? 'Reconciliado' : t.estado_reconciliacao === 'parcial' ? 'Parcial' : 'Pendente'}
-                    </Badge>
+                  <TableCell className="text-sm whitespace-nowrap">{formatDate(t.data)}</TableCell>
+                  <TableCell className="text-sm">{getTipoBadge(t.tipo)}</TableCell>
+                  <TableCell className="text-sm font-medium whitespace-nowrap">{formatCurrency(t.valor)}</TableCell>
+                  <TableCell className="text-sm max-w-[260px] truncate">
+                    {t.tarefa_id && <Badge variant="outline" className="text-xs mr-1">Tarefa</Badge>}
+                    {t.descricao || '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => setViewTransacaoId(t.id)}>
-                        <Eye className="h-4 w-4" />
+                    <div className="flex justify-end gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewTransacaoId(t.id)} title="Ver detalhes">
+                        <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditTransacao(t)}>
-                        <Pencil className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditTransacao(t)} title="Editar">
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
-                        <Trash2 className="h-4 w-4" />
+                      {t.tipo !== 'reembolso' && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600" onClick={() => setReembolsoDe(t)} title="Reembolsar">
+                          <Undo2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(t.id)} title="Eliminar">
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -178,11 +175,12 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
 
       {/* Modals */}
       <TransacaoModal
-        isOpen={isCreateOpen || !!editTransacao}
-        onClose={() => { setIsCreateOpen(false); setEditTransacao(null); }}
+        isOpen={isCreateOpen || !!editTransacao || !!reembolsoDe}
+        onClose={() => { setIsCreateOpen(false); setEditTransacao(null); setReembolsoDe(null); }}
         processoId={processoId}
         clienteId={clienteId}
         transacao={editTransacao}
+        reembolsoDe={reembolsoDe}
       />
       <TransacaoDetailsModal
         isOpen={!!viewTransacaoId}

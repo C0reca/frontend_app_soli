@@ -5,6 +5,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import UnderlineExtension from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { FontSize } from './FontSizeExtension';
 import { Table as TableExtension } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
@@ -52,6 +56,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
         heading: { levels: [1, 2, 3] },
       }),
       UnderlineExtension,
+      TextStyle,
+      Color,
+      FontFamily,
+      FontSize,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Comece a escrever o template do documento...' }),
       Highlight,
@@ -75,9 +83,11 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   // Update editor content when content prop changes externally (e.g., import)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false);
+      queueMicrotask(() => {
+        editor.commands.setContent(content, false);
+      });
     }
-  }, [content]);
+  }, [content, editor]);
 
   // Insert a template variable at current cursor or specific position
   const insertVariable = useCallback(

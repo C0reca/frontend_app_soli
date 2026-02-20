@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -581,38 +582,35 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Localização</FormLabel>
-                                        <Select
-                                            onValueChange={(v) => field.onChange(v === "__none__" || v === "--------" ? undefined : v)}
-                                            value={field.value != null && field.value !== "" ? field.value : "__none__"}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione a localização" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="__none__">--------</SelectItem>
-                                                <SelectItem value="Casa">Casa</SelectItem>
-                                                <SelectItem value="Cartorio">Cartorio</SelectItem>
-                                                <SelectItem value="Camara/GaiaUrb">Camara/GaiaUrb</SelectItem>
-                                                <SelectItem value="DPA Agendado">DPA Agendado</SelectItem>
-                                                <SelectItem value="Armário DPA">Armário DPA</SelectItem>
-                                                <SelectItem value="PEPEX">PEPEX</SelectItem>
-                                                <SelectItem value="Conservatoria Civil/Comercial">Conservatoria Civil/Comercial</SelectItem>
-                                                <SelectItem value="Reuniões">Reuniões</SelectItem>
-                                                <SelectItem value="Conservatoria Predial">Conservatoria Predial</SelectItem>
-                                                <SelectItem value="Serviço Finanças">Serviço Finanças</SelectItem>
-                                                <SelectItem value="Imposto Selo / Participações">Imposto Selo / Participações</SelectItem>
-                                                <SelectItem value="Serviço Finanças Pendentes">Serviço Finanças Pendentes</SelectItem>
-                                                <SelectItem value="Aguarda Doc Cliente/Informações">Aguarda Doc Cliente/Informações</SelectItem>
-                                                <SelectItem value="Aguarda Doc">Aguarda Doc</SelectItem>
-                                                <SelectItem value="Decorre Prazo">Decorre Prazo</SelectItem>
-                                                <SelectItem value="Pendentes">Pendentes</SelectItem>
-                                                <SelectItem value="Injunções">Injunções</SelectItem>
-                                                <SelectItem value="Execuções">Execuções</SelectItem>
-                                                <SelectItem value="Inventário Judicial">Inventário Judicial</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <FormControl>
+                                            <DynamicSelect
+                                                categoria="onde_estao"
+                                                value={field.value != null && field.value !== "" ? field.value : undefined}
+                                                onValueChange={(v) => field.onChange(v)}
+                                                placeholder="Selecione a localização"
+                                                fallbackOptions={[
+                                                    { value: "Casa", label: "Casa" },
+                                                    { value: "Cartorio", label: "Cartorio" },
+                                                    { value: "Camara/GaiaUrb", label: "Camara/GaiaUrb" },
+                                                    { value: "DPA Agendado", label: "DPA Agendado" },
+                                                    { value: "Armário DPA", label: "Armário DPA" },
+                                                    { value: "PEPEX", label: "PEPEX" },
+                                                    { value: "Conservatoria Civil/Comercial", label: "Conservatoria Civil/Comercial" },
+                                                    { value: "Reuniões", label: "Reuniões" },
+                                                    { value: "Conservatoria Predial", label: "Conservatoria Predial" },
+                                                    { value: "Serviço Finanças", label: "Serviço Finanças" },
+                                                    { value: "Imposto Selo / Participações", label: "Imposto Selo / Participações" },
+                                                    { value: "Serviço Finanças Pendentes", label: "Serviço Finanças Pendentes" },
+                                                    { value: "Aguarda Doc Cliente/Informações", label: "Aguarda Doc Cliente/Informações" },
+                                                    { value: "Aguarda Doc", label: "Aguarda Doc" },
+                                                    { value: "Decorre Prazo", label: "Decorre Prazo" },
+                                                    { value: "Pendentes", label: "Pendentes" },
+                                                    { value: "Injunções", label: "Injunções" },
+                                                    { value: "Execuções", label: "Execuções" },
+                                                    { value: "Inventário Judicial", label: "Inventário Judicial" },
+                                                ]}
+                                            />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -665,6 +663,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 const cid = form.getValues("cliente_id");
                                                 if (cid == null || cid === 0) {
                                                     form.setError("cliente_id", { type: "manual", message: "Selecione a entidade." });
+                                                    return;
+                                                }
+                                                const did = form.getValues("dossie_id");
+                                                if (did == null || did === 0) {
+                                                    form.setError("cliente_id", { type: "manual", message: "A entidade não tem arquivo. Crie um arquivo primeiro." });
                                                     return;
                                                 }
                                             }

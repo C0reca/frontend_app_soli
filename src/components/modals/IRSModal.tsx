@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useIRS, IRS as IRSType, IRSCreate, IRSUpdate } from '@/hooks/useIRS';
@@ -658,20 +659,18 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="estado">Pagamento *</Label>
-                <Select
+                <DynamicSelect
+                  categoria="estado_pagamento_irs"
                   value={watch('estado')}
                   onValueChange={(value) => setValue('estado', value as 'Por Pagar' | 'Pago' | 'Isento')}
-                  disabled={isEditing && irs?.numero_recibo && irs.estado === 'Pago'}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Por Pagar">Por Pagar</SelectItem>
-                    <SelectItem value="Pago">Pago</SelectItem>
-                    <SelectItem value="Isento">Isento</SelectItem>
-                  </SelectContent>
-                </Select>
+                  disabled={!!(isEditing && irs?.numero_recibo && irs.estado === 'Pago')}
+                  placeholder="Selecionar..."
+                  fallbackOptions={[
+                    { value: "Por Pagar", label: "Por Pagar" },
+                    { value: "Pago", label: "Pago" },
+                    { value: "Isento", label: "Isento" },
+                  ]}
+                />
                 {errors.estado && (
                   <p className="text-sm text-red-500">{errors.estado.message}</p>
                 )}
@@ -684,23 +683,21 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
 
               <div className="space-y-2">
                 <Label htmlFor="estado_entrega">Estado de Entrega</Label>
-                <Select
+                <DynamicSelect
+                  categoria="estado_entrega_irs"
                   value={watch('estado_entrega') || ''}
                   onValueChange={(value) => setValue('estado_entrega', value === '' ? undefined : value as 'Enviado' | 'Levantado Pelo Cliente' | 'Aguarda Documentos' | 'Contencioso Administrativo' | 'Em Análise' | 'Verificado' | 'Concluído')}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Enviado">Enviado</SelectItem>
-                    <SelectItem value="Levantado Pelo Cliente">Levantado Pelo Cliente</SelectItem>
-                    <SelectItem value="Aguarda Documentos">Aguarda Documentos</SelectItem>
-                    <SelectItem value="Contencioso Administrativo">Contencioso Administrativo</SelectItem>
-                    <SelectItem value="Em Análise">Em Análise</SelectItem>
-                    <SelectItem value="Verificado">Verificado</SelectItem>
-                    <SelectItem value="Concluído">Concluído</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione o estado"
+                  fallbackOptions={[
+                    { value: "Enviado", label: "Enviado" },
+                    { value: "Levantado Pelo Cliente", label: "Levantado Pelo Cliente" },
+                    { value: "Aguarda Documentos", label: "Aguarda Documentos" },
+                    { value: "Contencioso Administrativo", label: "Contencioso Administrativo" },
+                    { value: "Em Análise", label: "Em Análise" },
+                    { value: "Verificado", label: "Verificado" },
+                    { value: "Concluído", label: "Concluído" },
+                  ]}
+                />
                 {errors.estado_entrega && (
                   <p className="text-sm text-red-500">{errors.estado_entrega.message}</p>
                 )}

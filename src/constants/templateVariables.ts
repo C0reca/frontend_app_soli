@@ -10,6 +10,59 @@ export interface TemplateVariableGroup {
   campos: TemplateVariableField[];
 }
 
+const ENTIDADE_SEC_CAMPOS: TemplateVariableField[] = [
+  { campo: 'tipo_participacao', label: 'Tipo de Participação', tipo: 'texto' },
+  { campo: 'nome', label: 'Nome', tipo: 'texto' },
+  { campo: 'designacao', label: 'Designação', tipo: 'texto' },
+  { campo: 'email', label: 'Email', tipo: 'texto' },
+  { campo: 'telefone', label: 'Telefone', tipo: 'texto' },
+  { campo: 'morada', label: 'Morada (rua)', tipo: 'texto' },
+  { campo: 'codigo_postal', label: 'Código Postal', tipo: 'texto' },
+  { campo: 'localidade', label: 'Localidade', tipo: 'texto' },
+  { campo: 'distrito', label: 'Distrito', tipo: 'texto' },
+  { campo: 'pais', label: 'País', tipo: 'texto' },
+  { campo: 'morada_completa', label: 'Morada Completa', tipo: 'texto' },
+  { campo: 'nif', label: 'NIF', tipo: 'texto' },
+  { campo: 'data_nascimento', label: 'Data de Nascimento', tipo: 'data' },
+  { campo: 'estado_civil', label: 'Estado Civil', tipo: 'texto' },
+  { campo: 'profissao', label: 'Profissão', tipo: 'texto' },
+  { campo: 'num_cc', label: 'N.º Cartão de Cidadão', tipo: 'texto' },
+  { campo: 'validade_cc', label: 'Validade CC', tipo: 'data' },
+  { campo: 'num_ss', label: 'N.º Segurança Social', tipo: 'texto' },
+  { campo: 'num_sns', label: 'N.º SNS', tipo: 'texto' },
+  { campo: 'num_ident_civil', label: 'N.º Identificação Civil', tipo: 'texto' },
+  { campo: 'nacionalidade', label: 'Nacionalidade', tipo: 'texto' },
+  { campo: 'nome_empresa', label: 'Nome Empresa', tipo: 'texto' },
+  { campo: 'nif_empresa', label: 'NIF Empresa', tipo: 'texto' },
+  { campo: 'forma_juridica', label: 'Forma Jurídica', tipo: 'texto' },
+  { campo: 'data_constituicao', label: 'Data Constituição', tipo: 'data' },
+  { campo: 'registo_comercial', label: 'Registo Comercial', tipo: 'texto' },
+  { campo: 'cae', label: 'CAE', tipo: 'texto' },
+  { campo: 'capital_social', label: 'Capital Social', tipo: 'texto' },
+  { campo: 'representante_1_nome', label: 'Rep. Legal 1 - Nome', tipo: 'texto' },
+  { campo: 'representante_1_nif', label: 'Rep. Legal 1 - NIF', tipo: 'texto' },
+  { campo: 'representante_1_email', label: 'Rep. Legal 1 - Email', tipo: 'texto' },
+  { campo: 'representante_1_telemovel', label: 'Rep. Legal 1 - Telemóvel', tipo: 'texto' },
+  { campo: 'representante_1_cargo', label: 'Rep. Legal 1 - Cargo', tipo: 'texto' },
+  { campo: 'representante_2_nome', label: 'Rep. Legal 2 - Nome', tipo: 'texto' },
+  { campo: 'representante_2_nif', label: 'Rep. Legal 2 - NIF', tipo: 'texto' },
+  { campo: 'representante_2_email', label: 'Rep. Legal 2 - Email', tipo: 'texto' },
+  { campo: 'representante_2_telemovel', label: 'Rep. Legal 2 - Telemóvel', tipo: 'texto' },
+  { campo: 'representante_2_cargo', label: 'Rep. Legal 2 - Cargo', tipo: 'texto' },
+  { campo: 'iban', label: 'IBAN', tipo: 'texto' },
+  { campo: 'certidao_permanente', label: 'Certidão Permanente', tipo: 'texto' },
+  { campo: 'observacoes', label: 'Observações', tipo: 'texto' },
+  { campo: 'incapacidade', label: 'Incapacidade (%)', tipo: 'numero' },
+];
+
+function gerarGruposEntidadesSecundarias(count: number): TemplateVariableGroup[] {
+  return Array.from({ length: count }, (_, i) => ({
+    grupo: `Entidade Secundária ${i + 1}`,
+    prefixo: `entidade_sec_${i + 1}`,
+    campos: ENTIDADE_SEC_CAMPOS,
+  }));
+}
+
 export const TEMPLATE_VARIABLES: TemplateVariableGroup[] = [
   {
     grupo: 'Entidade',
@@ -53,6 +106,7 @@ export const TEMPLATE_VARIABLES: TemplateVariableGroup[] = [
       { campo: 'incapacidade', label: 'Incapacidade (%)', tipo: 'numero' },
     ],
   },
+  ...gerarGruposEntidadesSecundarias(3),
   {
     grupo: 'Processo',
     prefixo: 'processo',

@@ -24,7 +24,7 @@ const navItems = [
   { icon: FolderOpen, label: 'Processos', path: '/processos' },
   { icon: Receipt, label: 'IRS', path: '/irs' },
   { icon: CheckSquare, label: 'Compromissos', path: '/tarefas' },
-  { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
+  { icon: Truck, label: 'Diligências Externas', path: '/servicos-externos' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
   { icon: Megaphone, label: 'Novidades', path: '/changelog' },
 ];

@@ -17,10 +17,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { useClients } from '@/hooks/useClients';
 import { useEmployeeList } from '@/hooks/useEmployees';
+import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 
 
 export const Processes: React.FC = () => {
+  const { canCreate, canEdit } = usePermissions();
   const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess } = useProcesses();
   const { clients } = useClients();
   const { data: employees = [] } = useEmployeeList();
@@ -69,7 +71,7 @@ export const Processes: React.FC = () => {
   const getClientNameById = (id?: number) => {
     if (!id) return '';
     const client = clients.find((c: any) => c.id?.toString() === id.toString());
-    return client?.nome || client?.nome_empresa || '';
+    return (client?.nome || client?.nome_empresa || '').toUpperCase();
   };
 
   const getEmployeeNameById = (id?: number) => {
@@ -92,7 +94,8 @@ export const Processes: React.FC = () => {
     const matchesSearch = (
       normalizeString(process.titulo).includes(termNormalized) ||
       normalizeString(clienteNome).includes(termNormalized) ||
-      normalizeString(funcionarioNome).includes(termNormalized)
+      normalizeString(funcionarioNome).includes(termNormalized) ||
+      (process.referencia && normalizeString(process.referencia).includes(termNormalized))
     );
     
     const matchesStatus = filters.status === 'all' || process.estado === filters.status;
@@ -230,10 +233,12 @@ export const Processes: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Processos</h1>
           <p className="text-gray-600">Gerencie os processos da sua empresa</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Processo
-        </Button>
+        {canCreate("processos") && (
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Processo
+          </Button>
+        )}
       </div>
 
       {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
@@ -359,7 +364,10 @@ export const Processes: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold">{process.titulo}</h3>
+                        <h3 className="text-lg font-semibold">
+                          {process.referencia && <>{process.referencia} - </>}
+                          {process.titulo}
+                        </h3>
                         {process.tipo && (
                           <Badge variant="outline">
                             {process.tipo}

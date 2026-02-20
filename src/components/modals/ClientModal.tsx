@@ -13,10 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Building, Loader2 } from 'lucide-react';
-import { useClients, Client, IndividualClient, CorporateClient } from '@/hooks/useClients';
+import { User, Building, Loader2, AlertTriangle, Printer } from 'lucide-react';
+import { useClients, Client, IndividualClient, CorporateClient, Representante, getEffectiveTipo } from '@/hooks/useClients';
+import { printRGPD } from '@/utils/printRGPD';
 import { IndividualClientForm } from './IndividualClientForm';
-import { CorporateClientForm } from './CorporateClientForm';
+import { CorporateClientForm, RepresentanteLocal } from './CorporateClientForm';
 import { useToast } from '@/hooks/use-toast';
 
 // Schema base para campos comuns
@@ -109,6 +110,7 @@ interface ClientModalProps {
   client?: Client | null;
   initialData?: any;
   onSuccess?: (client: Client) => void;
+  onEditExisting?: (client: Client) => void;
 }
 
 export const ClientModal: React.FC<ClientModalProps> = ({
@@ -117,16 +119,39 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   client,
   initialData,
   onSuccess,
+  onEditExisting,
 }) => {
   const { minimize } = useMinimize();
   const { createClient, updateClient } = useClients();
   const { toast } = useToast();
   const isEditing = !!client;
   const [contactosLocais, setContactosLocais] = useState<Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>>([]);
+  const [representantesLocais, setRepresentantesLocais] = useState<RepresentanteLocal[]>([]);
+  const [duplicateClient, setDuplicateClient] = useState<Client | null>(null);
+  const [createdClient, setCreatedClient] = useState<Client | null>(null);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
   const [tipo, setTipo] = useState<'singular' | 'coletivo'>(
     // Se tipo for null/undefined ou não for válido, assume como singular
     client?.tipo === 'coletivo' ? 'coletivo' : 'singular'
   );
+
+  // Inicializar representantes a partir do client existente
+  React.useEffect(() => {
+    if (client && (client as CorporateClient).representantes) {
+      const reps = ((client as CorporateClient).representantes || []).map((r: Representante) => ({
+        id: r.id,
+        cliente_id: r.cliente_id,
+        nome: r.nome || '',
+        nif: r.nif || '',
+        email: r.email || '',
+        telemovel: r.telemovel || '',
+        cargo: r.cargo || '',
+      }));
+      setRepresentantesLocais(reps);
+    } else {
+      setRepresentantesLocais([]);
+    }
+  }, [client]);
 
   const getSchema = () => {
     return tipo === 'singular' ? individualClientSchema : corporateClientSchema;
@@ -262,7 +287,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   React.useEffect(() => {
     reset(getDefaultValues());
+    setCreatedClient(null);
   }, [tipo, client, initialData]);
+
+  React.useEffect(() => {
+    if (isOpen) setCreatedClient(null);
+  }, [isOpen]);
 
   const normalizeData = (data: any): any => {
     const normalized: any = {};
@@ -289,12 +319,69 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     return normalized;
   };
 
+  const syncRepresentantes = async (clienteId: number | string) => {
+    if (tipo !== 'coletivo') return;
+    try {
+      // Obter representantes atuais do servidor
+      const { data: serverReps } = await api.get(`/clientes/${clienteId}/representantes`);
+      const serverIds = new Set((serverReps || []).map((r: any) => r.id));
+      const localIds = new Set(representantesLocais.filter(r => r.id).map(r => r.id));
+
+      // Apagar representantes que estavam no servidor mas foram removidos localmente
+      for (const sr of (serverReps || [])) {
+        if (!localIds.has(sr.id)) {
+          await api.delete(`/clientes/${clienteId}/representantes/${sr.id}`);
+        }
+      }
+
+      // Criar representantes novos (sem id)
+      for (const rep of representantesLocais) {
+        if (!rep.id) {
+          await api.post(`/clientes/${clienteId}/representantes`, {
+            nome: rep.nome,
+            nif: rep.nif,
+            email: rep.email,
+            telemovel: rep.telemovel,
+            cargo: rep.cargo,
+            cliente_id: rep.cliente_id,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao sincronizar representantes:', err);
+    }
+  };
+
   const onSubmit = async (data: any) => {
+    // Validar campos obrigatórios antes de submeter
+    let hasError = false;
+    if (tipo === 'singular') {
+      if (!data.nome || !data.nome.trim()) {
+        form.setError('nome', { message: 'Nome é obrigatório' });
+        hasError = true;
+      }
+      if (!data.nif || !data.nif.trim()) {
+        form.setError('nif', { message: 'NIF é obrigatório' });
+        hasError = true;
+      }
+    } else {
+      if (!data.nome_empresa || !data.nome_empresa.trim()) {
+        form.setError('nome_empresa', { message: 'Nome da empresa é obrigatório' });
+        hasError = true;
+      }
+      if (!data.nif_empresa || !data.nif_empresa.trim()) {
+        form.setError('nif_empresa', { message: 'NIF é obrigatório' });
+        hasError = true;
+      }
+    }
+    if (hasError) return;
+
     try {
       const normalizedData = normalizeData(data);
-      
+
       if (isEditing && client) {
         const updated = await updateClient.mutateAsync({ id: client.id, ...normalizedData } as any);
+        await syncRepresentantes(client.id);
         toast({
           title: "Cliente atualizado",
           description: "As informações do cliente foram atualizadas com sucesso.",
@@ -302,7 +389,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         onSuccess?.(updated as Client);
       } else {
         const created = await createClient.mutateAsync(normalizedData as Omit<Client, 'id' | 'createdAt'>);
-        
+
         // Criar contactos se houver contactos locais
         if (contactosLocais.length > 0 && created.id) {
           try {
@@ -314,19 +401,38 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             }
           } catch (contactoError: any) {
             console.error('Erro ao criar contactos:', contactoError);
-            // Não falhar a criação do cliente se os contactos falharem
           }
         }
-        
+
+        // Criar representantes para novo cliente
+        if (representantesLocais.length > 0 && created.id) {
+          await syncRepresentantes(created.id);
+        }
+
         toast({
           title: "Cliente criado",
           description: "O novo cliente foi criado com sucesso.",
         });
         onSuccess?.(created as Client);
+        setContactosLocais([]);
+        setRepresentantesLocais([]);
+        setCreatedClient(created as Client);
+        return; // Não fecha — mostra prompt RGPD
       }
-      setContactosLocais([]); // Limpar contactos locais
+      setContactosLocais([]);
+      setRepresentantesLocais([]);
       onClose();
     } catch (error: any) {
+      // Interceptar 409 — NIF duplicado com dados do existente (fluxo esperado, sem log de erro)
+      if (error?.response?.status === 409) {
+        const detail = error?.response?.data?.detail;
+        if (detail?.existente) {
+          setDuplicateClient(detail.existente as Client);
+          setTimeout(() => dialogRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+          return;
+        }
+      }
+
       console.error('Error saving client:', error);
 
       // Extrair mensagem legível mesmo quando o backend devolve um array de erros (422)
@@ -345,6 +451,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         errorMessage = messages.join(' | ');
       } else if (typeof detail === 'string') {
         errorMessage = detail;
+      } else if (typeof detail?.message === 'string') {
+        errorMessage = detail.message;
       } else if (typeof error?.response?.data?.message === 'string') {
         errorMessage = error.response.data.message;
       } else if (typeof error?.message === 'string') {
@@ -364,7 +472,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent ref={dialogRef} className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -392,6 +500,85 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </Button>
           </div>
         </DialogHeader>
+
+        {createdClient && (
+          <div className="flex flex-col items-center gap-4 py-8">
+            <div className="rounded-full bg-green-100 p-3">
+              <Printer className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-semibold text-lg">Cliente criado com sucesso</p>
+              <p className="text-sm text-muted-foreground">
+                Deseja imprimir o documento de consentimento RGPD com os dados do cliente?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={() => {
+                  printRGPD(createdClient);
+                  setCreatedClient(null);
+                  onClose();
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir RGPD
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setCreatedClient(null);
+                  onClose();
+                }}
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!createdClient && (<>
+        {duplicateClient && (
+          <Alert className="border-orange-300 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="space-y-3">
+              <p className="font-medium text-orange-800">
+                Já existe uma entidade com este NIF:
+              </p>
+              <div className="rounded border bg-white p-3 text-sm space-y-1">
+                <p><strong>Nome:</strong> {getEffectiveTipo(duplicateClient) === 'coletivo' ? (duplicateClient as any).nome_empresa : (duplicateClient as any).nome}</p>
+                <p><strong>NIF:</strong> {getEffectiveTipo(duplicateClient) === 'coletivo' ? (duplicateClient as any).nif_empresa : (duplicateClient as any).nif}</p>
+                {duplicateClient.email && <p><strong>Email:</strong> {duplicateClient.email}</p>}
+                {duplicateClient.telefone && <p><strong>Telefone:</strong> {duplicateClient.telefone}</p>}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    const existingClient = duplicateClient;
+                    setDuplicateClient(null);
+                    onClose();
+                    // Defer to next tick so the close state settles before reopening
+                    setTimeout(() => onEditExisting?.(existingClient), 50);
+                  }}
+                >
+                  Editar entidade existente
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDuplicateClient(null)}
+                >
+                  Voltar ao formulário
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Card>
@@ -501,13 +688,15 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               onContactosChange={setContactosLocais}
             />
           ) : (
-            <CorporateClientForm 
-              form={form} 
-              watch={watch} 
-              setValue={setValue} 
+            <CorporateClientForm
+              form={form}
+              watch={watch}
+              setValue={setValue}
               clienteId={isEditing && client ? client.id : undefined}
               contactosLocais={contactosLocais}
               onContactosChange={setContactosLocais}
+              representantesLocais={representantesLocais}
+              onRepresentantesChange={setRepresentantesLocais}
             />
           )}
 
@@ -541,6 +730,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </Button>
           </DialogFooter>
         </form>
+        </>)}
       </DialogContent>
     </Dialog>
   );

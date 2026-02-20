@@ -13,9 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 const resumidoSingularSchema = z.object({
   tipo: z.literal('singular'),
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  nif: z.string().min(9, 'NIF deve ter 9 dígitos'),
+  nif: z.string().min(1, 'NIF é obrigatório'),
   email: z.string().email('Email inválido'),
-  telefone: z.string().min(9, 'Telemóvel deve ter pelo menos 9 dígitos'),
+  telefone: z.string().min(1, 'Telemóvel é obrigatório'),
   nome_empresa: z.string().optional(),
   nif_empresa: z.string().optional(),
 });
@@ -23,9 +23,9 @@ const resumidoSingularSchema = z.object({
 const resumidoColetivoSchema = z.object({
   tipo: z.literal('coletivo'),
   nome_empresa: z.string().min(2, 'Nome da empresa deve ter pelo menos 2 caracteres'),
-  nif_empresa: z.string().min(9, 'NIF deve ter 9 dígitos'),
+  nif_empresa: z.string().min(1, 'NIF é obrigatório'),
   email: z.string().email('Email inválido'),
-  telefone: z.string().min(9, 'Telefone deve ter pelo menos 9 dígitos'),
+  telefone: z.string().min(1, 'Telefone é obrigatório'),
   nome: z.string().optional(),
   nif: z.string().optional(),
 });
@@ -182,14 +182,14 @@ export const ClientModalResumido: React.FC<ClientModalResumidoProps> = ({
             <>
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome completo *</Label>
-                <Input id="nome" {...register('nome')} placeholder="Nome completo" />
+                <Input id="nome" {...register('nome')} placeholder="Nome completo" style={{ textTransform: 'uppercase' }} onChange={(e) => { e.target.value = e.target.value.toUpperCase(); register('nome').onChange(e); }} />
                 {errors.nome && (
                   <p className="text-sm text-red-600">{errors.nome.message?.toString()}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nif">NIF *</Label>
-                <Input id="nif" {...register('nif')} placeholder="123456789" maxLength={9} />
+                <Input id="nif" {...register('nif')} placeholder="123456789" />
                 {errors.nif && (
                   <p className="text-sm text-red-600">{errors.nif.message?.toString()}</p>
                 )}
@@ -199,14 +199,14 @@ export const ClientModalResumido: React.FC<ClientModalResumidoProps> = ({
             <>
               <div className="space-y-2">
                 <Label htmlFor="nome_empresa">Nome da empresa *</Label>
-                <Input id="nome_empresa" {...register('nome_empresa')} placeholder="Nome da empresa" />
+                <Input id="nome_empresa" {...register('nome_empresa')} placeholder="Nome da empresa" style={{ textTransform: 'uppercase' }} onChange={(e) => { e.target.value = e.target.value.toUpperCase(); register('nome_empresa').onChange(e); }} />
                 {errors.nome_empresa && (
                   <p className="text-sm text-red-600">{errors.nome_empresa.message?.toString()}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nif_empresa">NIF *</Label>
-                <Input id="nif_empresa" {...register('nif_empresa')} placeholder="123456789" maxLength={9} />
+                <Input id="nif_empresa" {...register('nif_empresa')} placeholder="123456789" />
                 {errors.nif_empresa && (
                   <p className="text-sm text-red-600">{errors.nif_empresa.message?.toString()}</p>
                 )}

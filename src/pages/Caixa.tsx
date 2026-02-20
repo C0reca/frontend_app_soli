@@ -19,8 +19,11 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useClients, getEffectiveTipo } from '@/hooks/useClients';
 
 export const Caixa: React.FC = () => {
+  const { canCreate, canEdit } = usePermissions();
   const [isMovimentoModalOpen, setIsMovimentoModalOpen] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<string>('');
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>('');
@@ -46,6 +49,17 @@ export const Caixa: React.FC = () => {
     fecharCaixa,
     refetch
   } = useCaixa();
+  const { clients } = useClients();
+
+  const getClientName = (clienteId: number | null | undefined): string | null => {
+    if (!clienteId || !clients) return null;
+    const client = clients.find((c: any) => c.id === clienteId);
+    if (!client) return `Entidade #${clienteId}`;
+    const tipo = getEffectiveTipo(client);
+    return tipo === 'singular'
+      ? ((client as any).nome || `Entidade #${clienteId}`)
+      : ((client as any).nome_empresa || `Entidade #${clienteId}`);
+  };
 
   const reconciliadoParam = filtroReconciliado === '' ? undefined : filtroReconciliado === 'true';
   const { movimentos: movimentosBancarios, isLoading: isLoadingBancarios, importarExtrato, reconciliar, desreconciliar } = useMovimentosBancarios({
@@ -152,6 +166,7 @@ export const Caixa: React.FC = () => {
   };
 
   const handleGuardarMovimento = async (data: Parameters<typeof createMovimento>[0]) => {
+    const clienteId = data.cliente_id ? Number(data.cliente_id) : null;
     const processoId =
       data.associado_a_processo && data.processo_id
         ? Number(data.processo_id)
@@ -163,6 +178,7 @@ export const Caixa: React.FC = () => {
       descricao: data.descricao,
       data: data.data,
       hora: data.hora ? data.hora : undefined,
+      cliente_id: clienteId,
       processo_id: processoId,
       tipo_transferencia: data.tipo_transferencia,
     };
@@ -178,6 +194,7 @@ export const Caixa: React.FC = () => {
         await createMovimento({
           ...basePayload,
           associado_a_processo: data.associado_a_processo,
+          cliente_id: clienteId,
           processo_id: processoId,
         });
         toast({
@@ -274,17 +291,19 @@ const formatTransferType = (value?: string | null) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => {
-              setModalMode('create');
-              setMovimentoSelecionado(null);
-              setIsMovimentoModalOpen(true);
-            }}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Novo Movimento
-          </Button>
+          {canCreate("caixa") && (
+            <Button
+              onClick={() => {
+                setModalMode('create');
+                setMovimentoSelecionado(null);
+                setIsMovimentoModalOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Movimento
+            </Button>
+          )}
           <Button
             onClick={handleFecharCaixaClick}
             variant="outline"
@@ -440,7 +459,7 @@ const formatTransferType = (value?: string | null) => {
                       <TableHead>Tipo</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Descrição</TableHead>
-                      <TableHead>Processo Associado</TableHead>
+                      <TableHead>Entidade / Processo</TableHead>
                       <TableHead>Tipo de Transferência</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -474,10 +493,15 @@ const formatTransferType = (value?: string | null) => {
                           </TableCell>
                           <TableCell>{movimento.descricao}</TableCell>
                           <TableCell>
-                            {movimento.processo_id ? (
-                              <span className="text-sm text-muted-foreground">
-                                Processo #{movimento.processo_id}
-                              </span>
+                            {movimento.cliente_id ? (
+                              <div className="text-sm">
+                                <span>{getClientName(movimento.cliente_id)}</span>
+                                {movimento.processo_id && (
+                                  <span className="text-muted-foreground block text-xs">
+                                    Processo #{movimento.processo_id}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               '-'
                             )}

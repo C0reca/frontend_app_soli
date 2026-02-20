@@ -25,22 +25,34 @@ const ClienteExpandido: React.FC<ClienteExpandidoProps> = ({ clienteId }) => {
 
   return (
     <div className="p-4 bg-muted/30">
-      <div className="grid gap-3 md:grid-cols-4 mb-3">
-        <div className="rounded-md border p-3 text-sm">
-          <span className="text-muted-foreground">Total Custos</span>
-          <p className="font-bold text-red-600">{formatCurrency(data.total_custos)}</p>
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+          <span className="text-xs font-medium text-red-600 flex items-center gap-1">
+            <TrendingDown className="h-3.5 w-3.5 shrink-0" />
+            Custos
+          </span>
+          <span className="text-sm font-bold text-red-600">{formatCurrency(data.total_custos)}</span>
         </div>
-        <div className="rounded-md border p-3 text-sm">
-          <span className="text-muted-foreground">Total Pagamentos</span>
-          <p className="font-bold text-green-600">{formatCurrency(data.total_pagamentos)}</p>
+        <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+          <span className="text-xs font-medium text-green-600 flex items-center gap-1">
+            <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+            Pagamentos
+          </span>
+          <span className="text-sm font-bold text-green-600">{formatCurrency(data.total_pagamentos)}</span>
         </div>
-        <div className="rounded-md border p-3 text-sm">
-          <span className="text-muted-foreground">Total Reembolsos</span>
-          <p className="font-bold text-blue-600">{formatCurrency(data.total_reembolsos)}</p>
+        <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+          <span className="text-xs font-medium text-blue-600 flex items-center gap-1">
+            <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+            Reembolsos
+          </span>
+          <span className="text-sm font-bold text-blue-600">{formatCurrency(data.total_reembolsos)}</span>
         </div>
-        <div className="rounded-md border p-3 text-sm">
-          <span className="text-muted-foreground">Saldo</span>
-          <p className="font-bold">{formatCurrency(data.saldo_total)}</p>
+        <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <DollarSign className="h-3.5 w-3.5 shrink-0" />
+            Saldo
+          </span>
+          <span className="text-sm font-bold">{formatCurrency(data.saldo_total)}</span>
         </div>
       </div>
       {data.processos.length > 0 && (
@@ -57,7 +69,13 @@ const ClienteExpandido: React.FC<ClienteExpandidoProps> = ({ clienteId }) => {
           <TableBody>
             {data.processos.map((p: ContaCorrenteProcesso) => (
               <TableRow key={p.processo_id}>
-                <TableCell className="font-medium">{p.processo_titulo}</TableCell>
+                <TableCell className="font-medium">
+                  {p.processo_id === 0 ? (
+                    <span className="italic text-muted-foreground">{p.processo_titulo}</span>
+                  ) : (
+                    p.processo_titulo
+                  )}
+                </TableCell>
                 <TableCell className="text-red-600">{formatCurrency(p.total_custos)}</TableCell>
                 <TableCell className="text-green-600">{formatCurrency(p.total_pagamentos)}</TableCell>
                 <TableCell className="text-blue-600">{formatCurrency(p.total_reembolsos)}</TableCell>
@@ -98,52 +116,42 @@ export const ContaCorrente: React.FC = () => {
 
       {/* Resumo Geral */}
       {resumo && (
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Custos</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{formatCurrency(resumo.total_custos)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Pagamentos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(resumo.total_pagamentos)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Reembolsos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{formatCurrency(resumo.total_reembolsos)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saldo Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(resumo.saldo_total)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clientes c/ Saldo</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{resumo.total_clientes_com_saldo}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-5 gap-2">
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-red-600 flex items-center gap-1">
+              <TrendingDown className="h-4 w-4 shrink-0" />
+              Custos
+            </span>
+            <span className="text-lg font-bold text-red-600">{formatCurrency(resumo.total_custos)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              Pagamentos
+            </span>
+            <span className="text-lg font-bold text-green-600">{formatCurrency(resumo.total_pagamentos)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              Reembolsos
+            </span>
+            <span className="text-lg font-bold text-blue-600">{formatCurrency(resumo.total_reembolsos)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <DollarSign className="h-4 w-4 shrink-0" />
+              Saldo
+            </span>
+            <span className="text-lg font-bold">{formatCurrency(resumo.saldo_total)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <Users className="h-4 w-4 shrink-0" />
+              C/ Saldo
+            </span>
+            <span className="text-lg font-bold">{resumo.total_clientes_com_saldo}</span>
+          </div>
         </div>
       )}
 

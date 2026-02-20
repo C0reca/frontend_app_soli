@@ -24,13 +24,14 @@ import NotFound from "./pages/NotFound";
 import { MinimizeProvider } from "@/contexts/MinimizeContext";
 import { MinimizeDock } from "@/components/MinimizeDock";
 import { MinimizeRenderer } from "@/components/MinimizeRenderer";
-import { AdminImport } from "@/pages/AdminImport";
 import { ServicosExternos } from "@/pages/ServicosExternos";
 import { ContaCorrente } from "@/pages/ContaCorrente";
 import { Profile } from "@/pages/Profile";
 import { Notifications } from "@/pages/Notifications";
 import { ErroReports } from "@/pages/ErroReports";
+import { AdminPanel } from "@/pages/AdminPanel";
 import { Changelog } from "@/pages/Changelog";
+import { Settings } from "@/pages/Settings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient({
@@ -102,11 +103,12 @@ const AppRoutes = () => {
         <Route path="calendario" element={<Calendar />} />
         <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} />
         <Route path="conta-corrente" element={<ManagerRoute><ContaCorrente /></ManagerRoute>} />
-        <Route path="admin-import" element={<AdminRoute><AdminImport /></AdminRoute>} />
         <Route path="servicos-externos" element={<ServicosExternos />} />
         <Route path="perfil" element={<Profile />} />
         <Route path="notificacoes" element={<Notifications />} />
         <Route path="erro-reports" element={<AdminRoute><ErroReports /></AdminRoute>} />
+        <Route path="admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+        <Route path="definicoes" element={<ManagerRoute><Settings /></ManagerRoute>} />
         <Route path="changelog" element={<Changelog />} />
       </Route>
       <Route path="*" element={<NotFound />} />

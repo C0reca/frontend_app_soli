@@ -196,7 +196,7 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".docx,.doc,.pdf"
+        accept=".docx,.doc,.docm,.dotx,.dotm,.dot,.rtf,.odt,.wps,.pdf"
         className="hidden"
         onChange={handleFileSelected}
       />

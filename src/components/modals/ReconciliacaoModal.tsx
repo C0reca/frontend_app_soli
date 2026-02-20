@@ -102,7 +102,7 @@ export const ReconciliacaoModal: React.FC<ReconciliacaoModalProps> = ({
                       <TableCell>{formatDate(t.data)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
-                          {t.tipo === 'custo' ? 'Custo' : t.tipo === 'pagamento' ? 'Pagamento' : 'Reembolso'}
+                          {t.tipo === 'custo' ? 'Custo' : t.tipo === 'honorario' ? 'Honorário' : t.tipo === 'despesa' ? 'Despesa' : t.tipo === 'pagamento' ? 'Pagamento' : t.tipo === 'reembolso' ? 'Reembolso' : t.tipo}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">{formatCurrency(t.valor)}</TableCell>

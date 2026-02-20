@@ -14,14 +14,16 @@ import {
   Calendar,
   Building,
   Wallet,
-  Upload,
   Truck,
   Receipt,
   Landmark,
   Bug,
-  Megaphone
+  Megaphone,
+  Shield,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { ChangelogBadge } from '@/components/ChangelogBadge';
 
@@ -31,45 +33,50 @@ interface NavItem {
   path: string;
   adminOnly?: boolean;
   managerOrAdmin?: boolean;
+  modulo?: string; // para filtragem por permissão de módulo
 }
 
 const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Calendar, label: 'Calendário', path: '/calendario' },
-  { icon: Users, label: 'Entidades', path: '/clientes' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', modulo: 'dashboard' },
+  { icon: Calendar, label: 'Calendário', path: '/calendario', modulo: 'calendario' },
+  { icon: Users, label: 'Entidades', path: '/clientes', modulo: 'clientes' },
   { icon: UserCog, label: 'Funcionários', path: '/funcionarios', adminOnly: true },
-  { icon: Folder, label: 'Arquivos', path: '/dossies' },
-  { icon: FolderOpen, label: 'Processos', path: '/processos' },
-  { icon: Receipt, label: 'IRS', path: '/irs' },
-  { icon: CheckSquare, label: 'Compromissos', path: '/tarefas' },
-  { icon: Truck, label: 'Serviços Externos', path: '/servicos-externos' },
-  { icon: Building, label: 'Registos Prediais', path: '/registos-prediais' },
-  { icon: Wallet, label: 'Caixa', path: '/caixa', managerOrAdmin: true },
-  { icon: Landmark, label: 'Conta Corrente', path: '/conta-corrente', managerOrAdmin: true },
+  { icon: Folder, label: 'Arquivos', path: '/dossies', modulo: 'dossies' },
+  { icon: FolderOpen, label: 'Processos', path: '/processos', modulo: 'processos' },
+  { icon: Receipt, label: 'IRS', path: '/irs', modulo: 'irs' },
+  { icon: CheckSquare, label: 'Compromissos', path: '/tarefas', modulo: 'tarefas' },
+  { icon: Truck, label: 'Diligências Externas', path: '/servicos-externos', modulo: 'servicos_externos' },
+  { icon: Building, label: 'Registos Prediais', path: '/registos-prediais', modulo: 'registos_prediais' },
+  { icon: Wallet, label: 'Caixa', path: '/caixa', managerOrAdmin: true, modulo: 'caixa' },
+  { icon: Landmark, label: 'Conta Corrente', path: '/conta-corrente', managerOrAdmin: true, modulo: 'financeiro' },
   { icon: FileTemplate, label: 'Templates', path: '/templates', adminOnly: true },
-  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates' },
-  { icon: FileText, label: 'Documentos', path: '/documentos', managerOrAdmin: true },
-  { icon: Upload, label: 'Importação CSV', path: '/admin-import', adminOnly: true },
+  { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates', modulo: 'templates_docs' },
+  { icon: FileText, label: 'Documentos', path: '/documentos', managerOrAdmin: true, modulo: 'documentos' },
   { icon: Bug, label: 'Reportes', path: '/erro-reports', adminOnly: true },
+  { icon: Settings, label: 'Definições', path: '/definicoes', managerOrAdmin: true },
+  { icon: Shield, label: 'Administração', path: '/admin', adminOnly: true },
   { icon: Megaphone, label: 'Novidades', path: '/changelog' },
 ];
-
-function isItemVisible(item: NavItem, role: string | undefined): boolean {
-  if (item.adminOnly) return role === 'admin';
-  if (item.managerOrAdmin) return role === 'admin' || role === 'manager';
-  return true;
-}
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const { logout, user } = useAuth();
   const role = user?.role;
+  const { canView, isAdminOrManager } = usePermissions();
 
   const panelLabel = role === 'admin'
     ? 'Painel Administrativo'
     : role === 'manager'
       ? 'Painel de Gestão'
       : 'Painel do Funcionário';
+
+  const isItemVisible = (item: NavItem): boolean => {
+    if (item.adminOnly) return role === 'admin';
+    if (item.managerOrAdmin) return role === 'admin' || role === 'manager';
+    // Para funcionários, verificar permissão por módulo
+    if (item.modulo && !isAdminOrManager) return canView(item.modulo);
+    return true;
+  };
 
   return (
     <div className="h-full w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -80,7 +87,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
-        {navItems.filter(item => isItemVisible(item, role)).map((item) => {
+        {navItems.filter(item => isItemVisible(item)).map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 

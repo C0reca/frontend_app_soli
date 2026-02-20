@@ -14,6 +14,7 @@ interface ListTransacoesParams {
   data_inicio?: string;
   data_fim?: string;
   estado_reconciliacao?: string;
+  sem_processo?: boolean;
   skip?: number;
   limit?: number;
 }
@@ -34,6 +35,7 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       if (params.data_inicio) searchParams.set('data_inicio', params.data_inicio);
       if (params.data_fim) searchParams.set('data_fim', params.data_fim);
       if (params.estado_reconciliacao) searchParams.set('estado_reconciliacao', params.estado_reconciliacao);
+      if (params.sem_processo) searchParams.set('sem_processo', 'true');
       if (params.skip) searchParams.set('skip', String(params.skip));
       if (params.limit) searchParams.set('limit', String(params.limit));
       const qs = searchParams.toString();

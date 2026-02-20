@@ -2,16 +2,26 @@ import React, { useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { CorporateClient, useClients } from '@/hooks/useClients';
+import { useClients } from '@/hooks/useClients';
 import { ClienteContactosTab } from '@/components/ClienteContactosTab';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClientModal } from './ClientModal';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+
+export interface RepresentanteLocal {
+  id?: number;
+  cliente_id?: number | null;
+  nome: string;
+  nif: string;
+  email: string;
+  telemovel: string;
+  cargo: string;
+}
 
 interface CorporateClientFormProps {
   form: UseFormReturn<any>;
@@ -20,6 +30,8 @@ interface CorporateClientFormProps {
   clienteId?: number;
   contactosLocais?: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>;
   onContactosChange?: (contactos: Array<{ tipo: 'telefone' | 'email'; valor: string; descricao?: string; principal: boolean }>) => void;
+  representantesLocais?: RepresentanteLocal[];
+  onRepresentantesChange?: (reps: RepresentanteLocal[]) => void;
 }
 
 export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
@@ -28,12 +40,38 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
   setValue,
   clienteId,
   contactosLocais,
-  onContactosChange
+  onContactosChange,
+  representantesLocais = [],
+  onRepresentantesChange,
 }) => {
   const { register, formState: { errors } } = form;
   const { clients, isLoading: isClientsLoading } = useClients();
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-  const representanteId = watch('representante_id');
+  const [newRepClienteId, setNewRepClienteId] = useState<number | undefined>(undefined);
+  const [newRepCargo, setNewRepCargo] = useState('');
+
+  const handleAddRepresentante = () => {
+    if (!newRepClienteId) return;
+    if (representantesLocais.some(r => r.cliente_id === newRepClienteId)) return;
+    const selectedClient = clients?.find(c => Number(c.id) === newRepClienteId);
+    if (!selectedClient) return;
+    const newRep: RepresentanteLocal = {
+      cliente_id: newRepClienteId,
+      nome: (selectedClient as any).nome || (selectedClient as any).nome_empresa || '',
+      nif: (selectedClient as any).nif || (selectedClient as any).nif_empresa || '',
+      email: (selectedClient as any).email || '',
+      telemovel: (selectedClient as any).telefone || '',
+      cargo: newRepCargo,
+    };
+    onRepresentantesChange?.([...representantesLocais, newRep]);
+    setNewRepClienteId(undefined);
+    setNewRepCargo('');
+  };
+
+  const handleRemoveRepresentante = (index: number) => {
+    const updated = representantesLocais.filter((_, i) => i !== index);
+    onRepresentantesChange?.(updated);
+  };
 
   return (
     <>
@@ -57,6 +95,8 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                   id="nome_empresa"
                   {...register('nome_empresa')}
                   placeholder="Nome da empresa"
+                  style={{ textTransform: 'uppercase' }}
+                  onChange={(e) => { e.target.value = e.target.value.toUpperCase(); register('nome_empresa').onChange(e); }}
                 />
                 {errors.nome_empresa && (
                   <p className="text-sm text-red-600">{errors.nome_empresa.message?.toString()}</p>
@@ -97,22 +137,20 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="forma_juridica">Forma jurídica</Label>
-                <Select
+                <DynamicSelect
+                  categoria="forma_juridica"
                   value={watch('forma_juridica')}
                   onValueChange={(value) => setValue('forma_juridica', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LDA">Sociedade por Quotas (LDA)</SelectItem>
-                    <SelectItem value="SA">Sociedade Anónima (SA)</SelectItem>
-                    <SelectItem value="SGPS">Sociedade Gestora de Participações Sociais (SGPS)</SelectItem>
-                    <SelectItem value="CRL">Cooperativa de Responsabilidade Limitada (CRL)</SelectItem>
-                    <SelectItem value="EI">Estabelecimento Individual (EI)</SelectItem>
-                    <SelectItem value="other">Outra</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione"
+                  fallbackOptions={[
+                    { value: "LDA", label: "Sociedade por Quotas (LDA)" },
+                    { value: "SA", label: "Sociedade Anónima (SA)" },
+                    { value: "SGPS", label: "Sociedade Gestora de Participações Sociais (SGPS)" },
+                    { value: "CRL", label: "Cooperativa de Responsabilidade Limitada (CRL)" },
+                    { value: "EI", label: "Estabelecimento Individual (EI)" },
+                    { value: "other", label: "Outra" },
+                  ]}
+                />
               </div>
             </div>
 
@@ -145,13 +183,33 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               />
             </div>
 
-            {/* Representante Legal */}
+            {/* Representantes Legais */}
               <div className="space-y-4 border-t pt-4">
-              <h4 className="font-semibold">Representante Legal</h4>
-              
-              <div className="space-y-2">
+              <h4 className="font-semibold">Representantes Legais</h4>
+
+              {representantesLocais.map((rep, index) => (
+                <div key={rep.id ?? `new-${index}`} className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{rep.nome}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[rep.cargo, rep.nif].filter(Boolean).join(' | ')}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 shrink-0"
+                    onClick={() => handleRemoveRepresentante(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+
+              <div className="space-y-3 rounded-lg border p-3">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="representante_id">Entidade *</Label>
+                  <Label>Adicionar representante</Label>
                   <Button
                     type="button"
                     variant="secondary"
@@ -169,32 +227,31 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                 </div>
                 <ClientCombobox
                   clients={clients || []}
-                  value={representanteId}
-                  onChange={(value) => {
-                    setValue('representante_id', value);
-                    // Preencher automaticamente os campos do representante com os dados do cliente selecionado
-                    const selectedClient = clients?.find(c => Number(c.id) === value);
-                    if (selectedClient) {
-                      setValue('representante_nome', selectedClient.nome || selectedClient.nome_empresa || '');
-                      setValue('representante_nif', selectedClient.nif || selectedClient.nif_empresa || '');
-                      setValue('representante_email', selectedClient.email || '');
-                      setValue('representante_telemovel', selectedClient.telefone || '');
-                    }
-                  }}
+                  value={newRepClienteId}
+                  onChange={(value) => setNewRepClienteId(value)}
                   isLoading={isClientsLoading}
                 />
-                {errors.representante_id && (
-                  <p className="text-sm text-red-500">{errors.representante_id.message as string}</p>
+                <div className="space-y-2">
+                  <Label>Cargo</Label>
+                  <Input
+                    value={newRepCargo}
+                    onChange={(e) => setNewRepCargo(e.target.value)}
+                    placeholder="Gerente, Administrador, etc."
+                  />
+                </div>
+                {newRepClienteId && representantesLocais.some(r => r.cliente_id === newRepClienteId) && (
+                  <p className="text-sm text-amber-600">Esta entidade já foi adicionada como representante.</p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="representante_cargo">Cargo</Label>
-                <Input
-                  id="representante_cargo"
-                  {...register('representante_cargo')}
-                  placeholder="Gerente, Administrador, etc."
-                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!newRepClienteId || representantesLocais.some(r => r.cliente_id === newRepClienteId)}
+                  onClick={handleAddRepresentante}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Representante
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -300,28 +357,6 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="incapacidade">Incapacidade (%)</Label>
-              <Input
-                id="incapacidade"
-                type="number"
-                min="0"
-                max="100"
-                {...register('incapacidade', {
-                  valueAsNumber: true,
-                  validate: (value) => {
-                    if (value === undefined || value === null || value === '') return true;
-                    const num = Number(value);
-                    return (num >= 0 && num <= 100) || 'Incapacidade deve estar entre 0 e 100%';
-                  }
-                })}
-                placeholder="0-100"
-              />
-              {errors.incapacidade && (
-                <p className="text-sm text-red-500">{errors.incapacidade.message as string}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea
                 id="observacoes"
@@ -336,18 +371,14 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                 <Label htmlFor="senha_financas">Senha Finanças</Label>
                 <Input
                   id="senha_financas"
-                  type="password"
                   {...register('senha_financas')}
-                  placeholder="••••••••"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="senha_ss">Senha Segurança Social</Label>
                 <Input
                   id="senha_ss"
-                  type="password"
                   {...register('senha_ss')}
-                  placeholder="••••••••"
                 />
               </div>
             </div>
@@ -359,16 +390,9 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
       isOpen={isClientModalOpen}
       onClose={() => setIsClientModalOpen(false)}
       onSuccess={(newClient) => {
-        // Após criar o cliente, selecioná-lo automaticamente
+        // Após criar o cliente, selecioná-lo automaticamente no campo de novo representante
         if (newClient?.id) {
-          setValue('representante_id', Number(newClient.id));
-          const client = clients?.find(c => Number(c.id) === Number(newClient.id));
-          if (client) {
-            setValue('representante_nome', client.nome || client.nome_empresa || '');
-            setValue('representante_nif', client.nif || client.nif_empresa || '');
-            setValue('representante_email', client.email || '');
-            setValue('representante_telemovel', client.telefone || '');
-          }
+          setNewRepClienteId(Number(newClient.id));
         }
         setIsClientModalOpen(false);
       }}
