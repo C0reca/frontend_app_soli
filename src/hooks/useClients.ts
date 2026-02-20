@@ -170,10 +170,24 @@ export const useClients = () => {
   const deleteClient = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/clientes/${id}`);
+      return id;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['clients'] });
-      await queryClient.invalidateQueries({ queryKey: ['clients-duplicates'] });
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['clients'] });
+      const previous = queryClient.getQueryData<Client[]>(['clients']);
+      queryClient.setQueryData<Client[]>(['clients'], (old) =>
+        (old || []).filter((c) => String(c.id) !== String(id))
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['clients'], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-duplicates'] });
     },
   });
 
