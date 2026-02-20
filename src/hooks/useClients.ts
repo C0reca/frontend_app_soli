@@ -171,8 +171,9 @@ export const useClients = () => {
     mutationFn: async (id: string) => {
       await api.delete(`/clientes/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['clients'] });
+      await queryClient.invalidateQueries({ queryKey: ['clients-duplicates'] });
     },
   });
 
