@@ -298,20 +298,20 @@ export const RegistosPrediais: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {sortedRegistos.map((registo: any) => (
-              <Card 
-                key={registo.id} 
+              <Card
+                key={registo.id}
                 className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => handleView(registo)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         {getStatusIcon(registo.estado_key)}
                         <h3 className="font-semibold">
                           {registo.numero_processo} -{' '}
-                          <ClickableClientName 
-                            clientId={registo.cliente_id} 
+                          <ClickableClientName
+                            clientId={registo.cliente_id}
                             client={registo.cliente}
                             clientName={registo.cliente?.nome || clientNameById(registo.cliente_id) || 'N/A'}
                           />
@@ -320,16 +320,45 @@ export const RegistosPrediais: React.FC = () => {
                           {getStatusLabel(registo.estado_key)}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{registo.predio} - {registo.freguesia}</p>
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+
+                      {/* Prédios */}
+                      {registo.predios && registo.predios.length > 0 ? (
+                        <div className="mb-2 space-y-1">
+                          {registo.predios.map((p: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
+                              <Building className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                              <span>{p.predio}{p.freguesia ? ` - ${p.freguesia}` : ''}</span>
+                              {p.codigo_certidao_permanente && (
+                                <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded">{p.codigo_certidao_permanente}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700 mb-2">
+                          <Building className="h-3.5 w-3.5 text-gray-400 inline mr-1" />
+                          {registo.predio}{registo.freguesia ? ` - ${registo.freguesia}` : ''}
+                        </p>
+                      )}
+
+                      {/* Detalhes */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs text-gray-500">
                         <span><strong>Registo:</strong> {registo.registo}</span>
+                        <span><strong>Conservatória:</strong> {registo.conservatoria}</span>
+                        <span><strong>Facto de Registo:</strong> {registo.requisicao}</span>
+                        <span><strong>Apresentação:</strong> {registo.apresentacao}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
                         <span><strong>Data:</strong> {new Date(registo.data).toLocaleDateString('pt-BR')}</span>
-                        {registo.predios && registo.predios.length > 0 && registo.predios.some((p: any) => p.codigo_certidao_permanente) && (
-                          <span><strong>Códigos Certidão:</strong> {registo.predios.filter((p: any) => p.codigo_certidao_permanente).map((p: any) => p.codigo_certidao_permanente).join(', ')}</span>
+                        {registo.apresentacao_complementar && (
+                          <span className="ml-4"><strong>Apresentação Complementar:</strong> {registo.apresentacao_complementar}</span>
+                        )}
+                        {registo.outras_observacoes && (
+                          <span className="ml-4"><strong>Observações:</strong> {registo.outras_observacoes}</span>
                         )}
                       </div>
                     </div>
-                    <div className="flex space-x-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex space-x-2 ml-4 shrink-0" onClick={(e) => e.stopPropagation()}>
                       {registo.estado_key !== 'concluido' && (
                         <Button
                           variant="ghost"
