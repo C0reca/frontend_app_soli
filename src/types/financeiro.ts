@@ -2,9 +2,9 @@
 // Transacao Financeira
 // ============================
 
-export type TipoTransacao = 'custo' | 'pagamento' | 'reembolso' | 'honorario' | 'despesa';
+export type TipoTransacao = string;
 export type EstadoReconciliacao = 'pendente' | 'reconciliado' | 'parcial';
-export type MetodoPagamento = 'dinheiro' | 'mb' | 'transferencia' | 'cheque' | 'outro';
+export type MetodoPagamento = string;
 
 export interface TransacaoAnexo {
   id: number;

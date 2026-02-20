@@ -16,11 +16,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { TransacaoFinanceira } from '@/types/financeiro';
 
 const transacaoSchema = z.object({
-  tipo: z.enum(['custo', 'pagamento', 'reembolso', 'honorario', 'despesa']),
+  tipo: z.string().min(1, 'Selecione um tipo'),
   valor: z.coerce.number().positive('Valor deve ser positivo'),
   descricao: z.string().optional(),
   data: z.string().optional(),
-  metodo_pagamento: z.enum(['dinheiro', 'mb', 'transferencia', 'cheque', 'outro']).optional(),
+  metodo_pagamento: z.string().optional(),
   referencia: z.string().optional(),
   gerar_movimento_caixa: z.boolean().optional(),
   transacao_original_id: z.coerce.number().optional().nullable(),
