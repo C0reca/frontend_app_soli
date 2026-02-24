@@ -12,6 +12,8 @@ export interface Representante {
   email?: string;
   telemovel?: string;
   cargo?: string;
+  quota_valor?: number | null;
+  quota_tipo?: string | null;
   criado_em?: string;
   atualizado_em?: string;
 }
@@ -41,6 +43,7 @@ export interface IndividualClient extends BaseClient {
   morada?: string;
   codigo_postal?: string;
   localidade?: string;
+  concelho?: string;
   distrito?: string;
   pais?: string;
   
@@ -78,6 +81,7 @@ export interface CorporateClient extends BaseClient {
   morada?: string;
   codigo_postal?: string;
   localidade?: string;
+  concelho?: string;
   distrito?: string;
   pais?: string;
   
@@ -226,6 +230,10 @@ export const useDuplicateClients = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['clients-duplicates'] });
+      // Invalidar cache de dossiês e processos para que os transferidos apareçam
+      queryClient.invalidateQueries({ queryKey: ['dossie'] });
+      queryClient.invalidateQueries({ queryKey: ['dossies'] });
+      queryClient.invalidateQueries({ queryKey: ['processes'] });
     },
   });
 

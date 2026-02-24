@@ -113,6 +113,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
       cliente_id: clienteId,
       cliente_relacionado_id: selectedClienteId,
       tipo_relacao: tipoRelacao,
+      faz_parte_agregado: true,
     });
 
     // Registrar no histórico do IRS se disponível
@@ -485,7 +486,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                     <p className="text-sm font-mono">{(clientePrincipal as any).codigo_postal || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Localidade</label>
+                    <label className="text-xs font-medium text-muted-foreground">Freguesia</label>
                     <p className="text-sm">{(clientePrincipal as any).localidade || '-'}</p>
                   </div>
                 </div>
@@ -1205,12 +1206,12 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="localidade">Localidade</Label>
+                <Label htmlFor="localidade">Freguesia</Label>
                 <Input
                   id="localidade"
                   value={newMorada.localidade}
                   onChange={(e) => setNewMorada(prev => ({ ...prev, localidade: e.target.value }))}
-                  placeholder="Cidade"
+                  placeholder="Freguesia"
                   className="w-full"
                 />
               </div>

@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SelectOptionsManager } from '@/components/settings/SelectOptionsManager';
 import { UserPermissionsManager } from '@/components/settings/UserPermissionsManager';
-import { Settings as SettingsIcon, Shield } from 'lucide-react';
+import { SolicitadorManager } from '@/components/settings/SolicitadorManager';
+import { Settings as SettingsIcon, Shield, UserCog } from 'lucide-react';
 
 export const Settings = () => {
   return (
@@ -18,6 +19,10 @@ export const Settings = () => {
             <Shield className="h-4 w-4" />
             Permissões de Utilizadores
           </TabsTrigger>
+          <TabsTrigger value="solicitadores" className="flex items-center gap-2">
+            <UserCog className="h-4 w-4" />
+            Perfis de Solicitador
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="opcoes" className="mt-6">
@@ -26,6 +31,10 @@ export const Settings = () => {
 
         <TabsContent value="permissoes" className="mt-6">
           <UserPermissionsManager />
+        </TabsContent>
+
+        <TabsContent value="solicitadores" className="mt-6">
+          <SolicitadorManager />
         </TabsContent>
       </Tabs>
     </div>

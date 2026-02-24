@@ -9,6 +9,8 @@ export interface DocumentTemplate {
   descricao?: string;
   categoria: string;
   conteudo_html: string;
+  cabecalho_template_id?: number | null;
+  cabecalho_template_nome?: string | null;
   variaveis: string[];
   criado_por?: number;
   criado_em: string;
@@ -63,6 +65,7 @@ export const useDocumentTemplates = () => {
       descricao?: string;
       categoria: string;
       conteudo_html: string;
+      cabecalho_template_id?: number | null;
       variaveis?: string[];
       tipo_template?: string;
       campos_overlay?: OverlayFieldData[] | null;

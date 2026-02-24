@@ -146,6 +146,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         email: r.email || '',
         telemovel: r.telemovel || '',
         cargo: r.cargo || '',
+        quota_valor: r.quota_valor ?? null,
+        quota_tipo: r.quota_tipo ?? null,
       }));
       setRepresentantesLocais(reps);
     } else {
@@ -334,17 +336,23 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         }
       }
 
-      // Criar representantes novos (sem id)
       for (const rep of representantesLocais) {
-        if (!rep.id) {
-          await api.post(`/clientes/${clienteId}/representantes`, {
-            nome: rep.nome,
-            nif: rep.nif,
-            email: rep.email,
-            telemovel: rep.telemovel,
-            cargo: rep.cargo,
-            cliente_id: rep.cliente_id,
-          });
+        const payload = {
+          nome: rep.nome,
+          nif: rep.nif,
+          email: rep.email,
+          telemovel: rep.telemovel,
+          cargo: rep.cargo,
+          cliente_id: rep.cliente_id,
+          quota_valor: rep.quota_valor,
+          quota_tipo: rep.quota_tipo,
+        };
+        if (rep.id) {
+          // Atualizar representante existente (quota ou outros campos alterados)
+          await api.put(`/clientes/${clienteId}/representantes/${rep.id}`, payload);
+        } else {
+          // Criar representante novo
+          await api.post(`/clientes/${clienteId}/representantes`, payload);
         }
       }
     } catch (err) {

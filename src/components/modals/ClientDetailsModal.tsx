@@ -15,6 +15,7 @@ import { ClientModal } from './ClientModal';
 import { TransacaoModal } from './TransacaoModal';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { ClienteContactosTab } from '@/components/ClienteContactosTab';
+import { FiliacaoSection } from '@/components/FiliacaoSection';
 import {
   Building,
   Mail,
@@ -199,15 +200,15 @@ const DetailField = ({ label, value, valueClassName, className }: { label: strin
 );
 
 // Secção de morada uniforme
-const MoradaSection = ({ morada, codigo_postal, localidade, distrito, pais }: { morada?: string; codigo_postal?: string; localidade?: string; distrito?: string; pais?: string }) => {
-  const temAlgo = morada || codigo_postal || localidade || distrito || pais;
+const MoradaSection = ({ morada, codigo_postal, localidade, concelho, distrito, pais }: { morada?: string; codigo_postal?: string; localidade?: string; concelho?: string; distrito?: string; pais?: string }) => {
+  const temAlgo = morada || codigo_postal || localidade || concelho || distrito || pais;
   return (
     <div className="rounded-lg border bg-muted/50 p-4 space-y-1">
       {temAlgo ? (
         <>
           {morada && <p className="text-sm">{morada}</p>}
           {(codigo_postal || localidade) && <p className="text-sm">{[codigo_postal, localidade].filter(Boolean).join(' ')}</p>}
-          {(distrito || pais) && <p className="text-sm text-muted-foreground">{[distrito, pais].filter(Boolean).join(', ')}</p>}
+          {(concelho || distrito || pais) && <p className="text-sm text-muted-foreground">{[concelho, distrito, pais].filter(Boolean).join(', ')}</p>}
         </>
       ) : (
         <p className="text-sm text-muted-foreground">Sem morada registada</p>
@@ -587,11 +588,13 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <MoradaSection morada={client.morada} codigo_postal={client.codigo_postal} localidade={client.localidade} distrito={client.distrito} pais={client.pais} />
+              <MoradaSection morada={client.morada} codigo_postal={client.codigo_postal} localidade={client.localidade} concelho={client.concelho} distrito={client.distrito} pais={client.pais} />
             </CardContent>
           </Card>
 
           <ClienteContactosTab clienteId={client.id} uniformCard />
+
+          <FiliacaoSection clienteId={client.id} />
         </div>
       </TabsContent>
 
@@ -787,11 +790,13 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <MoradaSection morada={client.morada} codigo_postal={client.codigo_postal} localidade={client.localidade} distrito={client.distrito} pais={client.pais} />
+              <MoradaSection morada={client.morada} codigo_postal={client.codigo_postal} localidade={client.localidade} concelho={client.concelho} distrito={client.distrito} pais={client.pais} />
             </CardContent>
           </Card>
 
           <ClienteContactosTab clienteId={client.id} uniformCard />
+
+          <FiliacaoSection clienteId={client.id} />
 
         </div>
       </TabsContent>

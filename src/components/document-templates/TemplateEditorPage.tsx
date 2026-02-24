@@ -31,6 +31,7 @@ import {
   usePdfInfo,
   PdfPageInfo,
 } from '@/hooks/useDocumentTemplates';
+import { useCabecalhoTemplates } from '@/hooks/useCabecalhoTemplates';
 import type { OverlayFieldData } from '@/components/editor/OverlayFieldRect';
 
 interface TemplateEditorPageProps {
@@ -49,11 +50,13 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
   const { data: pdfInfoData } = usePdfInfo(
     existingTemplate?.tipo_template === 'pdf_overlay' && existingTemplate?.has_pdf ? templateId : null,
   );
+  const { cabecalhos } = useCabecalhoTemplates();
 
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [categoria, setCategoria] = useState('Outros');
   const [conteudoHtml, setConteudoHtml] = useState('');
+  const [cabecalhoTemplateId, setCabecalhoTemplateId] = useState<number | null>(null);
   const [variaveis, setVariaveis] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +82,7 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
       setDescricao(existingTemplate.descricao || '');
       setCategoria(existingTemplate.categoria);
       setConteudoHtml(existingTemplate.conteudo_html || '');
+      setCabecalhoTemplateId(existingTemplate.cabecalho_template_id ?? null);
       setVariaveis(existingTemplate.variaveis || []);
       setTipoTemplate((existingTemplate.tipo_template as 'html' | 'pdf_overlay') || 'html');
       setOverlayFields(existingTemplate.campos_overlay || []);
@@ -136,6 +140,7 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
             descricao: descricao || undefined,
             categoria,
             conteudo_html: conteudoHtml,
+            cabecalho_template_id: cabecalhoTemplateId ?? 0,
             variaveis,
           });
         } else {
@@ -144,6 +149,7 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
             descricao: descricao || undefined,
             categoria,
             conteudo_html: conteudoHtml,
+            cabecalho_template_id: cabecalhoTemplateId,
             variaveis,
           });
         }
@@ -152,18 +158,16 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [nome, descricao, categoria, conteudoHtml, variaveis, templateId, existingTemplate, tipoTemplate, overlayFields, pdfBase64]);
+  }, [nome, descricao, categoria, conteudoHtml, cabecalhoTemplateId, variaveis, templateId, existingTemplate, tipoTemplate, overlayFields, pdfBase64]);
 
   // Click-to-insert handler for sidebar (HTML mode)
   const handleVariableClick = useCallback((variablePath: string, label: string) => {
     if (tipoTemplate === 'html') {
-      const editorContainer = document.querySelector('.template-editor') as HTMLDivElement | null;
+      const editorContainer = document.querySelector('.template-editor:not(.header-editor)') as HTMLDivElement | null;
       if (editorContainer && (editorContainer as any).__insertVariable) {
         (editorContainer as any).__insertVariable(variablePath, label);
       }
     }
-    // In PDF overlay mode, clicking a variable in the sidebar does nothing special
-    // (user drags variables onto the PDF instead)
   }, [tipoTemplate]);
 
   // Import DOCX (for HTML mode)
@@ -357,6 +361,33 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={78}>
               <div className="h-full overflow-auto p-4 bg-gray-50">
+                {/* Header template selector */}
+                <div className="mb-3 flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Cabeçalho:
+                  </label>
+                  <Select
+                    value={cabecalhoTemplateId ? String(cabecalhoTemplateId) : 'none'}
+                    onValueChange={(val) => setCabecalhoTemplateId(val === 'none' ? null : Number(val))}
+                  >
+                    <SelectTrigger className="w-64 bg-white">
+                      <SelectValue placeholder="Sem cabeçalho" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sem cabeçalho</SelectItem>
+                      {cabecalhos.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {cabecalhoTemplateId && (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                      Ativo
+                    </span>
+                  )}
+                </div>
                 <TemplateEditor
                   content={conteudoHtml}
                   onChange={setConteudoHtml}

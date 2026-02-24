@@ -204,10 +204,12 @@ export const useCaixa = () => {
     }
   }, []);
 
-  const createMovimento = useCallback(async (data: CreateMovimentoData): Promise<void> => {
+  const createMovimento = useCallback(async (data: CreateMovimentoData): Promise<MovimentoCaixa> => {
     try {
-      await api.post('/caixa/movimento', data);
+      const response = await api.post('/caixa/movimento', data);
+      const created = normalizarMovimento(response.data);
       await Promise.all([fetchMovimentos(), fetchFechos(), fetchResumoDia()]);
+      return created;
     } catch (error) {
       setError('Erro ao criar movimento');
       throw error;

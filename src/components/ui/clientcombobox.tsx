@@ -15,6 +15,7 @@ interface Client {
     nif_empresa?: string | null;
     criado_em?: string | null;
     createdAt?: string | null;
+    ativo?: boolean | null;
 }
 
 interface ClientComboboxProps {
@@ -35,12 +36,15 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
     const filteredClients = useMemo(() => {
         const normSearch = normalizeString(search);
         const filtered = (clients ?? []).filter((client) => {
+            // Excluir entidades inativas
+            if (client.ativo === false) return false;
+
             const nome = client?.nome || client?.nome_empresa || "";
-            const nif = client?.tipo === 'coletivo' 
+            const nif = client?.tipo === 'coletivo'
                 ? (client?.nif_empresa || "")
                 : (client?.nif || "");
-            
-            return normalizeString(nome).includes(normSearch) || 
+
+            return normalizeString(nome).includes(normSearch) ||
                    normalizeString(nif).includes(normSearch);
         });
         

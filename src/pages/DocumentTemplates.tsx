@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus,
   Search,
@@ -19,9 +20,12 @@ import {
   ChevronDown,
   ChevronUp,
   FileType,
+  PanelTop,
 } from 'lucide-react';
 import { useDocumentTemplates, DocumentTemplateListItem } from '@/hooks/useDocumentTemplates';
+import { useCabecalhoTemplates, CabecalhoTemplateListItem } from '@/hooks/useCabecalhoTemplates';
 import { TemplateEditorPage } from '@/components/document-templates/TemplateEditorPage';
+import { CabecalhoTemplateEditor } from '@/components/document-templates/CabecalhoTemplateEditor';
 import { DocumentTemplateDetailsModal } from '@/components/modals/DocumentTemplateDetailsModal';
 import { ApplyTemplateModal } from '@/components/modals/ApplyTemplateModal';
 
@@ -29,11 +33,14 @@ type PageMode = { type: 'list' } | { type: 'editor'; templateId: number | null }
 
 export const DocumentTemplates: React.FC = () => {
   const { templates, isLoading, deleteTemplate } = useDocumentTemplates();
+  const { cabecalhos, isLoading: loadingCabecalhos, deleteCabecalho } = useCabecalhoTemplates();
   const [searchTerm, setSearchTerm] = useState('');
   const [mode, setMode] = useState<PageMode>({ type: 'list' });
   const [detailsTemplate, setDetailsTemplate] = useState<DocumentTemplateListItem | null>(null);
   const [applyTemplate, setApplyTemplate] = useState<DocumentTemplateListItem | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [cabecalhoEditorOpen, setCabecalhoEditorOpen] = useState(false);
+  const [editingCabecalhoId, setEditingCabecalhoId] = useState<number | null>(null);
 
   if (mode.type === 'editor') {
     return (
@@ -70,6 +77,12 @@ export const DocumentTemplates: React.FC = () => {
     }
   };
 
+  const handleDeleteCabecalho = (id: number) => {
+    if (confirm('Tem a certeza que deseja eliminar este cabeçalho? Os templates que o usam ficarão sem cabeçalho.')) {
+      deleteCabecalho.mutate(id);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -95,10 +108,6 @@ export const DocumentTemplates: React.FC = () => {
             <Info className="mr-1.5 h-4 w-4" />
             {showInfo ? 'Ocultar ajuda' : 'Como funciona?'}
             {showInfo ? <ChevronUp className="ml-1 h-3.5 w-3.5" /> : <ChevronDown className="ml-1 h-3.5 w-3.5" />}
-          </Button>
-          <Button onClick={() => setMode({ type: 'editor', templateId: null })}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Template
           </Button>
         </div>
       </div>
@@ -158,142 +167,244 @@ export const DocumentTemplates: React.FC = () => {
         </Card>
       )}
 
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Pesquisar templates..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList>
+          <TabsTrigger value="templates">
+            <FileText className="h-4 w-4 mr-1.5" />
+            Templates de Documentos
+          </TabsTrigger>
+          <TabsTrigger value="cabecalhos">
+            <PanelTop className="h-4 w-4 mr-1.5" />
+            Cabeçalhos
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map((template) => (
-          <Card key={template.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">{template.nome}</CardTitle>
-                </div>
-                <div className="flex gap-1.5">
-                  {template.tipo_template === 'pdf_overlay' && (
-                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5">
-                      <FileType className="h-3 w-3 mr-0.5" />
-                      PDF
-                    </Badge>
-                  )}
-                  <Badge className={getCategoryColor(template.categoria)}>
-                    {template.categoria}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {template.descricao && (
-                <p className="text-sm text-gray-600 line-clamp-2">{template.descricao}</p>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Campos:</span>
-                  <p className="font-medium">{template.variaveis?.length || 0} variáveis</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Utilizações:</span>
-                  <p className="font-medium">{template.uso_count}</p>
-                </div>
-              </div>
-
-              <div className="text-sm">
-                <span className="text-gray-500">Criado em:</span>
-                <p className="font-medium">
-                  {template.criado_em
-                    ? new Date(template.criado_em).toLocaleDateString('pt-PT')
-                    : '-'}
-                </p>
-              </div>
-
-              {template.variaveis && template.variaveis.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {template.variaveis.slice(0, 4).map((v) => (
-                    <Badge key={v} variant="outline" className="text-[10px] px-1.5 py-0">
-                      {v}
-                    </Badge>
-                  ))}
-                  {template.variaveis.length > 4 && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      +{template.variaveis.length - 4}
-                    </Badge>
-                  )}
-                </div>
-              )}
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDetailsTemplate(template)}
-                  title="Ver detalhes"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMode({ type: 'editor', templateId: template.id })}
-                  title="Editar"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setApplyTemplate(template)}
-                  title="Aplicar a processo"
-                >
-                  <FileDown className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(template.id)}
-                  className="text-red-600 hover:text-red-700"
-                  title="Eliminar"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredTemplates.length === 0 && (
-        <div className="text-center py-12">
-          <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
-            Nenhum template encontrado
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchTerm
-              ? 'Tente ajustar os filtros de pesquisa.'
-              : 'Comece criando um novo template.'}
-          </p>
-          {!searchTerm && (
-            <Button
-              className="mt-4"
-              onClick={() => setMode({ type: 'editor', templateId: null })}
-            >
+        {/* ── Tab: Templates ───────────────────────────────────────────── */}
+        <TabsContent value="templates" className="space-y-4 mt-4">
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Pesquisar templates..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button onClick={() => setMode({ type: 'editor', templateId: null })}>
               <Plus className="mr-2 h-4 w-4" />
-              Criar Template
+              Novo Template
             </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((template) => (
+              <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <CardTitle className="text-lg">{template.nome}</CardTitle>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {template.tipo_template === 'pdf_overlay' && (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5">
+                          <FileType className="h-3 w-3 mr-0.5" />
+                          PDF
+                        </Badge>
+                      )}
+                      <Badge className={getCategoryColor(template.categoria)}>
+                        {template.categoria}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {template.descricao && (
+                    <p className="text-sm text-gray-600 line-clamp-2">{template.descricao}</p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Campos:</span>
+                      <p className="font-medium">{template.variaveis?.length || 0} variáveis</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Utilizações:</span>
+                      <p className="font-medium">{template.uso_count}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-sm">
+                    <span className="text-gray-500">Criado em:</span>
+                    <p className="font-medium">
+                      {template.criado_em
+                        ? new Date(template.criado_em).toLocaleDateString('pt-PT')
+                        : '-'}
+                    </p>
+                  </div>
+
+                  {template.variaveis && template.variaveis.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {template.variaveis.slice(0, 4).map((v) => (
+                        <Badge key={v} variant="outline" className="text-[10px] px-1.5 py-0">
+                          {v}
+                        </Badge>
+                      ))}
+                      {template.variaveis.length > 4 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          +{template.variaveis.length - 4}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDetailsTemplate(template)}
+                      title="Ver detalhes"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setMode({ type: 'editor', templateId: template.id })}
+                      title="Editar"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setApplyTemplate(template)}
+                      title="Aplicar a processo"
+                    >
+                      <FileDown className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(template.id)}
+                      className="text-red-600 hover:text-red-700"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {filteredTemplates.length === 0 && (
+            <div className="text-center py-12">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                Nenhum template encontrado
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm
+                  ? 'Tente ajustar os filtros de pesquisa.'
+                  : 'Comece criando um novo template.'}
+              </p>
+              {!searchTerm && (
+                <Button
+                  className="mt-4"
+                  onClick={() => setMode({ type: 'editor', templateId: null })}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Template
+                </Button>
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+
+        {/* ── Tab: Cabeçalhos ──────────────────────────────────────────── */}
+        <TabsContent value="cabecalhos" className="space-y-4 mt-4">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-600">
+              Cabeçalhos reutilizáveis que podem ser associados a qualquer template de documento.
+            </p>
+            <Button onClick={() => { setEditingCabecalhoId(null); setCabecalhoEditorOpen(true); }}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Cabeçalho
+            </Button>
+          </div>
+
+          {loadingCabecalhos ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            </div>
+          ) : cabecalhos.length === 0 ? (
+            <div className="text-center py-12">
+              <PanelTop className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                Nenhum cabeçalho criado
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Crie um cabeçalho reutilizável para os seus documentos.
+              </p>
+              <Button
+                className="mt-4"
+                onClick={() => { setEditingCabecalhoId(null); setCabecalhoEditorOpen(true); }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Cabeçalho
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {cabecalhos.map((cab) => (
+                <Card key={cab.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <PanelTop className="h-4 w-4 text-blue-600" />
+                        <CardTitle className="text-base">{cab.nome}</CardTitle>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {cab.descricao && (
+                      <p className="text-sm text-gray-600 line-clamp-2">{cab.descricao}</p>
+                    )}
+                    <div className="text-xs text-gray-500">
+                      {cab.atualizado_em
+                        ? `Atualizado: ${new Date(cab.atualizado_em).toLocaleDateString('pt-PT')}`
+                        : cab.criado_em
+                          ? `Criado: ${new Date(cab.criado_em).toLocaleDateString('pt-PT')}`
+                          : ''}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setEditingCabecalhoId(cab.id); setCabecalhoEditorOpen(true); }}
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteCabecalho(cab.id)}
+                        className="text-red-600 hover:text-red-700"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <DocumentTemplateDetailsModal
         isOpen={!!detailsTemplate}
@@ -305,6 +416,12 @@ export const DocumentTemplates: React.FC = () => {
         isOpen={!!applyTemplate}
         onClose={() => setApplyTemplate(null)}
         template={applyTemplate}
+      />
+
+      <CabecalhoTemplateEditor
+        isOpen={cabecalhoEditorOpen}
+        onClose={() => setCabecalhoEditorOpen(false)}
+        cabecalhoId={editingCabecalhoId}
       />
     </div>
   );

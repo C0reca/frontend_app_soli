@@ -17,7 +17,8 @@ import { TaskModal } from '@/components/modals/TaskModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
 import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock, Printer, DollarSign } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
@@ -27,6 +28,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Client, useClients } from '@/hooks/useClients';
 import { ProcessoEntidadesSecundariasTab } from '@/components/ProcessoEntidadesSecundariasTab';
+import { useSolicitadoresAtivos } from '@/hooks/useSolicitadores';
 import { GenerateFromTemplateModal } from '@/components/modals/GenerateFromTemplateModal';
 import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
 import FullCalendar from '@fullcalendar/react';
@@ -100,12 +102,41 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const canManageVisibility = user?.role === 'admin' || user?.role === 'manager';
   const [privadoLocal, setPrivadoLocal] = React.useState(false);
   const [autorizadosIdsLocal, setAutorizadosIdsLocal] = React.useState<number[]>([]);
+  const [gerandoCapa, setGerandoCapa] = React.useState(false);
   React.useEffect(() => {
     if (process) {
       setPrivadoLocal(process.privado ?? false);
       setAutorizadosIdsLocal(process.autorizados?.map((a: { id: number }) => a.id) ?? []);
     }
   }, [process]);
+
+  const { data: solicitadoresAtivos } = useSolicitadoresAtivos();
+
+  const handleGerarCapa = async (solicitadorId: number) => {
+    if (!process) return;
+    setGerandoCapa(true);
+    try {
+      const response = await api.get(`/processos/${process.id}/capa-pdf`, {
+        params: { solicitador_id: solicitadorId },
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `capa_processo_${process.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast({ title: 'Capa gerada com sucesso' });
+    } catch (err) {
+      console.error('Erro ao gerar capa:', err);
+      toast({ title: 'Erro ao gerar capa', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setGerandoCapa(false);
+    }
+  };
   
   React.useEffect(() => {
     if (process && isOpen) {
@@ -427,6 +458,33 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
+              {process && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={gerandoCapa}
+                      className="flex items-center gap-2"
+                    >
+                      <Printer className="h-4 w-4" />
+                      {gerandoCapa ? 'A gerar...' : 'Gerar Capa'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {solicitadoresAtivos?.map((sol) => (
+                      <DropdownMenuItem key={sol.id} onClick={() => handleGerarCapa(sol.id)}>
+                        {sol.nome}
+                      </DropdownMenuItem>
+                    ))}
+                    {(!solicitadoresAtivos || solicitadoresAtivos.length === 0) && (
+                      <DropdownMenuItem disabled>
+                        Nenhum solicitador ativo
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {onEdit && process && (
                 <Button
                   variant="outline"
@@ -583,6 +641,18 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                     </div>
                     <p className="text-sm">{(process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || 'Não definido')}</p>
                   </div>
+
+                  {(process as any).valor != null && Number((process as any).valor) > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1 mb-1">
+                        <DollarSign className="h-4 w-4" />
+                        <span>Valor</span>
+                      </label>
+                      <p className="text-sm font-medium">
+                        {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(Number((process as any).valor))}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -79,7 +79,8 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
       const address = data.address ?? {};
       setValue('morada', address.street ?? '');
       setValue('codigo_postal', address.postalCode ?? '');
-      setValue('localidade', address.municipality ?? '');
+      setValue('localidade', address.parish ?? address.municipality ?? '');
+      setValue('concelho', address.municipality ?? '');
       setValue('distrito', address.district ?? '');
       setValue('pais', address.countryCode ?? 'Portugal');
 
@@ -329,24 +330,36 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="localidade">Localidade</Label>
+                  <Label htmlFor="localidade">Freguesia</Label>
                   <Input
                       id="localidade"
                       {...register('localidade')}
-                      placeholder="Lisboa"
+                      placeholder="Mafamude"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="concelho">Concelho</Label>
+                  <Input
+                      id="concelho"
+                      {...register('concelho')}
+                      placeholder="Vila Nova de Gaia"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="distrito">Distrito</Label>
                   <Input
                       id="distrito"
                       {...register('distrito')}
-                      placeholder="Lisboa"
+                      placeholder="Porto"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
 
                 <div className="space-y-2">
                   <Label htmlFor="pais">País</Label>

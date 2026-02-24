@@ -9,6 +9,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { FontSize } from './FontSizeExtension';
+import { Indent } from './IndentExtension';
 import { Table as TableExtension } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
@@ -60,6 +61,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       Color,
       FontFamily,
       FontSize,
+      Indent,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Comece a escrever o template do documento...' }),
       Highlight,
@@ -158,13 +160,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`template-editor border rounded-md bg-white ${isDragOver ? 'drag-over ring-2 ring-blue-400' : ''}`}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      className={`template-editor-wrapper ${isDragOver ? 'drag-over' : ''}`}
     >
       <EditorToolbar editor={editor} onImportDocx={onImportDocx} />
-      <EditorContent editor={editor} />
+      <div
+        className="template-editor"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 };

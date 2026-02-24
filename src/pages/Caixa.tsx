@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2, Download, Upload, Link2, Unlink } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2, Download, Upload, Link2, Unlink, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +21,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useClients, getEffectiveTipo } from '@/hooks/useClients';
+import { printTalao } from '@/utils/printTalao';
+import { ToastAction } from '@/components/ui/toast';
 
 export const Caixa: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
@@ -191,7 +193,7 @@ export const Caixa: React.FC = () => {
           description: "O movimento foi atualizado com sucesso.",
         });
       } else {
-        await createMovimento({
+        const criado = await createMovimento({
           ...basePayload,
           associado_a_processo: data.associado_a_processo,
           cliente_id: clienteId,
@@ -200,6 +202,11 @@ export const Caixa: React.FC = () => {
         toast({
           title: "Movimento registado",
           description: "O movimento foi registado com sucesso.",
+          action: (
+            <ToastAction altText="Imprimir talao" onClick={() => handleImprimirTalao(criado)}>
+              Imprimir Talao
+            </ToastAction>
+          ),
         });
       }
     } catch (error) {
@@ -238,6 +245,12 @@ export const Caixa: React.FC = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleImprimirTalao = (movimento: MovimentoCaixa) => {
+    const clienteNome = getClientName(movimento.cliente_id);
+    const processoTitulo = movimento.processo_id ? `Processo #${movimento.processo_id}` : null;
+    printTalao(movimento, { clienteNome, processoTitulo });
   };
 
   const movimentosFiltrados = movimentos.filter(movimento => {
@@ -509,6 +522,15 @@ const formatTransferType = (value?: string | null) => {
                           <TableCell>{formatTransferType(movimento.tipo_transferencia)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleImprimirTalao(movimento)}
+                                title="Imprimir talao"
+                              >
+                                <Printer className="h-4 w-4" />
+                                <span className="sr-only">Imprimir talao</span>
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"

@@ -32,6 +32,7 @@ export interface Process {
   };
   privado?: boolean;
   autorizados?: { id: number; nome: string }[];
+  valor?: number | null;
 }
 
 export const useProcesses = () => {

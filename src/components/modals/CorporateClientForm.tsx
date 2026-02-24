@@ -11,7 +11,9 @@ import { useClients } from '@/hooks/useClients';
 import { ClienteContactosTab } from '@/components/ClienteContactosTab';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClientModal } from './ClientModal';
-import { Plus, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, X, AlertTriangle } from 'lucide-react';
 
 export interface RepresentanteLocal {
   id?: number;
@@ -21,6 +23,8 @@ export interface RepresentanteLocal {
   email: string;
   telemovel: string;
   cargo: string;
+  quota_valor?: number | null;
+  quota_tipo?: string | null;
 }
 
 interface CorporateClientFormProps {
@@ -49,6 +53,8 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [newRepClienteId, setNewRepClienteId] = useState<number | undefined>(undefined);
   const [newRepCargo, setNewRepCargo] = useState('');
+  const [newRepQuotaValor, setNewRepQuotaValor] = useState('');
+  const [newRepQuotaTipo, setNewRepQuotaTipo] = useState<string>('percentagem');
 
   const handleAddRepresentante = () => {
     if (!newRepClienteId) return;
@@ -62,11 +68,31 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
       email: (selectedClient as any).email || '',
       telemovel: (selectedClient as any).telefone || '',
       cargo: newRepCargo,
+      quota_valor: newRepQuotaValor ? parseFloat(newRepQuotaValor) : null,
+      quota_tipo: newRepQuotaTipo,
     };
     onRepresentantesChange?.([...representantesLocais, newRep]);
     setNewRepClienteId(undefined);
     setNewRepCargo('');
+    setNewRepQuotaValor('');
+    setNewRepQuotaTipo('percentagem');
   };
+
+  const handleUpdateRepQuota = (index: number, field: 'quota_valor' | 'quota_tipo', value: any) => {
+    const updated = [...representantesLocais];
+    updated[index] = { ...updated[index], [field]: field === 'quota_valor' ? (value ? parseFloat(value) : null) : value };
+    onRepresentantesChange?.(updated);
+  };
+
+  // Quota validation
+  const capitalSocialStr = watch('capital_social') || '';
+  const capitalSocialNum = parseFloat(capitalSocialStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+  const quotaTipoAtual = representantesLocais.length > 0 ? (representantesLocais[0]?.quota_tipo || 'percentagem') : 'percentagem';
+  const somaQuotas = representantesLocais.reduce((sum, r) => sum + (r.quota_valor || 0), 0);
+  const quotaExpected = quotaTipoAtual === 'percentagem' ? 100 : capitalSocialNum;
+  const quotaLabel = quotaTipoAtual === 'percentagem' ? '%' : '€';
+  const hasQuotas = representantesLocais.some(r => r.quota_valor != null && r.quota_valor > 0);
+  const quotaMismatch = hasQuotas && Math.abs(somaQuotas - quotaExpected) > 0.01;
 
   const handleRemoveRepresentante = (index: number) => {
     const updated = representantesLocais.filter((_, i) => i !== index);
@@ -188,24 +214,60 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               <h4 className="font-semibold">Representantes Legais</h4>
 
               {representantesLocais.map((rep, index) => (
-                <div key={rep.id ?? `new-${index}`} className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{rep.nome}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[rep.cargo, rep.nif].filter(Boolean).join(' | ')}
-                    </p>
+                <div key={rep.id ?? `new-${index}`} className="rounded-lg border bg-muted/50 p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{rep.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {[rep.cargo, rep.nif].filter(Boolean).join(' | ')}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 shrink-0"
+                      onClick={() => handleRemoveRepresentante(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 shrink-0"
-                    onClick={() => handleRemoveRepresentante(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Quota:</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="h-7 text-xs w-24"
+                      placeholder="Valor"
+                      value={rep.quota_valor ?? ''}
+                      onChange={(e) => handleUpdateRepQuota(index, 'quota_valor', e.target.value)}
+                    />
+                    <Select
+                      value={rep.quota_tipo || 'percentagem'}
+                      onValueChange={(v) => handleUpdateRepQuota(index, 'quota_tipo', v)}
+                    >
+                      <SelectTrigger className="h-7 text-xs w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentagem">%</SelectItem>
+                        <SelectItem value="euros">€</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               ))}
+
+              {quotaMismatch && (
+                <Alert className="border-amber-300 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-sm text-amber-800">
+                    Soma das quotas ({somaQuotas.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}{quotaLabel}) não corresponde ao esperado ({quotaExpected.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}{quotaLabel}).
+                    {quotaTipoAtual === 'euros' && capitalSocialNum === 0 && ' Preencha o campo "Capital social" acima.'}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="space-y-3 rounded-lg border p-3">
                 <div className="flex items-center justify-between">
@@ -238,6 +300,34 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
                     onChange={(e) => setNewRepCargo(e.target.value)}
                     placeholder="Gerente, Administrador, etc."
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label>Quota (valor)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newRepQuotaValor}
+                      onChange={(e) => setNewRepQuotaValor(e.target.value)}
+                      placeholder="Ex: 50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo</Label>
+                    <Select
+                      value={newRepQuotaTipo}
+                      onValueChange={(v) => setNewRepQuotaTipo(v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentagem">% (Percentagem)</SelectItem>
+                        <SelectItem value="euros">€ (Euros)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 {newRepClienteId && representantesLocais.some(r => r.cliente_id === newRepClienteId) && (
                   <p className="text-sm text-amber-600">Esta entidade já foi adicionada como representante.</p>
@@ -297,24 +387,36 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="localidade">Localidade</Label>
+                <Label htmlFor="localidade">Freguesia</Label>
                 <Input
                   id="localidade"
                   {...register('localidade')}
-                  placeholder="Lisboa"
+                  placeholder="Mafamude"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="concelho">Concelho</Label>
+                <Input
+                  id="concelho"
+                  {...register('concelho')}
+                  placeholder="Vila Nova de Gaia"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="distrito">Distrito</Label>
                 <Input
                   id="distrito"
                   {...register('distrito')}
-                  placeholder="Lisboa"
+                  placeholder="Porto"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
 
               <div className="space-y-2">
                 <Label htmlFor="pais">País</Label>

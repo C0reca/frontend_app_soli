@@ -105,6 +105,7 @@ const processSchemaBase = z.object({
     dossie_id: z.number().optional(),
     funcionario_id: z.number().optional(),
     estado: z.enum(["pendente", "em_curso", "concluido"]).default("pendente"),
+    valor: z.coerce.number().nullable().optional(),
 });
 
 // Schema para criação - cliente_id é obrigatório
@@ -208,6 +209,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
             dossie_id: (initialData as any)?.dossie_id ?? undefined,
             funcionario_id: initialData?.funcionario_id ?? undefined,
             estado: initialData?.estado ?? "pendente",
+            valor: (initialData as any)?.valor ?? null,
         },
     });
 
@@ -254,6 +256,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 dossie_id: (process as any).dossie_id ?? undefined,
                 funcionario_id: process.funcionario_id || undefined,
                 estado: process.estado,
+                valor: (process as any).valor ?? null,
             });
             if (process.cliente_id) {
                 setSelectedClienteId(process.cliente_id);
@@ -268,6 +271,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 dossie_id: (initialData as any)?.dossie_id ?? undefined,
                 funcionario_id: initialData?.funcionario_id ?? undefined,
                 estado: initialData?.estado ?? "pendente",
+                valor: (initialData as any)?.valor ?? null,
             });
             if (initialData?.cliente_id) {
                 setSelectedClienteId(initialData.cliente_id);
@@ -685,6 +689,28 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                 <SelectItem value="concluido">Concluído</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="valor"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Valor (EUR)</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                {...field}
+                                                value={field.value ?? ''}
+                                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                                            />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
