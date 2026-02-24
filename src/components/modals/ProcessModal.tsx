@@ -34,8 +34,10 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { ClientCombobox } from "@/components/ui/clientcombobox";
-import { Loader2, Minimize2, ChevronRight, ChevronLeft, Plus, X } from "lucide-react";
+import { Loader2, Minimize2, ChevronRight, ChevronLeft, Plus, X, ScanSearch, ChevronDown } from "lucide-react";
 import { useMinimize } from '@/contexts/MinimizeContext';
+import { useExtracaoStatus, useExtrairDocumento } from '@/hooks/useExtracaoDocumento';
+import { ExtracaoUploadZone } from '@/components/extraction/ExtracaoUploadZone';
 
 const PROCESS_TYPES_STORAGE_KEY = "app-soli-process-types";
 const PROCESS_TYPES_HIDDEN_KEY = "app-soli-process-types-hidden";
@@ -188,6 +190,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const { dossie: dossieEntidade, isLoading: isDossieLoading, createDossie } = useDossies(selectedCliente?.id);
 
     const [createdDossieId, setCreatedDossieId] = useState<number | null>(null);
+    const [showExtracao, setShowExtracao] = useState(false);
+    const { data: extracaoStatus } = useExtracaoStatus();
+    const extracao = useExtrairDocumento();
 
     const isEditing = !!process;
     const schema = isEditing ? processSchemaUpdate : processSchemaCreate;
@@ -433,6 +438,49 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 )}
                             />
                                         </>
+                                    )}
+
+                                    {/* Inline extraction */}
+                                    {isWizard && extracaoStatus?.habilitado && (
+                                        <div className="mt-4 border border-gray-200 rounded-lg">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowExtracao(!showExtracao)}
+                                                className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <ScanSearch className="h-4 w-4" />
+                                                    Preencher a partir de documento
+                                                </span>
+                                                <ChevronDown className={`h-4 w-4 transition-transform ${showExtracao ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {showExtracao && (
+                                                <div className="px-3 pb-3">
+                                                    <ExtracaoUploadZone
+                                                        onExtrair={(ficheiro, tipo) => {
+                                                            extracao.mutate(
+                                                                { ficheiro, tipo_processo: tipo },
+                                                                {
+                                                                    onSuccess: (data) => {
+                                                                        if (data.processo?.titulo_sugerido) {
+                                                                            form.setValue("titulo", data.processo.titulo_sugerido);
+                                                                        }
+                                                                        if (data.processo?.tipo_sugerido) {
+                                                                            form.setValue("tipo", data.processo.tipo_sugerido);
+                                                                        }
+                                                                        if (data.processo?.descricao) {
+                                                                            form.setValue("descricao", data.processo.descricao);
+                                                                        }
+                                                                        setShowExtracao(false);
+                                                                    },
+                                                                },
+                                                            );
+                                                        }}
+                                                        isLoading={extracao.isPending}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}

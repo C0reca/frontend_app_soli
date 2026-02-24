@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import type { OverlayFieldData } from '@/components/editor/OverlayFieldRect';
 
 export interface DocumentTemplate {
   id: number;
@@ -13,6 +14,9 @@ export interface DocumentTemplate {
   criado_em: string;
   atualizado_em: string;
   uso_count: number;
+  tipo_template: string;
+  campos_overlay?: OverlayFieldData[] | null;
+  has_pdf: boolean;
 }
 
 export interface DocumentTemplateListItem {
@@ -24,6 +28,14 @@ export interface DocumentTemplateListItem {
   criado_em: string;
   atualizado_em: string;
   uso_count: number;
+  tipo_template: string;
+  has_pdf: boolean;
+}
+
+export interface PdfPageInfo {
+  page: number;
+  width: number;
+  height: number;
 }
 
 export const useDocumentTemplates = () => {
@@ -52,6 +64,9 @@ export const useDocumentTemplates = () => {
       categoria: string;
       conteudo_html: string;
       variaveis?: string[];
+      tipo_template?: string;
+      campos_overlay?: OverlayFieldData[] | null;
+      pdf_base64?: string | null;
     }) => {
       const response = await api.post('/documento-templates', data);
       return response.data;
@@ -67,7 +82,7 @@ export const useDocumentTemplates = () => {
 
   // Update
   const updateTemplate = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number } & Partial<DocumentTemplate>) => {
+    mutationFn: async ({ id, ...data }: { id: number } & Partial<DocumentTemplate> & { pdf_base64?: string | null }) => {
       const response = await api.put(`/documento-templates/${id}`, data);
       return response.data;
     },
@@ -94,7 +109,7 @@ export const useDocumentTemplates = () => {
     },
   });
 
-  // Generate DOCX
+  // Generate document
   const generateDocument = useMutation({
     mutationFn: async ({
       templateId,
@@ -155,6 +170,33 @@ export const useDocumentTemplates = () => {
     },
   });
 
+  // Import PDF for overlay mode
+  const importPdfOverlay = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await api.post('/documento-templates/importar-pdf-overlay', formData, {
+        headers: { 'Content-Type': undefined },
+      });
+      return response.data as {
+        page_count: number;
+        pages: PdfPageInfo[];
+        pdf_base64: string;
+      };
+    },
+    onSuccess: () => {
+      toast({ title: 'Sucesso', description: 'PDF importado para modo overlay.' });
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      toast({
+        title: 'Erro ao importar PDF',
+        description: detail || 'Erro ao importar PDF.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     templates,
     isLoading,
@@ -164,6 +206,7 @@ export const useDocumentTemplates = () => {
     deleteTemplate,
     generateDocument,
     importDocx,
+    importPdfOverlay,
   };
 };
 
@@ -177,5 +220,18 @@ export const useDocumentTemplate = (id: number | null) => {
     },
     enabled: !!id,
     staleTime: 60_000,
+  });
+};
+
+// Hook for getting PDF info for an existing template
+export const usePdfInfo = (templateId: number | null) => {
+  return useQuery<{ page_count: number; pages: PdfPageInfo[] }>({
+    queryKey: ['documento-templates', templateId, 'pdf-info'],
+    queryFn: async () => {
+      const response = await api.get(`/documento-templates/${templateId}/pdf-info`);
+      return response.data;
+    },
+    enabled: !!templateId,
+    staleTime: 5 * 60 * 1000,
   });
 };

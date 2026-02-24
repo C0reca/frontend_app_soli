@@ -18,6 +18,7 @@ import {
   FileOutput,
   ChevronDown,
   ChevronUp,
+  FileType,
 } from 'lucide-react';
 import { useDocumentTemplates, DocumentTemplateListItem } from '@/hooks/useDocumentTemplates';
 import { TemplateEditorPage } from '@/components/document-templates/TemplateEditorPage';
@@ -178,9 +179,17 @@ export const DocumentTemplates: React.FC = () => {
                   <FileText className="h-5 w-5 text-blue-600" />
                   <CardTitle className="text-lg">{template.nome}</CardTitle>
                 </div>
-                <Badge className={getCategoryColor(template.categoria)}>
-                  {template.categoria}
-                </Badge>
+                <div className="flex gap-1.5">
+                  {template.tipo_template === 'pdf_overlay' && (
+                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5">
+                      <FileType className="h-3 w-3 mr-0.5" />
+                      PDF
+                    </Badge>
+                  )}
+                  <Badge className={getCategoryColor(template.categoria)}>
+                    {template.categoria}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

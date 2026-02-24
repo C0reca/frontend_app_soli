@@ -16,7 +16,7 @@ import { useEmployeeList } from '@/hooks/useEmployees';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ProcessCombobox } from '@/components/ui/processcombobox';
-import { Minimize2, FileIcon, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Minimize2, FileIcon, X, ChevronRight, ChevronLeft, Repeat, Bell, Trash2 } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/services/api';
@@ -35,7 +35,20 @@ const taskSchema = z.object({
   parent_id: z.number().nullable().optional(),
   onde_estao: z.string().optional(),
   custo: z.coerce.number().nullable().optional(),
+  recorrencia_tipo: z.string().nullable().optional(),
+  recorrencia_dia_semana: z.number().nullable().optional(),
+  recorrencia_fim: z.string().nullable().optional(),
 });
+
+const LEMBRETE_OPTIONS = [
+  { value: 15, label: '15 minutos antes' },
+  { value: 30, label: '30 minutos antes' },
+  { value: 60, label: '1 hora antes' },
+  { value: 120, label: '2 horas antes' },
+  { value: 1440, label: '1 dia antes' },
+  { value: 2880, label: '2 dias antes' },
+  { value: 10080, label: '1 semana antes' },
+];
 
 type TaskFormData = z.infer<typeof taskSchema>;
 
@@ -49,13 +62,14 @@ interface TaskModalProps {
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, parentId = null, processoId = null, initialData = null }) => {
-  const { createTask, updateTask } = useTasks();
+  const { createTask, updateTask, addLembrete, removeLembrete } = useTasks();
   const { processes, isLoading: isProcessesLoading } = useProcesses();
   const { clients = [], isLoading: isClientsLoading } = useClients();
   const { data: employees = [] } = useEmployeeList();
   const { user } = useAuth();
   const { minimize } = useMinimize();
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingLembretes, setPendingLembretes] = useState<number[]>([]);
   const [step, setStep] = useState(0);
   const isWizard = !task;
   const isSubtask = !task && !!parentId;
@@ -77,6 +91,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
       parent_id: (initialData as any)?.parent_id ?? parentId,
       onde_estao: (initialData as any)?.onde_estao ?? undefined,
       custo: (initialData as any)?.custo ?? null,
+      recorrencia_tipo: (initialData as any)?.recorrencia_tipo ?? null,
+      recorrencia_dia_semana: (initialData as any)?.recorrencia_dia_semana ?? null,
+      recorrencia_fim: (initialData as any)?.recorrencia_fim ?? null,
     },
   });
 
@@ -86,9 +103,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
     return (processes || []).filter((p) => p.cliente_id === selectedClienteId);
   }, [processes, selectedClienteId]);
 
+  // Use a ref for processes to avoid infinite loops from unstable array references
+  const processesRef = React.useRef(processes);
+  processesRef.current = processes;
+
   useEffect(() => {
     if (task) {
-      const entityId = task.cliente_id ?? (task.processo_id && processes?.find((p) => p.id === task.processo_id)?.cliente_id) ?? null;
+      const procs = processesRef.current;
+      const entityId = task.cliente_id ?? (task.processo_id && procs?.find((p) => p.id === task.processo_id)?.cliente_id) ?? null;
       form.reset({
         titulo: task.titulo,
         descricao: task.descricao,
@@ -103,9 +125,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         parent_id: task.parent_id ?? null,
         onde_estao: (task as any).onde_estao ?? undefined,
         custo: (task as any).custo ?? null,
+        recorrencia_tipo: task.recorrencia_tipo ?? null,
+        recorrencia_dia_semana: task.recorrencia_dia_semana ?? null,
+        recorrencia_fim: task.recorrencia_fim ? (task.recorrencia_fim as string).split('T')[0] : null,
       });
+      // Load existing lembretes for edit mode
+      setPendingLembretes(task.lembretes?.map(l => l.tempo_antes_minutos) ?? []);
     } else {
-      const initialClienteId = initialData?.cliente_id ?? (processoId && processes?.find((p) => p.id === processoId)?.cliente_id) ?? null;
+      const procs = processesRef.current;
+      const initialClienteId = initialData?.cliente_id ?? (processoId && procs?.find((p) => p.id === processoId)?.cliente_id) ?? null;
       const currentUserId = user?.id ?? null;
       form.reset({
         titulo: initialData?.titulo ?? '',
@@ -121,10 +149,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         parent_id: (initialData as any)?.parent_id ?? parentId,
         onde_estao: (initialData as any)?.onde_estao ?? undefined,
         custo: (initialData as any)?.custo ?? null,
+        recorrencia_tipo: (initialData as any)?.recorrencia_tipo ?? null,
+        recorrencia_dia_semana: (initialData as any)?.recorrencia_dia_semana ?? null,
+        recorrencia_fim: (initialData as any)?.recorrencia_fim ?? null,
       });
+      setPendingLembretes([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- form from useForm is stable, omit to avoid init issues
-  }, [task, parentId, processoId, initialData, processes, user?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- form/processesRef are stable refs, omit to avoid init issues
+  }, [task, parentId, processoId, initialData, user?.id]);
 
   useEffect(() => {
     if (isOpen && !task) setStep(0);
@@ -155,6 +187,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
         parent_id: data.parent_id || null,
         data_fim: data.data_fim || null,
         custo: data.custo && data.custo > 0 ? data.custo : null,
+        recorrencia_tipo: data.recorrencia_tipo || null,
+        recorrencia_dia_semana: data.recorrencia_tipo === 'semanal' ? (data.recorrencia_dia_semana ?? null) : null,
+        recorrencia_fim: data.recorrencia_fim || null,
       };
 
       if (task) {
@@ -166,7 +201,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
           prioridade: normalizedData.prioridade,
           concluida: normalizedData.concluida,
           tipo: normalizedData.tipo,
-          onde_estao: normalizedData.onde_estao, // Sempre incluir, mesmo que seja null
+          onde_estao: normalizedData.onde_estao,
           custo: normalizedData.custo,
           cliente_id: normalizedData.cliente_id,
           processo_id: normalizedData.processo_id,
@@ -174,24 +209,49 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
           autor_id: normalizedData.autor_id,
           parent_id: normalizedData.parent_id,
           data_fim: normalizedData.data_fim,
+          recorrencia_tipo: normalizedData.recorrencia_tipo,
+          recorrencia_dia_semana: normalizedData.recorrencia_dia_semana,
+          recorrencia_fim: normalizedData.recorrencia_fim,
         };
-        console.log('Update payload onde_estao:', updatePayload.onde_estao); // Debug
         await updateTask.mutateAsync(updatePayload as Task & { id: string });
+
+        // Sync lembretes: remove old, add new
+        const existingLembretes = task.lembretes ?? [];
+        const existingMinutos = existingLembretes.map(l => l.tempo_antes_minutos);
+        // Remove lembretes that are no longer in the list
+        for (const existing of existingLembretes) {
+          if (!pendingLembretes.includes(existing.tempo_antes_minutos)) {
+            try { await removeLembrete.mutateAsync({ tarefaId: task.id, lembreteId: existing.id }); } catch {}
+          }
+        }
+        // Add new lembretes
+        for (const minutos of pendingLembretes) {
+          if (!existingMinutos.includes(minutos)) {
+            try { await addLembrete.mutateAsync({ tarefaId: task.id, tempo_antes_minutos: minutos }); } catch {}
+          }
+        }
       } else {
         const newTask = await createTask.mutateAsync(normalizedData as Omit<Task, 'id' | 'criado_em'>);
         // Fazer upload dos ficheiros pendentes após criar o compromisso
-        if (pendingFiles.length > 0 && newTask?.id) {
-          for (const file of pendingFiles) {
-            try {
-              const formData = new FormData();
-              formData.append('file', file);
-              await api.post(`/documentos/upload-tarefa/${newTask.id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-            } catch (error) {
-              console.error('Erro ao fazer upload do ficheiro:', error);
+        if (newTask?.id) {
+          if (pendingFiles.length > 0) {
+            for (const file of pendingFiles) {
+              try {
+                const formData = new FormData();
+                formData.append('file', file);
+                await api.post(`/documentos/upload-tarefa/${newTask.id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+              } catch (error) {
+                console.error('Erro ao fazer upload do ficheiro:', error);
+              }
             }
+          }
+          // Create lembretes for the new task
+          for (const minutos of pendingLembretes) {
+            try { await addLembrete.mutateAsync({ tarefaId: String(newTask.id), tempo_antes_minutos: minutos }); } catch {}
           }
         }
         setPendingFiles([]);
+        setPendingLembretes([]);
       }
       onClose();
     } catch (error) {
@@ -574,6 +634,132 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, par
                       </FormItem>
                     )}
                   />
+                </div>
+
+                {/* Recorrência */}
+                <div className="space-y-3 rounded-md border p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Repeat className="h-4 w-4" />
+                    Recorrência
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="recorrencia_tipo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === '_none' ? null : value)}
+                          value={field.value || '_none'}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sem recorrência" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="_none">Sem recorrência</SelectItem>
+                            <SelectItem value="diaria">Diária</SelectItem>
+                            <SelectItem value="semanal">Semanal</SelectItem>
+                            <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                            <SelectItem value="mensal">Mensal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  {form.watch('recorrencia_tipo') === 'semanal' && (
+                    <FormField
+                      control={form.control}
+                      name="recorrencia_dia_semana"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia da semana</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(Number(value))}
+                            value={field.value?.toString() ?? ''}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Dia da semana" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">Segunda-feira</SelectItem>
+                              <SelectItem value="1">Terça-feira</SelectItem>
+                              <SelectItem value="2">Quarta-feira</SelectItem>
+                              <SelectItem value="3">Quinta-feira</SelectItem>
+                              <SelectItem value="4">Sexta-feira</SelectItem>
+                              <SelectItem value="5">Sábado</SelectItem>
+                              <SelectItem value="6">Domingo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  {form.watch('recorrencia_tipo') && form.watch('recorrencia_tipo') !== '_none' && (
+                    <FormField
+                      control={form.control}
+                      name="recorrencia_fim"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data limite (opcional)</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} value={field.value || ''} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Lembretes */}
+                <div className="space-y-3 rounded-md border p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Bell className="h-4 w-4" />
+                    Lembretes
+                  </div>
+                  {pendingLembretes.length > 0 && (
+                    <ul className="space-y-1">
+                      {pendingLembretes.map((minutos, idx) => {
+                        const opt = LEMBRETE_OPTIONS.find(o => o.value === minutos);
+                        return (
+                          <li key={idx} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1">
+                            <span>{opt?.label ?? `${minutos} minutos antes`}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600"
+                              onClick={() => setPendingLembretes(pendingLembretes.filter((_, i) => i !== idx))}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <Select
+                    onValueChange={(value) => {
+                      const minutos = Number(value);
+                      if (!pendingLembretes.includes(minutos)) {
+                        setPendingLembretes([...pendingLembretes, minutos]);
+                      }
+                    }}
+                    value=""
+                  >
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Adicionar lembrete..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LEMBRETE_OPTIONS.filter(o => !pendingLembretes.includes(o.value)).map(o => (
+                        <SelectItem key={o.value} value={o.value.toString()}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {!task && (

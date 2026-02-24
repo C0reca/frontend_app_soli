@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, CalendarClock } from 'lucide-react';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, CalendarClock, Repeat } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses } from '@/hooks/useProcesses';
@@ -215,6 +215,12 @@ export const Tasks: React.FC = () => {
                     ) : null;
                   })()}
                   {level > 0 && <Badge variant="secondary">Sub-compromisso</Badge>}
+                  {task.recorrencia_tipo && (
+                    <Badge variant="outline" className="border-blue-500 text-blue-700 gap-1">
+                      <Repeat className="h-3 w-3" />
+                      Recorrente
+                    </Badge>
+                  )}
                   {isOverdue(task.data_fim, task.concluida) && (
                     <Badge variant="destructive">Atrasada</Badge>
                   )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Trash2, User, Building, Filter, X, ChevronLeft, ChevronRight, GitMerge, AlertTriangle, Users, FileWarning } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, User, Building, Filter, X, ChevronLeft, ChevronRight, GitMerge, AlertTriangle, Users, FileWarning, ScanSearch } from 'lucide-react';
 import { useClients, Client, getEffectiveTipo, useDuplicateClients, DuplicateGroup, useNameDuplicateClients, NameDuplicateGroup } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
@@ -17,6 +17,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 
 export const Clients: React.FC = () => {
+  const navigate = useNavigate();
   const { clients, isLoading, deleteClient } = useClients();
   const { duplicates, isLoading: isDuplicatesLoading } = useDuplicateClients();
   const { user } = useAuth();
@@ -238,12 +239,20 @@ export const Clients: React.FC = () => {
             {isAdmin ? 'Gerencie os clientes da empresa' : 'Visualize e trabalhe com clientes'}
           </p>
         </div>
-          {canCreate("clientes") && (
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Cliente
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {canCreate("clientes") && (
+              <Button variant="outline" onClick={() => navigate('/assistente-documentos')}>
+                <ScanSearch className="mr-2 h-4 w-4" />
+                Extrair de Documento
+              </Button>
+            )}
+            {canCreate("clientes") && (
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Cliente
+              </Button>
+            )}
+          </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

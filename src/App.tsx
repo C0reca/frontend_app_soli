@@ -33,6 +33,8 @@ import { AdminPanel } from "@/pages/AdminPanel";
 import { Changelog } from "@/pages/Changelog";
 import { Settings } from "@/pages/Settings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import BaseConhecimento from "@/pages/BaseConhecimento";
+import { DocumentExtraction } from "@/pages/DocumentExtraction";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,6 +111,8 @@ const AppRoutes = () => {
         <Route path="erro-reports" element={<AdminRoute><ErroReports /></AdminRoute>} />
         <Route path="admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
         <Route path="definicoes" element={<ManagerRoute><Settings /></ManagerRoute>} />
+        <Route path="assistente-documentos" element={<DocumentExtraction />} />
+        <Route path="base-conhecimento" element={<BaseConhecimento />} />
         <Route path="changelog" element={<Changelog />} />
       </Route>
       <Route path="*" element={<NotFound />} />

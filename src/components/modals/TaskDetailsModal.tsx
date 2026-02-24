@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin, CalendarClock, Folder, UserPlus, DollarSign } from 'lucide-react';
+import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin, CalendarClock, Folder, UserPlus, DollarSign, Repeat, Bell } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses, Process } from '@/hooks/useProcesses';
@@ -315,11 +315,17 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         <DialogHeader>
           <DialogDescription className="sr-only">Detalhes do compromisso: {displayTask.titulo}</DialogDescription>
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center space-x-2">
+            <DialogTitle className="flex items-center space-x-2 flex-wrap gap-1">
               {getStatusIcon(displayTask.concluida)}
               <span>{displayTask.titulo}</span>
               {isOverdue(displayTask.data_fim) && (
                 <Badge variant="destructive">Atrasada</Badge>
+              )}
+              {displayTask.recorrencia_tipo && (
+                <Badge variant="outline" className="border-blue-500 text-blue-700 gap-1">
+                  <Repeat className="h-3 w-3" />
+                  Recorrente
+                </Badge>
               )}
             </DialogTitle>
             <div className="flex items-center gap-2">
@@ -630,6 +636,61 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Recorrência */}
+            {displayTask.recorrencia_tipo && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-blue-600" />
+                  <label className="text-sm font-medium text-blue-800">Recorrência</label>
+                </div>
+                <p className="text-sm text-gray-900">
+                  {(() => {
+                    const dias = ['segundas-feiras', 'terças-feiras', 'quartas-feiras', 'quintas-feiras', 'sextas-feiras', 'sábados', 'domingos'];
+                    switch (displayTask.recorrencia_tipo) {
+                      case 'diaria': return 'Repete diariamente';
+                      case 'semanal': return `Repete semanalmente às ${displayTask.recorrencia_dia_semana != null ? dias[displayTask.recorrencia_dia_semana] : 'N/A'}`;
+                      case 'quinzenal': return 'Repete quinzenalmente';
+                      case 'mensal': return 'Repete mensalmente';
+                      default: return displayTask.recorrencia_tipo;
+                    }
+                  })()}
+                </p>
+                {displayTask.recorrencia_fim && (
+                  <p className="text-xs text-gray-600">
+                    Até {new Date(displayTask.recorrencia_fim).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
+                {displayTask.recorrencia_origem_id && (
+                  <p className="text-xs text-gray-500">Origem: Compromisso #{displayTask.recorrencia_origem_id}</p>
+                )}
+              </div>
+            )}
+
+            {/* Lembretes */}
+            {taskDetail?.lembretes && taskDetail.lembretes.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-amber-600" />
+                  <label className="text-sm font-medium text-amber-800">Lembretes</label>
+                </div>
+                <ul className="space-y-1">
+                  {taskDetail.lembretes.map((l) => {
+                    let label: string;
+                    if (l.tempo_antes_minutos >= 1440) label = `${l.tempo_antes_minutos / 1440} dia(s) antes`;
+                    else if (l.tempo_antes_minutos >= 60) label = `${l.tempo_antes_minutos / 60} hora(s) antes`;
+                    else label = `${l.tempo_antes_minutos} minuto(s) antes`;
+                    return (
+                      <li key={l.id} className="text-sm flex items-center gap-2">
+                        <span className={l.enviado ? 'text-gray-400 line-through' : 'text-gray-900'}>{label}</span>
+                        {l.enviado && <Badge className="bg-green-100 text-green-800 text-xs">Enviado</Badge>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-500">Anexos</label>
               <div className="flex items-center gap-2">

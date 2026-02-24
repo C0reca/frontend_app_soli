@@ -12,6 +12,14 @@ export interface Adiamento {
   criado_em: string;
 }
 
+export interface Lembrete {
+  id: number;
+  tarefa_id: number;
+  tempo_antes_minutos: number;
+  enviado: boolean;
+  criado_em: string;
+}
+
 export interface Task {
   id: string;
   titulo: string;
@@ -35,6 +43,11 @@ export interface Task {
   custo?: number | null;
   despesa_criada?: boolean;
   adiamentos?: Adiamento[];
+  recorrencia_tipo?: 'diaria' | 'semanal' | 'quinzenal' | 'mensal' | null;
+  recorrencia_dia_semana?: number | null;
+  recorrencia_fim?: string | null;
+  recorrencia_origem_id?: number | null;
+  lembretes?: Lembrete[];
 }
 
 function formatApiErrorDetail(detail: unknown, fallback: string): string {
@@ -197,6 +210,33 @@ export const useTasks = () => {
     },
   });
 
+  const addLembrete = useMutation({
+    mutationFn: async ({ tarefaId, tempo_antes_minutos }: { tarefaId: string; tempo_antes_minutos: number }) => {
+      const response = await api.post(`/tarefas/${tarefaId}/lembretes`, { tempo_antes_minutos });
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['task', variables.tarefaId] });
+      toast({ title: "Sucesso", description: "Lembrete adicionado." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao adicionar lembrete."), variant: "destructive" });
+    },
+  });
+
+  const removeLembrete = useMutation({
+    mutationFn: async ({ tarefaId, lembreteId }: { tarefaId: string; lembreteId: number }) => {
+      await api.delete(`/tarefas/${tarefaId}/lembretes/${lembreteId}`);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['task', variables.tarefaId] });
+      toast({ title: "Sucesso", description: "Lembrete removido." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao remover lembrete."), variant: "destructive" });
+    },
+  });
+
   const getTasksByProcess = useCallback(async (processoId: number) => {
     const response = await api.get(`/tarefas/processo/${processoId}`);
     return response.data;
@@ -249,6 +289,8 @@ export const useTasks = () => {
     updateTaskStatus,
     setExternal,
     criarDespesa,
+    addLembrete,
+    removeLembrete,
     getTasksByProcess,
     getTaskById,
     generateTaskPDF,

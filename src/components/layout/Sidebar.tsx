@@ -20,7 +20,9 @@ import {
   Bug,
   Megaphone,
   Shield,
-  Settings
+  Settings,
+  BookOpen,
+  ScanSearch
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -52,6 +54,8 @@ const navItems: NavItem[] = [
   { icon: FileTemplate, label: 'Templates', path: '/templates', adminOnly: true },
   { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates', modulo: 'templates_docs' },
   { icon: FileText, label: 'Documentos', path: '/documentos', managerOrAdmin: true, modulo: 'documentos' },
+  { icon: ScanSearch, label: 'Assistente Docs', path: '/assistente-documentos', modulo: 'extracao_documentos' },
+  { icon: BookOpen, label: 'Base de Conhecimento', path: '/base-conhecimento' },
   { icon: Bug, label: 'Reportes', path: '/erro-reports', adminOnly: true },
   { icon: Settings, label: 'Definições', path: '/definicoes', managerOrAdmin: true },
   { icon: Shield, label: 'Administração', path: '/admin', adminOnly: true },
