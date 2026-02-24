@@ -128,12 +128,14 @@ export const useDocumentTemplates = () => {
       return response;
     },
     onSuccess: (response) => {
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const contentType = response.headers['content-type'] || '';
+      const isPdf = contentType.includes('application/pdf');
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
       const link = document.createElement('a');
       link.href = url;
       const disposition = response.headers['content-disposition'] || '';
       const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-      const filename = filenameMatch ? filenameMatch[1] : 'documento.docx';
+      const filename = filenameMatch ? filenameMatch[1] : (isPdf ? 'documento.pdf' : 'documento.docx');
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
@@ -182,6 +184,7 @@ export const useDocumentTemplates = () => {
         page_count: number;
         pages: PdfPageInfo[];
         pdf_base64: string;
+        page_images: Record<number, string>;
       };
     },
     onSuccess: () => {

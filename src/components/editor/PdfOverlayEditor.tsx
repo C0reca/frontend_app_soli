@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { OverlayFieldRect, OverlayFieldData } from './OverlayFieldRect';
@@ -21,7 +21,8 @@ interface PdfOverlayEditorProps {
   pagesInfo: PageInfo[];
   fields: OverlayFieldData[];
   onFieldsChange: (fields: OverlayFieldData[]) => void;
-  onVariableClick?: (variablePath: string, label: string) => void;
+  /** Pre-rendered page images from import (data URLs). Used when template not yet saved. */
+  importedPageImages?: Record<number, string> | null;
 }
 
 export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
@@ -29,15 +30,26 @@ export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
   pagesInfo,
   fields,
   onFieldsChange,
-  onVariableClick,
+  importedPageImages,
 }) => {
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [pageImages, setPageImages] = useState<Record<number, string>>({});
   const [loadingPages, setLoadingPages] = useState<Set<number>>(new Set());
+  const blobUrlsRef = useRef<string[]>([]);
 
-  // Load page images
+  // Use imported images immediately when available
+  useEffect(() => {
+    if (importedPageImages && Object.keys(importedPageImages).length > 0) {
+      setPageImages(importedPageImages);
+    }
+  }, [importedPageImages]);
+
+  // Load page images from API for saved templates (only if no imported images)
   useEffect(() => {
     if (!templateId || pagesInfo.length === 0) return;
+    // Skip if we already have all images (e.g. from import)
+    const allLoaded = pagesInfo.every((pi) => pageImages[pi.page]);
+    if (allLoaded) return;
 
     pagesInfo.forEach((pi) => {
       if (pageImages[pi.page] || loadingPages.has(pi.page)) return;
@@ -50,6 +62,7 @@ export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
         })
         .then((res) => {
           const url = URL.createObjectURL(res.data);
+          blobUrlsRef.current.push(url);
           setPageImages((prev) => ({ ...prev, [pi.page]: url }));
         })
         .catch((err) => {
@@ -65,16 +78,16 @@ export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
     });
   }, [templateId, pagesInfo]);
 
-  // Cleanup blob URLs
+  // Cleanup blob URLs on unmount
   useEffect(() => {
+    const urls = blobUrlsRef.current;
     return () => {
-      Object.values(pageImages).forEach((url) => URL.revokeObjectURL(url));
+      urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
   const handlePageClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, pageNum: number) => {
-      // Only create field if clicking on the page background (not on a field)
       const target = e.target as HTMLElement;
       if (target !== e.currentTarget) return;
 
@@ -90,6 +103,7 @@ export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
         width: 100,
         height: 16,
         variable: '',
+        custom_text: '',
         font_size: 12,
         font_family: 'Helvetica',
         color: '#000000',
@@ -117,11 +131,6 @@ export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
     [fields, onFieldsChange, selectedFieldId],
   );
 
-  // Handle variable click from sidebar → assign to selected field
-  useEffect(() => {
-    if (onVariableClick) return; // Sidebar handles its own clicks
-  }, [onVariableClick]);
-
   const selectedField = fields.find((f) => f.id === selectedFieldId) || null;
 
   // Handle variable drag-drop from sidebar
@@ -145,6 +154,7 @@ export const PdfOverlayEditor: React.FC<PdfOverlayEditorProps> = ({
           width: 120,
           height: 16,
           variable: variablePath,
+          custom_text: '',
           font_size: 12,
           font_family: 'Helvetica',
           color: '#000000',

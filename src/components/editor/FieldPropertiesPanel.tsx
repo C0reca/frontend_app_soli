@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -9,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Trash2, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Trash2, AlignLeft, AlignCenter, AlignRight, Type, Variable } from 'lucide-react';
 import { TEMPLATE_VARIABLES } from '@/constants/templateVariables';
 import type { OverlayFieldData } from './OverlayFieldRect';
 
@@ -57,6 +58,17 @@ export const FieldPropertiesPanel: React.FC<FieldPropertiesPanelProps> = ({
     );
   }
 
+  // Determine if this is a text field or variable field
+  const isTextMode = !field.variable;
+
+  const switchToText = () => {
+    onUpdate(field.id, { variable: '', custom_text: field.custom_text || '' });
+  };
+
+  const switchToVariable = () => {
+    onUpdate(field.id, { variable: field.variable || '', custom_text: '' });
+  };
+
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
@@ -72,25 +84,62 @@ export const FieldPropertiesPanel: React.FC<FieldPropertiesPanelProps> = ({
         </Button>
       </div>
 
-      {/* Variable selector */}
+      {/* Mode toggle: Variable vs Text */}
       <div className="space-y-1">
-        <Label className="text-xs">Variável</Label>
-        <Select
-          value={field.variable || ''}
-          onValueChange={(val) => onUpdate(field.id, { variable: val })}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Escolher variável..." />
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
-            {ALL_VARIABLES.map((v) => (
-              <SelectItem key={v.value} value={v.value} className="text-xs">
-                {v.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label className="text-xs">Tipo de campo</Label>
+        <div className="flex gap-1">
+          <Button
+            variant={!isTextMode ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1 h-8 text-xs"
+            onClick={switchToVariable}
+          >
+            <Variable className="h-3.5 w-3.5 mr-1" />
+            Variável
+          </Button>
+          <Button
+            variant={isTextMode ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1 h-8 text-xs"
+            onClick={switchToText}
+          >
+            <Type className="h-3.5 w-3.5 mr-1" />
+            Texto
+          </Button>
+        </div>
       </div>
+
+      {/* Variable selector OR text input */}
+      {isTextMode ? (
+        <div className="space-y-1">
+          <Label className="text-xs">Texto</Label>
+          <Textarea
+            value={field.custom_text}
+            onChange={(e) => onUpdate(field.id, { custom_text: e.target.value })}
+            placeholder="Escreva o texto..."
+            className="text-xs min-h-[60px] resize-none"
+          />
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <Label className="text-xs">Variável</Label>
+          <Select
+            value={field.variable || ''}
+            onValueChange={(val) => onUpdate(field.id, { variable: val })}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Escolher variável..." />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {ALL_VARIABLES.map((v) => (
+                <SelectItem key={v.value} value={v.value} className="text-xs">
+                  {v.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Font size */}
       <div className="space-y-1">

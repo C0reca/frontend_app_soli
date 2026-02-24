@@ -13,7 +13,14 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import { ArrowLeft, Save, Loader2, FileType } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { ArrowLeft, Save, Loader2, FileType, FileText, Layers } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TemplateEditor } from '@/components/editor/TemplateEditor';
 import { VariablesSidebar } from '@/components/editor/VariablesSidebar';
@@ -55,9 +62,15 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
   const [overlayFields, setOverlayFields] = useState<OverlayFieldData[]>([]);
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
   const [pagesInfo, setPagesInfo] = useState<PdfPageInfo[]>([]);
+  const [importedPageImages, setImportedPageImages] = useState<Record<number, string> | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  // PDF import mode choice dialog
+  const [pdfChoiceOpen, setPdfChoiceOpen] = useState(false);
+  const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
+  const [pdfImporting, setPdfImporting] = useState(false);
 
   // Load existing template data
   useEffect(() => {
@@ -164,17 +177,10 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
 
     const ext = file.name.split('.').pop()?.toLowerCase();
 
-    // If it's a PDF, offer overlay mode
     if (ext === 'pdf') {
-      try {
-        const result = await importPdfOverlay.mutateAsync(file);
-        setTipoTemplate('pdf_overlay');
-        setPdfBase64(result.pdf_base64);
-        setPagesInfo(result.pages);
-        setOverlayFields([]);
-      } catch {
-        // error handled by mutation
-      }
+      // Show choice dialog for PDF files
+      setPendingPdfFile(file);
+      setPdfChoiceOpen(true);
     } else {
       // Word/other docs → HTML mode
       try {
@@ -188,7 +194,35 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
 
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [importDocx, importPdfOverlay]);
+  }, [importDocx]);
+
+  // Handle PDF import mode choice
+  const handlePdfChoice = useCallback(async (mode: 'html' | 'pdf_overlay') => {
+    if (!pendingPdfFile) return;
+    setPdfImporting(true);
+    try {
+      if (mode === 'html') {
+        // Extract text → edit in TipTap
+        const result = await importDocx.mutateAsync(pendingPdfFile);
+        setTipoTemplate('html');
+        setConteudoHtml(result.html);
+      } else {
+        // PDF Overlay mode
+        const result = await importPdfOverlay.mutateAsync(pendingPdfFile);
+        setTipoTemplate('pdf_overlay');
+        setPdfBase64(result.pdf_base64);
+        setPagesInfo(result.pages);
+        setOverlayFields([]);
+        setImportedPageImages(result.page_images);
+      }
+    } catch {
+      // error handled by mutation
+    } finally {
+      setPdfImporting(false);
+      setPdfChoiceOpen(false);
+      setPendingPdfFile(null);
+    }
+  }, [pendingPdfFile, importDocx, importPdfOverlay]);
 
   // Import PDF specifically for overlay mode
   const handleImportPdf = useCallback(() => {
@@ -204,6 +238,7 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
       setPdfBase64(result.pdf_base64);
       setPagesInfo(result.pages);
       setOverlayFields([]);
+      setImportedPageImages(result.page_images);
     } catch {
       // error handled by mutation
     }
@@ -293,6 +328,7 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
                 pagesInfo={pagesInfo}
                 fields={overlayFields}
                 onFieldsChange={setOverlayFields}
+                importedPageImages={importedPageImages}
               />
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -332,6 +368,57 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
           </ResizablePanelGroup>
         )}
       </div>
+
+      {/* PDF import mode choice dialog */}
+      <Dialog open={pdfChoiceOpen} onOpenChange={(open) => {
+        if (!open && !pdfImporting) {
+          setPdfChoiceOpen(false);
+          setPendingPdfFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Como deseja importar o PDF?</DialogTitle>
+            <DialogDescription>
+              Escolha o modo de importação para o ficheiro PDF.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              onClick={() => handlePdfChoice('html')}
+              disabled={pdfImporting}
+              className="flex flex-col items-center gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText className="h-10 w-10 text-blue-600" />
+              <div className="text-center">
+                <p className="font-medium text-sm">Editar Texto</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Extrai o texto do PDF para edição livre no editor
+                </p>
+              </div>
+            </button>
+            <button
+              onClick={() => handlePdfChoice('pdf_overlay')}
+              disabled={pdfImporting}
+              className="flex flex-col items-center gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Layers className="h-10 w-10 text-purple-600" />
+              <div className="text-center">
+                <p className="font-medium text-sm">PDF Overlay</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Mantém o PDF original e posiciona campos por cima
+                </p>
+              </div>
+            </button>
+          </div>
+          {pdfImporting && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-gray-500">A importar...</span>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Hidden file inputs */}
       <input

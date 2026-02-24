@@ -9,6 +9,7 @@ export interface OverlayFieldData {
   width: number;
   height: number;
   variable: string;
+  custom_text: string;
   font_size: number;
   font_family: string;
   color: string;
@@ -135,7 +136,12 @@ export const OverlayFieldRect: React.FC<OverlayFieldRectProps> = ({
     }
   }, [dragging, resizing, handleMouseMove, handleMouseUp]);
 
-  const label = getVariableLabel(field.variable);
+  const label = field.variable
+    ? getVariableLabel(field.variable)
+    : field.custom_text || 'Clique para definir';
+
+  const isTextField = !field.variable && !!field.custom_text;
+  const isEmpty = !field.variable && !field.custom_text;
 
   return (
     <div
@@ -143,8 +149,8 @@ export const OverlayFieldRect: React.FC<OverlayFieldRectProps> = ({
       onMouseDown={handleMouseDown}
       className={`absolute cursor-move select-none flex items-center overflow-hidden ${
         selected
-          ? 'border-2 border-blue-500 bg-blue-50/60'
-          : 'border border-dashed border-blue-400 bg-blue-50/40 hover:bg-blue-50/60'
+          ? isEmpty ? 'border-2 border-gray-400 bg-gray-50/60' : isTextField ? 'border-2 border-green-500 bg-green-50/60' : 'border-2 border-blue-500 bg-blue-50/60'
+          : isEmpty ? 'border border-dashed border-gray-400 bg-gray-50/40 hover:bg-gray-50/60' : isTextField ? 'border border-dashed border-green-400 bg-green-50/40 hover:bg-green-50/60' : 'border border-dashed border-blue-400 bg-blue-50/40 hover:bg-blue-50/60'
       }`}
       style={{
         left: field.x * scale,
@@ -156,7 +162,9 @@ export const OverlayFieldRect: React.FC<OverlayFieldRectProps> = ({
       }}
     >
       <span
-        className="px-1 truncate w-full text-blue-700 font-medium pointer-events-none"
+        className={`px-1 truncate w-full font-medium pointer-events-none ${
+          isEmpty ? 'text-gray-400' : isTextField ? 'text-green-700' : 'text-blue-700'
+        }`}
         style={{
           textAlign: field.alignment as any,
         }}
