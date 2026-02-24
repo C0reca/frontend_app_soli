@@ -15,9 +15,7 @@ import { Minimize2, Upload, X, FileIcon } from 'lucide-react';
 import api from '@/services/api';
 
 const logSchema = z.object({
-  tipo: z.enum(['telefone', 'reuniao', 'email', 'documento', 'observacao'], {
-    required_error: "Tipo é obrigatório",
-  }),
+  tipo: z.string().min(1, "Tipo é obrigatório"),
   titulo: z.string().min(1, "Título é obrigatório"),
   descricao: z.string().optional(),
   funcionario_id: z.number().optional(),

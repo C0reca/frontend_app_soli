@@ -6,7 +6,7 @@ export interface LogProcesso {
   id: number;
   processo_id: number;
   funcionario_id: number | null;
-  tipo: 'criacao' | 'alteracao' | 'tarefa_criada' | 'tarefa_concluida' | 'estado_alterado' | 'telefone' | 'reuniao' | 'email' | 'documento' | 'observacao';
+  tipo: string;
   titulo: string;
   descricao: string | null;
   data_hora: string;
