@@ -6,9 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Edit, Users, Loader2 } from 'lucide-react';
 import { useProcessoEntidadesSecundarias, ProcessoEntidadeSecundaria } from '@/hooks/useProcessoEntidadesSecundarias';
 import { useClients } from '@/hooks/useClients';
+import { useEntidadesExternas, EntidadeExterna } from '@/hooks/useEntidadesExternas';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClickableClientName } from '@/components/ClickableClientName';
 
@@ -24,18 +26,85 @@ interface ProcessoEntidadesSecundariasTabProps {
   } | null;
 }
 
+/** Combobox simples para entidades externas */
+function ExternalEntityCombobox({
+  entidades,
+  value,
+  onChange,
+  isLoading,
+}: {
+  entidades: EntidadeExterna[];
+  value?: number;
+  onChange: (id: number) => void;
+  isLoading?: boolean;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = entidades.filter((e) => {
+    const term = search.toLowerCase();
+    return (
+      e.nome.toLowerCase().includes(term) ||
+      (e.nif || '').toLowerCase().includes(term)
+    );
+  });
+  const selected = entidades.find((e) => e.id === value);
+
+  return (
+    <div className="space-y-2">
+      <Input
+        placeholder="Pesquisar entidade externa por nome ou NIF..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <div className="max-h-48 overflow-y-auto border rounded-md">
+        {isLoading ? (
+          <div className="p-3 text-sm text-muted-foreground">A carregar...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-3 text-sm text-muted-foreground">Nenhuma entidade externa encontrada.</div>
+        ) : (
+          filtered.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex justify-between items-center ${
+                value === e.id ? 'bg-blue-50 text-blue-700' : ''
+              }`}
+              onClick={() => onChange(e.id)}
+            >
+              <div>
+                <span className="font-medium">{e.nome}</span>
+                {e.nif && <span className="text-xs text-muted-foreground ml-2">NIF: {e.nif}</span>}
+              </div>
+              {value === e.id && <span className="text-blue-600 text-xs font-medium">Selecionada</span>}
+            </button>
+          ))
+        )}
+      </div>
+      {selected && (
+        <p className="text-xs text-muted-foreground">
+          Selecionada: <strong>{selected.nome}</strong>
+        </p>
+      )}
+    </div>
+  );
+}
+
 export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundariasTabProps> = ({ processoId, clientePrincipal }) => {
   const { entidades, isLoading, adicionarEntidade, atualizarEntidade, removerEntidade } = useProcessoEntidadesSecundarias(processoId);
   const { clients, isLoading: isLoadingClients } = useClients();
+  const { entidades: entidadesExternas, isLoading: isLoadingExternas } = useEntidadesExternas();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEntidade, setSelectedEntidade] = useState<ProcessoEntidadeSecundaria | null>(null);
   const [selectedClienteId, setSelectedClienteId] = useState<number | undefined>();
+  const [selectedExternaId, setSelectedExternaId] = useState<number | undefined>();
   const [tipoParticipacao, setTipoParticipacao] = useState<string>('');
+  const [tipoEntidade, setTipoEntidade] = useState<'normal' | 'externa'>('normal');
 
   const handleAdd = () => {
     setSelectedClienteId(undefined);
+    setSelectedExternaId(undefined);
     setTipoParticipacao('');
+    setTipoEntidade('normal');
     setIsModalOpen(true);
   };
 
@@ -46,17 +115,24 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
   };
 
   const handleSave = async () => {
-    if (!selectedClienteId) {
-      return;
+    if (tipoEntidade === 'normal' && !selectedClienteId) return;
+    if (tipoEntidade === 'externa' && !selectedExternaId) return;
+
+    const dados: { cliente_id?: number; entidade_externa_id?: number; tipo_participacao?: string } = {
+      tipo_participacao: tipoParticipacao || undefined,
+    };
+
+    if (tipoEntidade === 'normal') {
+      dados.cliente_id = selectedClienteId;
+    } else {
+      dados.entidade_externa_id = selectedExternaId;
     }
 
-    await adicionarEntidade.mutateAsync({
-      cliente_id: selectedClienteId,
-      tipo_participacao: tipoParticipacao || undefined,
-    });
+    await adicionarEntidade.mutateAsync(dados);
 
     setIsModalOpen(false);
     setSelectedClienteId(undefined);
+    setSelectedExternaId(undefined);
     setTipoParticipacao('');
   };
 
@@ -79,21 +155,28 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
     }
   };
 
-  const getClienteNome = (clienteId: number) => {
-    const cliente = clients.find(c => Number(c.id) === clienteId);
-    if (!cliente) return `Cliente #${clienteId}`;
-    return cliente.tipo === 'singular' 
-      ? (cliente as any).nome 
-      : (cliente as any).nome_empresa;
+  const getEntidadeNome = (entidade: ProcessoEntidadeSecundaria): string => {
+    if (entidade.entidade_externa) return entidade.entidade_externa.nome || `Externa #${entidade.entidade_externa_id}`;
+    if (entidade.cliente) return entidade.cliente.nome || `Cliente #${entidade.cliente_id}`;
+    if (entidade.cliente_id) {
+      const cliente = clients.find(c => Number(c.id) === entidade.cliente_id);
+      if (cliente) return cliente.tipo === 'singular' ? (cliente as any).nome : (cliente as any).nome_empresa;
+      return `Cliente #${entidade.cliente_id}`;
+    }
+    return 'N/A';
   };
 
-  const getClienteNIF = (clienteId: number) => {
-    const cliente = clients.find(c => Number(c.id) === clienteId);
-    if (!cliente) return '-';
-    return cliente.tipo === 'singular' 
-      ? (cliente as any).nif 
-      : (cliente as any).nif_empresa;
+  const getEntidadeNIF = (entidade: ProcessoEntidadeSecundaria): string => {
+    if (entidade.entidade_externa) return entidade.entidade_externa.nif || '-';
+    if (entidade.cliente) return entidade.cliente.nif || '-';
+    if (entidade.cliente_id) {
+      const cliente = clients.find(c => Number(c.id) === entidade.cliente_id);
+      if (cliente) return cliente.tipo === 'singular' ? (cliente as any).nif : (cliente as any).nif_empresa;
+    }
+    return '-';
   };
+
+  const isExterna = (entidade: ProcessoEntidadeSecundaria) => !!entidade.entidade_externa_id;
 
   if (isLoading) {
     return (
@@ -132,8 +215,9 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Cliente</TableHead>
+                  <TableHead className="text-xs">Entidade</TableHead>
                   <TableHead className="text-xs">NIF</TableHead>
+                  <TableHead className="text-xs">Tipo</TableHead>
                   <TableHead className="text-xs">Tipo de Participação</TableHead>
                   <TableHead className="text-xs w-[100px]">Ações</TableHead>
                 </TableRow>
@@ -142,14 +226,29 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
                 {entidades.map((entidade) => (
                   <TableRow key={entidade.id}>
                     <TableCell className="text-xs">
-                      <ClickableClientName
-                        clientId={entidade.cliente_id}
-                        clientName={entidade.cliente?.nome || getClienteNome(entidade.cliente_id)}
-                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                      />
+                      {isExterna(entidade) ? (
+                        <span className="font-medium">{getEntidadeNome(entidade)}</span>
+                      ) : (
+                        <ClickableClientName
+                          clientId={entidade.cliente_id!}
+                          clientName={getEntidadeNome(entidade)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        />
+                      )}
                     </TableCell>
                     <TableCell className="text-xs font-mono">
-                      {entidade.cliente?.nif || getClienteNIF(entidade.cliente_id) || '-'}
+                      {getEntidadeNIF(entidade)}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {isExterna(entidade) ? (
+                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                          Externa
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">
+                          Normal
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {entidade.tipo_participacao || '-'}
@@ -182,7 +281,7 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>Nenhuma entidade secundária adicionada.</p>
-              <p className="text-sm mt-2">Clique em "Adicionar Entidade Secundária" para associar outro cliente ao processo.</p>
+              <p className="text-sm mt-2">Clique em "Adicionar Entidade Secundária" para associar outro cliente ou entidade externa ao processo.</p>
             </div>
           )}
         </CardContent>
@@ -193,18 +292,45 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Adicionar Entidade Secundária</DialogTitle>
-            <DialogDescription className="sr-only">Selecione o cliente e o tipo de participação.</DialogDescription>
+            <DialogDescription className="sr-only">Selecione o tipo de entidade, a entidade e o tipo de participação.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente</Label>
-              <ClientCombobox
-                clients={clients || []}
-                value={selectedClienteId}
-                onChange={(value) => setSelectedClienteId(value)}
-                isLoading={isLoadingClients}
-              />
+              <Label>Tipo de Entidade</Label>
+              <Select value={tipoEntidade} onValueChange={(v) => {
+                setTipoEntidade(v as 'normal' | 'externa');
+                setSelectedClienteId(undefined);
+                setSelectedExternaId(undefined);
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Entidade Normal</SelectItem>
+                  <SelectItem value="externa">Entidade Externa</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>{tipoEntidade === 'normal' ? 'Cliente' : 'Entidade Externa'}</Label>
+              {tipoEntidade === 'normal' ? (
+                <ClientCombobox
+                  clients={clients || []}
+                  value={selectedClienteId}
+                  onChange={(value) => setSelectedClienteId(value)}
+                  isLoading={isLoadingClients}
+                />
+              ) : (
+                <ExternalEntityCombobox
+                  entidades={entidadesExternas}
+                  value={selectedExternaId}
+                  onChange={(id) => setSelectedExternaId(id)}
+                  isLoading={isLoadingExternas}
+                />
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="tipo_participacao">Tipo de Participação (Opcional)</Label>
               <Input
@@ -221,7 +347,11 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!selectedClienteId || adicionarEntidade.isPending}
+              disabled={
+                (tipoEntidade === 'normal' && !selectedClienteId) ||
+                (tipoEntidade === 'externa' && !selectedExternaId) ||
+                adicionarEntidade.isPending
+              }
             >
               {adicionarEntidade.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Adicionar
@@ -240,9 +370,14 @@ export const ProcessoEntidadesSecundariasTab: React.FC<ProcessoEntidadesSecundar
           <div className="space-y-4 py-4">
             {selectedEntidade && (
               <div className="space-y-2">
-                <Label>Cliente</Label>
-                <p className="text-sm font-medium">
-                  {selectedEntidade.cliente?.nome || getClienteNome(selectedEntidade.cliente_id)}
+                <Label>Entidade</Label>
+                <p className="text-sm font-medium flex items-center gap-2">
+                  {getEntidadeNome(selectedEntidade)}
+                  {isExterna(selectedEntidade) && (
+                    <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                      Externa
+                    </Badge>
+                  )}
                 </p>
               </div>
             )}

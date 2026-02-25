@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Edit, Trash2, User, Building, Filter, X, ChevronLeft, ChevronRight, GitMerge, AlertTriangle, Users, FileWarning, ScanSearch } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, User, Building, Filter, X, ChevronLeft, ChevronRight, GitMerge, AlertTriangle, Users, FileWarning, ScanSearch, UserX } from 'lucide-react';
 import { useClients, Client, getEffectiveTipo, useDuplicateClients, DuplicateGroup, useNameDuplicateClients, NameDuplicateGroup } from '@/hooks/useClients';
 import { ClientModal } from '@/components/modals/ClientModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
@@ -15,6 +15,7 @@ import { MergeClientsModal } from '@/components/modals/MergeClientsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
+import { EntidadesExternasTab } from '@/pages/EntidadesExternas';
 
 export const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -258,6 +259,10 @@ export const Clients: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="todos">Todos os Clientes</TabsTrigger>
+          <TabsTrigger value="externas" className="flex items-center gap-1.5">
+            <UserX className="h-3.5 w-3.5" />
+            Externas
+          </TabsTrigger>
           <TabsTrigger value="duplicados" className="flex items-center gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" />
             Duplicados
@@ -887,6 +892,10 @@ export const Clients: React.FC = () => {
               )}
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="externas" className="space-y-4 mt-4">
+          <EntidadesExternasTab />
         </TabsContent>
       </Tabs>
 

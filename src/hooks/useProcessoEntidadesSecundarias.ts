@@ -18,7 +18,8 @@ function formatErrorDetail(detail: unknown): string {
 export interface ProcessoEntidadeSecundaria {
   id: number;
   processo_id: number;
-  cliente_id: number;
+  cliente_id?: number | null;
+  entidade_externa_id?: number | null;
   tipo_participacao?: string | null;
   criado_em: string;
   atualizado_em: string;
@@ -27,7 +28,14 @@ export interface ProcessoEntidadeSecundaria {
     nome: string;
     tipo: string;
     nif?: string;
-  };
+  } | null;
+  entidade_externa?: {
+    id: number;
+    nome: string;
+    nif?: string;
+    email?: string;
+    contacto?: string;
+  } | null;
 }
 
 export const useProcessoEntidadesSecundarias = (processoId: number | null) => {
@@ -49,7 +57,7 @@ export const useProcessoEntidadesSecundarias = (processoId: number | null) => {
   });
 
   const adicionarEntidade = useMutation({
-    mutationFn: async (dados: { cliente_id: number; tipo_participacao?: string }) => {
+    mutationFn: async (dados: { cliente_id?: number; entidade_externa_id?: number; tipo_participacao?: string }) => {
       if (!processoId) throw new Error('Processo ID não disponível');
       const response = await api.post(`/processos/${processoId}/entidades-secundarias`, dados);
       return response.data;
