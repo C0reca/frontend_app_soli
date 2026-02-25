@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,11 +29,15 @@ import { TemplateEditorPage } from '@/components/document-templates/TemplateEdit
 import { CabecalhoTemplateEditor } from '@/components/document-templates/CabecalhoTemplateEditor';
 import { DocumentTemplateDetailsModal } from '@/components/modals/DocumentTemplateDetailsModal';
 import { ApplyTemplateModal } from '@/components/modals/ApplyTemplateModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 type PageMode = { type: 'list' } | { type: 'editor'; templateId: number | null };
 
 export const DocumentTemplates: React.FC = () => {
-  const { templates, isLoading, deleteTemplate } = useDocumentTemplates();
+  const { templates, isLoading, moverParaLixeira } = useDocumentTemplates();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
   const { cabecalhos, isLoading: loadingCabecalhos, deleteCabecalho } = useCabecalhoTemplates();
   const [searchTerm, setSearchTerm] = useState('');
   const [mode, setMode] = useState<PageMode>({ type: 'list' });
@@ -72,8 +77,8 @@ export const DocumentTemplates: React.FC = () => {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('Tem a certeza que deseja eliminar este template?')) {
-      deleteTemplate.mutate(id);
+    if (confirm('Tem a certeza que deseja mover este template para a lixeira?')) {
+      moverParaLixeira.mutate(id);
     }
   };
 
@@ -191,6 +196,16 @@ export const DocumentTemplates: React.FC = () => {
                 className="pl-10"
               />
             </div>
+            {isAdminOrManager && (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/document-templates/lixeira')}
+                className="text-amber-600 hover:text-amber-700"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Lixeira
+              </Button>
+            )}
             <Button onClick={() => setMode({ type: 'editor', templateId: null })}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Template
@@ -288,8 +303,8 @@ export const DocumentTemplates: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(template.id)}
-                      className="text-red-600 hover:text-red-700"
-                      title="Eliminar"
+                      className="text-amber-600 hover:text-amber-700"
+                      title="Mover para lixeira"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -32,6 +32,8 @@ export interface DocumentTemplateListItem {
   uso_count: number;
   tipo_template: string;
   has_pdf: boolean;
+  apagado: boolean;
+  apagado_em?: string | null;
 }
 
 export interface PdfPageInfo {
@@ -98,17 +100,18 @@ export const useDocumentTemplates = () => {
     },
   });
 
-  // Delete
-  const deleteTemplate = useMutation({
+  // Mover para lixeira (soft delete)
+  const moverParaLixeira = useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/documento-templates/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documento-templates'] });
-      toast({ title: 'Sucesso', description: 'Template eliminado com sucesso.' });
+      queryClient.invalidateQueries({ queryKey: ['documento-templates-lixeira'] });
+      toast({ title: 'Sucesso', description: 'Template movido para a lixeira.' });
     },
     onError: () => {
-      toast({ title: 'Erro', description: 'Erro ao eliminar template.', variant: 'destructive' });
+      toast({ title: 'Erro', description: 'Erro ao mover template para a lixeira.', variant: 'destructive' });
     },
   });
 
@@ -209,7 +212,7 @@ export const useDocumentTemplates = () => {
     error,
     createTemplate,
     updateTemplate,
-    deleteTemplate,
+    moverParaLixeira,
     generateDocument,
     importDocx,
     importPdfOverlay,
@@ -227,6 +230,61 @@ export const useDocumentTemplate = (id: number | null) => {
     enabled: !!id,
     staleTime: 60_000,
   });
+};
+
+// Hook for lixeira (trash) management
+export const useDocumentTemplatesLixeira = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const {
+    data: templates = [],
+    isLoading,
+    error,
+  } = useQuery<DocumentTemplateListItem[]>({
+    queryKey: ['documento-templates-lixeira'],
+    queryFn: async () => {
+      const response = await api.get('/documento-templates/lixeira');
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const restaurarTemplate = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.post(`/documento-templates/${id}/restaurar`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documento-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['documento-templates-lixeira'] });
+      toast({ title: 'Sucesso', description: 'Template restaurado com sucesso.' });
+    },
+    onError: () => {
+      toast({ title: 'Erro', description: 'Erro ao restaurar template.', variant: 'destructive' });
+    },
+  });
+
+  const eliminarPermanente = useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/documento-templates/lixeira/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documento-templates-lixeira'] });
+      toast({ title: 'Sucesso', description: 'Template eliminado permanentemente.' });
+    },
+    onError: () => {
+      toast({ title: 'Erro', description: 'Erro ao eliminar template.', variant: 'destructive' });
+    },
+  });
+
+  return {
+    templates,
+    isLoading,
+    error,
+    restaurarTemplate,
+    eliminarPermanente,
+  };
 };
 
 // Hook for getting PDF info for an existing template

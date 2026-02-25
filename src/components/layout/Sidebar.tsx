@@ -20,6 +20,7 @@ import {
   Bug,
   Megaphone,
   Shield,
+  Trash2,
   Settings,
   BookOpen,
   ScanSearch
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
   { icon: Landmark, label: 'Conta Corrente', path: '/conta-corrente', managerOrAdmin: true, modulo: 'financeiro' },
   { icon: FileTemplate, label: 'Templates', path: '/templates', adminOnly: true },
   { icon: FileTemplate, label: 'Templates Docs', path: '/document-templates', modulo: 'templates_docs' },
+  { icon: Trash2, label: 'Lixeira Templates', path: '/document-templates/lixeira', managerOrAdmin: true },
   { icon: FileText, label: 'Documentos', path: '/documentos', managerOrAdmin: true, modulo: 'documentos' },
   { icon: ScanSearch, label: 'Assistente Docs', path: '/assistente-documentos', modulo: 'extracao_documentos' },
   { icon: BookOpen, label: 'Base de Conhecimento', path: '/base-conhecimento' },

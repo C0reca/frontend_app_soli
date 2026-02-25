@@ -35,6 +35,7 @@ import { Settings } from "@/pages/Settings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import BaseConhecimento from "@/pages/BaseConhecimento";
 import { DocumentExtraction } from "@/pages/DocumentExtraction";
+import { TemplatesLixeira } from "@/pages/TemplatesLixeira";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,6 +102,7 @@ const AppRoutes = () => {
         <Route path="registos-prediais" element={<RegistosPrediais />} />
         <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />
         <Route path="document-templates" element={<DocumentTemplates />} />
+        <Route path="document-templates/lixeira" element={<ManagerRoute><TemplatesLixeira /></ManagerRoute>} />
         <Route path="documentos" element={<ManagerRoute><Documents /></ManagerRoute>} />
         <Route path="calendario" element={<Calendar />} />
         <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} />
