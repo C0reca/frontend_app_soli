@@ -259,6 +259,76 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
+  // ── Error SMTP Config state ─────────────────────────────────────────
+  const [errorSmtp, setErrorSmtp] = useState({ error_smtp_host: '', error_smtp_port: 587, error_smtp_user: '', error_smtp_pass: '', error_smtp_from_email: '', error_smtp_to_email: '' });
+  const [errorSmtpPassSet, setErrorSmtpPassSet] = useState(false);
+  const [showErrorSmtpPass, setShowErrorSmtpPass] = useState(false);
+  const [errorSmtpLoading, setErrorSmtpLoading] = useState(false);
+  const [errorSmtpTesting, setErrorSmtpTesting] = useState(false);
+  const [errorSmtpLoaded, setErrorSmtpLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadErrorSmtp = async () => {
+      try {
+        const res = await api.get('/definicoes-sistema/error-smtp');
+        const d = res.data;
+        setErrorSmtp({
+          error_smtp_host: d.error_smtp_host || '',
+          error_smtp_port: d.error_smtp_port || 587,
+          error_smtp_user: d.error_smtp_user || '',
+          error_smtp_pass: '',
+          error_smtp_from_email: d.error_smtp_from_email || '',
+          error_smtp_to_email: d.error_smtp_to_email || '',
+        });
+        setErrorSmtpPassSet(d.error_smtp_pass_set);
+        setErrorSmtpLoaded(true);
+      } catch {
+        // silently fail
+      }
+    };
+    loadErrorSmtp();
+  }, []);
+
+  const handleErrorSmtpSave = async () => {
+    setErrorSmtpLoading(true);
+    try {
+      const payload: any = {
+        error_smtp_host: errorSmtp.error_smtp_host,
+        error_smtp_port: errorSmtp.error_smtp_port,
+        error_smtp_user: errorSmtp.error_smtp_user,
+        error_smtp_from_email: errorSmtp.error_smtp_from_email,
+        error_smtp_to_email: errorSmtp.error_smtp_to_email,
+      };
+      if (errorSmtp.error_smtp_pass) {
+        payload.error_smtp_pass = errorSmtp.error_smtp_pass;
+      }
+      const res = await api.put('/definicoes-sistema/error-smtp', payload);
+      setErrorSmtpPassSet(res.data.error_smtp_pass_set);
+      setErrorSmtp(prev => ({ ...prev, error_smtp_pass: '' }));
+      toast({ title: 'Configuração SMTP de erros guardada' });
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.response?.data?.detail || 'Falha ao guardar', variant: 'destructive' });
+    } finally {
+      setErrorSmtpLoading(false);
+    }
+  };
+
+  const handleErrorSmtpTest = async () => {
+    setErrorSmtpTesting(true);
+    try {
+      const res = await api.post('/definicoes-sistema/error-smtp/testar');
+      if (res.data.success) {
+        toast({ title: 'Teste SMTP Erros', description: res.data.message });
+      } else {
+        toast({ title: 'Teste falhou', description: res.data.message, variant: 'destructive' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.response?.data?.detail || 'Falha no teste', variant: 'destructive' });
+    } finally {
+      setErrorSmtpTesting(false);
+    }
+  };
+
   // ── SMTP Config state ────────────────────────────────────────────────
   const [smtp, setSmtp] = useState({ smtp_host: '', smtp_port: 587, smtp_user: '', smtp_pass: '', smtp_from_email: '' });
   const [smtpPassSet, setSmtpPassSet] = useState(false);
@@ -620,6 +690,111 @@ export const AdminPanel: React.FC = () => {
               </Button>
               <Button variant="outline" onClick={handleSmtpTest} disabled={smtpTesting || !smtp.smtp_host}>
                 {smtpTesting ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> A testar...</>
+                ) : (
+                  <><Send className="h-4 w-4 mr-2" /> Enviar Email de Teste</>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error SMTP Configuration */}
+      {errorSmtpLoaded && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Notificações de Erros (SMTP)
+            </CardTitle>
+            <CardDescription>
+              SMTP exclusivo para notificações de erros do sistema. Independente do email principal usado para cobranças e lembretes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="error_smtp_host">Servidor SMTP *</Label>
+                <Input
+                  id="error_smtp_host"
+                  value={errorSmtp.error_smtp_host}
+                  onChange={(e) => setErrorSmtp(prev => ({ ...prev, error_smtp_host: e.target.value }))}
+                  placeholder="smtp.gmail.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="error_smtp_port">Porta</Label>
+                <Input
+                  id="error_smtp_port"
+                  type="number"
+                  value={errorSmtp.error_smtp_port}
+                  onChange={(e) => setErrorSmtp(prev => ({ ...prev, error_smtp_port: parseInt(e.target.value) || 587 }))}
+                  placeholder="587"
+                />
+                <p className="text-xs text-muted-foreground">587 (STARTTLS) ou 465 (SSL)</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="error_smtp_user">Utilizador / Email</Label>
+                <Input
+                  id="error_smtp_user"
+                  value={errorSmtp.error_smtp_user}
+                  onChange={(e) => setErrorSmtp(prev => ({ ...prev, error_smtp_user: e.target.value }))}
+                  placeholder="user@exemplo.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="error_smtp_pass">
+                  Password {errorSmtpPassSet && !errorSmtp.error_smtp_pass && <Badge variant="secondary" className="ml-2 text-xs">Definida</Badge>}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="error_smtp_pass"
+                    type={showErrorSmtpPass ? 'text' : 'password'}
+                    value={errorSmtp.error_smtp_pass}
+                    onChange={(e) => setErrorSmtp(prev => ({ ...prev, error_smtp_pass: e.target.value }))}
+                    placeholder={errorSmtpPassSet ? '••••••••  (deixe vazio para manter)' : 'Password SMTP'}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => setShowErrorSmtpPass(!showErrorSmtpPass)}
+                  >
+                    {showErrorSmtpPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="error_smtp_from">Email Remetente *</Label>
+                <Input
+                  id="error_smtp_from"
+                  type="email"
+                  value={errorSmtp.error_smtp_from_email}
+                  onChange={(e) => setErrorSmtp(prev => ({ ...prev, error_smtp_from_email: e.target.value }))}
+                  placeholder="erros@exemplo.com"
+                />
+                <p className="text-xs text-muted-foreground">Endereço que aparece como remetente</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="error_smtp_to">Email Destinatário (Admin) *</Label>
+                <Input
+                  id="error_smtp_to"
+                  type="email"
+                  value={errorSmtp.error_smtp_to_email}
+                  onChange={(e) => setErrorSmtp(prev => ({ ...prev, error_smtp_to_email: e.target.value }))}
+                  placeholder="admin@exemplo.com"
+                />
+                <p className="text-xs text-muted-foreground">Quem recebe as notificações de erro</p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleErrorSmtpSave} disabled={errorSmtpLoading}>
+                {errorSmtpLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> A guardar...</> : 'Guardar Configuração'}
+              </Button>
+              <Button variant="outline" onClick={handleErrorSmtpTest} disabled={errorSmtpTesting || !errorSmtp.error_smtp_host}>
+                {errorSmtpTesting ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> A testar...</>
                 ) : (
                   <><Send className="h-4 w-4 mr-2" /> Enviar Email de Teste</>

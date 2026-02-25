@@ -573,6 +573,8 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                 <DetailField label="Validade CC" value={client.validade_cc ? new Date(client.validade_cc).toLocaleDateString('pt-PT') : null} />
                 <DetailField label="Data de Nascimento" value={client.data_nascimento ? new Date(client.data_nascimento).toLocaleDateString('pt-PT') : null} />
                 <DetailField label="Nacionalidade" value={client.nacionalidade} />
+                <DetailField label="Naturalidade (Freguesia)" value={client.naturalidade_freguesia} />
+                <DetailField label="Naturalidade (Concelho)" value={client.naturalidade_concelho} />
                 <DetailField label="Estado Civil" value={getEstadoCivilLabel(client.estado_civil)} />
                 <DetailField label="Profissão" value={client.profissao} />
                 <DetailField label="Incapacidade" value={client.incapacidade != null ? `${client.incapacidade}%` : null} />

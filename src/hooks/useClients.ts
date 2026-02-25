@@ -58,7 +58,8 @@ export interface IndividualClient extends BaseClient {
   num_sns?: string;
   num_ident_civil?: string;
   nacionalidade?: string;
-  naturalidade?: string;
+  naturalidade_freguesia?: string;
+  naturalidade_concelho?: string;
 
   // Documentos e outros
   iban?: string;

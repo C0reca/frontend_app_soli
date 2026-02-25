@@ -208,13 +208,23 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="naturalidade">Naturalidade</Label>
-              <Input
-                id="naturalidade"
-                {...register('naturalidade')}
-                placeholder="Ex: Lisboa"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="naturalidade_freguesia">Naturalidade (Freguesia)</Label>
+                <Input
+                  id="naturalidade_freguesia"
+                  {...register('naturalidade_freguesia')}
+                  placeholder="Ex: Santa Maria Maior"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="naturalidade_concelho">Naturalidade (Concelho)</Label>
+                <Input
+                  id="naturalidade_concelho"
+                  {...register('naturalidade_concelho')}
+                  placeholder="Ex: Lisboa"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
