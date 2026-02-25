@@ -143,9 +143,10 @@ export const useTasks = () => {
   });
 
   const updateTaskStatus = useMutation({
-    mutationFn: async ({ id, concluida, notas_conclusao }: { id: string; concluida: boolean; notas_conclusao?: string }) => {
-      const payload: { concluida: boolean; notas_conclusao?: string } = { concluida };
+    mutationFn: async ({ id, concluida, notas_conclusao, force }: { id: string; concluida: boolean; notas_conclusao?: string; force?: boolean }) => {
+      const payload: { concluida: boolean; notas_conclusao?: string; force?: boolean } = { concluida };
       if (notas_conclusao != null && notas_conclusao.trim() !== '') payload.notas_conclusao = notas_conclusao.trim();
+      if (force) payload.force = true;
       const response = await api.patch(`/tarefas/status/${id}`, payload);
       return response.data;
     },

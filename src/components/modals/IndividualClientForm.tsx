@@ -209,6 +209,15 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="naturalidade">Naturalidade</Label>
+              <Input
+                id="naturalidade"
+                {...register('naturalidade')}
+                placeholder="Ex: Lisboa"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="incapacidade">Incapacidade (%)</Label>
               <Input
                 id="incapacidade"

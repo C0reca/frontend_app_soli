@@ -58,7 +58,8 @@ export interface IndividualClient extends BaseClient {
   num_sns?: string;
   num_ident_civil?: string;
   nacionalidade?: string;
-  
+  naturalidade?: string;
+
   // Documentos e outros
   iban?: string;
   observacoes?: string;
@@ -105,6 +106,7 @@ export interface CorporateClient extends BaseClient {
 
   // Documentos e outros
   iban?: string;
+  codigo_rcbe?: string;
   certidao_permanente?: string;
   observacoes?: string;
   senha_financas?: string;

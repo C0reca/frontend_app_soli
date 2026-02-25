@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', modulo: 'dashboard' },
   { icon: Calendar, label: 'Calendário', path: '/calendario', modulo: 'calendario' },
   { icon: Users, label: 'Entidades', path: '/clientes', modulo: 'clientes' },
-  { icon: UserCog, label: 'Funcionários', path: '/funcionarios', adminOnly: true },
+  { icon: UserCog, label: 'Funcionários', path: '/funcionarios', managerOrAdmin: true },
   { icon: Folder, label: 'Arquivos', path: '/dossies', modulo: 'dossies' },
   { icon: FolderOpen, label: 'Processos', path: '/processos', modulo: 'processos' },
   { icon: Receipt, label: 'IRS', path: '/irs', modulo: 'irs' },

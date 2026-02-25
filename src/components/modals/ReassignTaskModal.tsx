@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, UserPlus } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
@@ -28,6 +29,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
   const { data: employees = [] } = useEmployeeList();
   const { toast } = useToast();
   const [novoResponsavelId, setNovoResponsavelId] = useState<number | null>(null);
+  const [motivo, setMotivo] = useState('');
   const [subtarefasParaMover, setSubtarefasParaMover] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,6 +38,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
 
   const resetForm = () => {
     setNovoResponsavelId(null);
+    setMotivo('');
     setSubtarefasParaMover(new Set());
   };
 
@@ -58,10 +61,18 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
       toast({ title: 'Erro', description: 'Selecione a nova pessoa responsável.', variant: 'destructive' });
       return;
     }
+    if (!motivo.trim()) {
+      toast({ title: 'Erro', description: 'Indique o motivo do reencaminhamento.', variant: 'destructive' });
+      return;
+    }
     setIsSubmitting(true);
     try {
       const taskId = typeof task.id === 'string' ? task.id : String(task.id);
       const parentId = task.parent_id ? Number(task.parent_id) : null;
+
+      // Find the name of the new responsible person
+      const novoResponsavel = employees.find((e) => e.id === novoResponsavelId);
+      const nomeNovo = novoResponsavel?.nome || 'outro responsável';
 
       const payload: Omit<Task, 'id' | 'criado_em'> = {
         titulo: task.titulo,
@@ -78,9 +89,11 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
         onde_estao: (task as any).onde_estao ?? null,
       };
 
+      // 1. Create new task for the new responsible
       const novaTarefa = await createTask.mutateAsync(payload);
       const novaTarefaId = typeof novaTarefa.id === 'string' ? novaTarefa.id : String(novaTarefa.id);
 
+      // 2. Move selected subtasks to new task
       for (const subtaskId of subtarefasParaMover) {
         await updateTask.mutateAsync({
           id: subtaskId,
@@ -88,19 +101,18 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
         });
       }
 
-      const subtarefasQueFicam = pendingSubtasks.filter((st) => !subtarefasParaMover.has(String(st.id)));
-      const nenhumaPendenteRestou = subtarefasQueFicam.length === 0;
-
-      if (nenhumaPendenteRestou) {
-        await updateTaskStatus.mutateAsync({
-          id: taskId,
-          concluida: true,
-        });
-      }
+      // 3. ALWAYS close the original task with the forwarding reason
+      const notaConclusao = `Reencaminhada para ${nomeNovo}: ${motivo.trim()}`;
+      await updateTaskStatus.mutateAsync({
+        id: taskId,
+        concluida: true,
+        notas_conclusao: notaConclusao,
+        force: true,
+      });
 
       toast({
         title: 'Tarefa reencaminhada',
-        description: `Nova tarefa criada para o novo responsável.${nenhumaPendenteRestou ? ' Tarefa original marcada como concluída.' : ''}`,
+        description: `Nova tarefa criada para ${nomeNovo}. Tarefa original encerrada.`,
       });
       onSuccess?.();
       handleClose();
@@ -123,7 +135,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
             Reencaminhar tarefa
           </DialogTitle>
           <DialogDescription>
-            Será criada uma nova tarefa igual para a pessoa selecionada. A tarefa atual será marcada como concluída se não tiver sub-compromissos pendentes.
+            Será criada uma nova tarefa igual para a pessoa selecionada. A tarefa atual será encerrada com o motivo indicado.
           </DialogDescription>
         </DialogHeader>
 
@@ -144,11 +156,21 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label>Motivo do reencaminhamento *</Label>
+            <Textarea
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Indique o motivo do reencaminhamento..."
+              rows={3}
+            />
+          </div>
+
           {pendingSubtasks.length > 0 && (
             <div className="space-y-2">
               <Label>Sub-compromissos pendentes</Label>
               <p className="text-sm text-muted-foreground">
-                Escolha quais sub-compromissos passam para a nova tarefa. Os restantes ficam na tarefa atual, que permanece pendente.
+                Escolha quais sub-compromissos passam para a nova tarefa.
               </p>
               <div className="rounded-lg border p-3 space-y-2 max-h-40 overflow-y-auto">
                 {pendingSubtasks.map((st) => (
@@ -169,7 +191,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !novoResponsavelId}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !novoResponsavelId || !motivo.trim()}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Reencaminhar
           </Button>

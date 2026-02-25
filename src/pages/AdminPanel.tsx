@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Database, Shield, Upload, FolderOpen, Hash, Bell, Trash2, DatabaseZap, Mail, Eye, EyeOff, Send } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Database, Shield, Upload, FolderOpen, Hash, Bell, Trash2, DatabaseZap, Mail, Eye, EyeOff, Send, Play, ScrollText } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
@@ -15,11 +15,73 @@ interface ActionResult {
   details?: Record<string, any>;
 }
 
+interface Migracao {
+  nome: string;
+  descricao: string;
+  sql: string;
+  executada: boolean;
+  executada_em?: string;
+  executada_por?: number;
+}
+
 export const AdminPanel: React.FC = () => {
   const { toast } = useToast();
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ActionResult | null>(null);
+
+  // ── Migrações state ─────────────────────────────────────────────────
+  const [migracoes, setMigracoes] = useState<Migracao[]>([]);
+  const [migracoesLoading, setMigracoesLoading] = useState(false);
+  const [migracaoExecutando, setMigracaoExecutando] = useState<string | null>(null);
+  const [confirmMigracao, setConfirmMigracao] = useState<Migracao | null>(null);
+  const [confirmExecutarTodas, setConfirmExecutarTodas] = useState(false);
+
+  const carregarMigracoes = async () => {
+    setMigracoesLoading(true);
+    try {
+      const res = await api.get('/migracoes');
+      setMigracoes(res.data);
+    } catch {
+      // silently fail
+    } finally {
+      setMigracoesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarMigracoes();
+  }, []);
+
+  const executarMigracao = async (nome: string) => {
+    setConfirmMigracao(null);
+    setMigracaoExecutando(nome);
+    try {
+      const res = await api.post(`/migracoes/${nome}/executar`);
+      toast({ title: 'Migração executada', description: res.data.msg });
+      carregarMigracoes();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err?.response?.data?.detail || 'Falha ao executar migração', variant: 'destructive' });
+    } finally {
+      setMigracaoExecutando(null);
+    }
+  };
+
+  const executarTodasPendentes = async () => {
+    setConfirmExecutarTodas(false);
+    setMigracaoExecutando('__todas__');
+    try {
+      const res = await api.post('/migracoes/executar-todas');
+      toast({ title: 'Migrações executadas', description: res.data.msg });
+      carregarMigracoes();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err?.response?.data?.detail || 'Falha ao executar migrações', variant: 'destructive' });
+    } finally {
+      setMigracaoExecutando(null);
+    }
+  };
+
+  const pendentes = migracoes.filter(m => !m.executada);
 
   // ── CSV Import state ──────────────────────────────────────────────────
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -567,6 +629,140 @@ export const AdminPanel: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Migrações de Base de Dados */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ScrollText className="h-5 w-5" />
+                Migrações de Base de Dados
+              </CardTitle>
+              <CardDescription>Migrações SQL pendentes e executadas</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={carregarMigracoes} disabled={migracoesLoading}>
+                <RefreshCw className={`h-4 w-4 mr-1 ${migracoesLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              {pendentes.length > 0 && (
+                <Button size="sm" onClick={() => setConfirmExecutarTodas(true)} disabled={!!migracaoExecutando}>
+                  {migracaoExecutando === '__todas__' ? (
+                    <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> A executar...</>
+                  ) : (
+                    <><Play className="h-4 w-4 mr-1" /> Executar Todas ({pendentes.length})</>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {migracoesLoading && migracoes.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" /> A carregar migrações...
+            </div>
+          ) : migracoes.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma migração definida.</p>
+          ) : (
+            migracoes.map((m) => (
+              <div
+                key={m.nome}
+                className={`flex items-center justify-between rounded-lg border p-4 ${
+                  m.executada ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'
+                }`}
+              >
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  {m.executada ? (
+                    <CheckCircle2 className="h-5 w-5 mt-0.5 text-green-600 flex-shrink-0" />
+                  ) : (
+                    <Database className="h-5 w-5 mt-0.5 text-amber-600 flex-shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm">{m.nome}</p>
+                      <Badge variant={m.executada ? 'default' : 'secondary'} className={m.executada ? 'bg-green-600' : 'bg-amber-500 text-white'}>
+                        {m.executada ? 'Executada' : 'Pendente'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{m.descricao}</p>
+                    {m.executada && m.executada_em && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Executada em {new Date(m.executada_em).toLocaleString('pt-PT')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {!m.executada && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-3 flex-shrink-0"
+                    onClick={() => setConfirmMigracao(m)}
+                    disabled={!!migracaoExecutando}
+                  >
+                    {migracaoExecutando === m.nome ? (
+                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> A executar...</>
+                    ) : (
+                      'Executar'
+                    )}
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Confirmação Migração Individual */}
+      <Dialog open={!!confirmMigracao} onOpenChange={() => setConfirmMigracao(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Executar Migração</DialogTitle>
+            <DialogDescription>
+              {confirmMigracao && (
+                <>Tem a certeza que deseja executar: <strong>{confirmMigracao.nome}</strong>?</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {confirmMigracao && (
+            <div className="bg-gray-900 text-gray-100 rounded-md p-3 text-xs font-mono overflow-auto max-h-60">
+              <pre className="whitespace-pre-wrap">{confirmMigracao.sql}</pre>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmMigracao(null)}>Cancelar</Button>
+            <Button onClick={() => confirmMigracao && executarMigracao(confirmMigracao.nome)}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmação Executar Todas */}
+      <Dialog open={confirmExecutarTodas} onOpenChange={setConfirmExecutarTodas}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Executar Todas as Migrações Pendentes</DialogTitle>
+            <DialogDescription>
+              Tem a certeza que deseja executar {pendentes.length} migração(ões) pendente(s)? As migrações serão executadas por ordem.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {pendentes.map(m => (
+              <div key={m.nome} className="text-sm flex items-center gap-2">
+                <Badge variant="secondary" className="bg-amber-500 text-white text-xs">{m.nome}</Badge>
+                <span className="text-muted-foreground">{m.descricao}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmExecutarTodas(false)}>Cancelar</Button>
+            <Button onClick={executarTodasPendentes}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <Dialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>

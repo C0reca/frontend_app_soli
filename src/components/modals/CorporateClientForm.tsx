@@ -459,6 +459,15 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="codigo_rcbe">Código RCBE</Label>
+              <Input
+                id="codigo_rcbe"
+                {...register('codigo_rcbe')}
+                placeholder="Código do Registo Central do Beneficiário Efetivo"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea
                 id="observacoes"

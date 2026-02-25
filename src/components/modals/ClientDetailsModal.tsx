@@ -367,6 +367,9 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           {/* IBAN — sempre texto */}
           <DetailField label="IBAN" value={client.iban} />
 
+          {/* Código RCBE — apenas para empresas */}
+          {isEmpresa && <DetailField label="Código RCBE" value={(client as any).codigo_rcbe} />}
+
           {/* Certidão Permanente — texto para singular, upload para empresa */}
           {isEmpresa
             ? renderDocUploadSection('Certidão Permanente', 'certidao')
