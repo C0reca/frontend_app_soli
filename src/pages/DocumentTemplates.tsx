@@ -22,6 +22,7 @@ import {
   ChevronUp,
   FileType,
   PanelTop,
+  Printer,
 } from 'lucide-react';
 import { useDocumentTemplates, DocumentTemplateListItem } from '@/hooks/useDocumentTemplates';
 import { useCabecalhoTemplates, CabecalhoTemplateListItem } from '@/hooks/useCabecalhoTemplates';
@@ -58,9 +59,17 @@ export const DocumentTemplates: React.FC = () => {
 
   const filteredTemplates = templates.filter(
     (t) =>
-      t.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.categoria !== 'Capa' &&
+      (t.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.descricao || '').toLowerCase().includes(searchTerm.toLowerCase()),
+      (t.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())),
+  );
+
+  const filteredCapas = templates.filter(
+    (t) =>
+      t.categoria === 'Capa' &&
+      (t.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
   const getCategoryColor = (category: string) => {
@@ -71,6 +80,7 @@ export const DocumentTemplates: React.FC = () => {
       Declaração: 'bg-cyan-100 text-cyan-800',
       Relatório: 'bg-green-100 text-green-800',
       Fatura: 'bg-purple-100 text-purple-800',
+      Capa: 'bg-amber-100 text-amber-800',
       Outros: 'bg-gray-100 text-gray-800',
     };
     return colors[category] || colors['Outros'];
@@ -177,6 +187,10 @@ export const DocumentTemplates: React.FC = () => {
           <TabsTrigger value="templates">
             <FileText className="h-4 w-4 mr-1.5" />
             Templates de Documentos
+          </TabsTrigger>
+          <TabsTrigger value="capas">
+            <Printer className="h-4 w-4 mr-1.5" />
+            Capas de Processo
           </TabsTrigger>
           <TabsTrigger value="cabecalhos">
             <PanelTop className="h-4 w-4 mr-1.5" />
@@ -332,6 +346,140 @@ export const DocumentTemplates: React.FC = () => {
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Criar Template
+                </Button>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Tab: Capas de Processo ────────────────────────────────────── */}
+        <TabsContent value="capas" className="space-y-4 mt-4">
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Pesquisar capas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button onClick={() => setMode({ type: 'editor', templateId: null })}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Capa
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCapas.map((template) => (
+              <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Printer className="h-5 w-5 text-amber-600" />
+                      <CardTitle className="text-lg">{template.nome}</CardTitle>
+                    </div>
+                    <Badge className="bg-amber-100 text-amber-800">Capa</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {template.descricao && (
+                    <p className="text-sm text-gray-600 line-clamp-2">{template.descricao}</p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Campos:</span>
+                      <p className="font-medium">{template.variaveis?.length || 0} variáveis</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Utilizações:</span>
+                      <p className="font-medium">{template.uso_count}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-sm">
+                    <span className="text-gray-500">Criado em:</span>
+                    <p className="font-medium">
+                      {template.criado_em
+                        ? new Date(template.criado_em).toLocaleDateString('pt-PT')
+                        : '-'}
+                    </p>
+                  </div>
+
+                  {template.variaveis && template.variaveis.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {template.variaveis.slice(0, 4).map((v) => (
+                        <Badge key={v} variant="outline" className="text-[10px] px-1.5 py-0">
+                          {v}
+                        </Badge>
+                      ))}
+                      {template.variaveis.length > 4 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          +{template.variaveis.length - 4}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDetailsTemplate(template)}
+                      title="Ver detalhes"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setMode({ type: 'editor', templateId: template.id })}
+                      title="Editar"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setApplyTemplate(template)}
+                      title="Aplicar a processo"
+                    >
+                      <FileDown className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(template.id)}
+                      className="text-amber-600 hover:text-amber-700"
+                      title="Mover para lixeira"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {filteredCapas.length === 0 && (
+            <div className="text-center py-12">
+              <Printer className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                Nenhuma capa encontrada
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm
+                  ? 'Tente ajustar os filtros de pesquisa.'
+                  : 'Crie uma capa de processo para usar ao gerar capas.'}
+              </p>
+              {!searchTerm && (
+                <Button
+                  className="mt-4"
+                  onClick={() => setMode({ type: 'editor', templateId: null })}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Capa
                 </Button>
               )}
             </div>

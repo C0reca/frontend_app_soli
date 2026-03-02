@@ -17,13 +17,16 @@ import { DocumentTemplates } from "@/pages/DocumentTemplates";
 import { Documents } from "@/pages/Documents";
 import { Calendar } from "@/pages/Calendar";
 import { RegistosPrediais } from "@/pages/RegistosPrediais";
+import { RegistosAutomoveis } from "@/pages/RegistosAutomoveis";
 import { Caixa } from "@/pages/Caixa";
 import { Dossies } from "@/pages/Dossies";
 import { IRS } from "@/pages/IRS";
 import NotFound from "./pages/NotFound";
 import { MinimizeProvider } from "@/contexts/MinimizeContext";
+import { MeetingProvider } from "@/contexts/MeetingContext";
 import { MinimizeDock } from "@/components/MinimizeDock";
 import { MinimizeRenderer } from "@/components/MinimizeRenderer";
+import { MeetingWidget } from "@/components/MeetingWidget";
 import { ServicosExternos } from "@/pages/ServicosExternos";
 import { ContaCorrente } from "@/pages/ContaCorrente";
 import { Profile } from "@/pages/Profile";
@@ -100,6 +103,7 @@ const AppRoutes = () => {
         <Route path="irs" element={<IRS />} />
         <Route path="tarefas" element={<Tasks />} />
         <Route path="registos-prediais" element={<RegistosPrediais />} />
+        <Route path="registos-automoveis" element={<RegistosAutomoveis />} />
         <Route path="templates" element={<AdminRoute><Templates /></AdminRoute>} />
         <Route path="document-templates" element={<DocumentTemplates />} />
         <Route path="document-templates/lixeira" element={<ManagerRoute><TemplatesLixeira /></ManagerRoute>} />
@@ -130,11 +134,14 @@ const App = () => (
         <Sonner />
         <ErrorBoundary>
           <BrowserRouter>
-            <MinimizeProvider>
-              <AppRoutes />
-              <MinimizeDock />
-              <MinimizeRenderer />
-            </MinimizeProvider>
+            <MeetingProvider>
+              <MinimizeProvider>
+                <AppRoutes />
+                <MinimizeDock />
+                <MinimizeRenderer />
+                <MeetingWidget />
+              </MinimizeProvider>
+            </MeetingProvider>
           </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>

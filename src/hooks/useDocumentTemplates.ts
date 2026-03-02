@@ -121,14 +121,16 @@ export const useDocumentTemplates = () => {
       templateId,
       processoId,
       clienteId,
+      solicitadorId,
     }: {
       templateId: number;
       processoId?: number;
       clienteId?: number;
+      solicitadorId?: number;
     }) => {
       const response = await api.post(
         `/documento-templates/${templateId}/gerar`,
-        { processo_id: processoId, cliente_id: clienteId },
+        { processo_id: processoId, cliente_id: clienteId, solicitador_id: solicitadorId },
         { responseType: 'blob' },
       );
       return response;

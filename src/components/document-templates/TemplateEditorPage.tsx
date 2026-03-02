@@ -39,7 +39,7 @@ interface TemplateEditorPageProps {
   onBack: () => void;
 }
 
-const CATEGORIAS = ['Contrato', 'Requerimento', 'Procuração', 'Declaração', 'Relatório', 'Fatura', 'Outros'];
+const CATEGORIAS = ['Contrato', 'Requerimento', 'Procuração', 'Declaração', 'Relatório', 'Fatura', 'Capa', 'Outros'];
 
 export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
   templateId,

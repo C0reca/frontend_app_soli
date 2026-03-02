@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { useMeeting } from '@/contexts/MeetingContext';
 
 export interface LogProcesso {
   id: number;
@@ -28,6 +29,7 @@ export interface LogProcessoCreate {
 export const useLogsProcesso = (processoId?: number) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { trackItem } = useMeeting();
 
   const {
     data: logs = [],
@@ -48,8 +50,9 @@ export const useLogsProcesso = (processoId?: number) => {
       const response = await api.post('/logs-processo/', logData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['logs-processo'] });
+      if (data?.id) trackItem('log_processo', data.id, data.titulo);
       toast({
         title: "Sucesso",
         description: "Log criado com sucesso.",

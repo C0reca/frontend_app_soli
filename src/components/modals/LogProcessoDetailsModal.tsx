@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { LogProcesso } from '@/hooks/useLogsProcesso';
-import { FileIcon, Edit, CheckSquare, Building, Calendar, User, Paperclip, X } from 'lucide-react';
+import { FileIcon, Edit, CheckSquare, Building, Calendar, User, Paperclip, Clock, MessageSquare, DollarSign } from 'lucide-react';
 import api from '@/services/api';
 import { LogProcessoModal } from './LogProcessoModal';
+import type { Reuniao } from '@/hooks/useReuniao';
 
 interface LogProcessoDetailsModalProps {
   isOpen: boolean;
@@ -27,10 +28,12 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
 }) => {
   const [docs, setDocs] = useState<{id:number; nome_original:string}[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [reuniao, setReuniao] = useState<Reuniao | null>(null);
 
   useEffect(() => {
     if (log?.id) {
       fetchDocs();
+      fetchReuniao();
     }
   }, [log]);
 
@@ -40,6 +43,18 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
       const res = await api.get(`/documentos/log/${log.id}`);
       setDocs(res.data);
     } catch {}
+  };
+
+  const fetchReuniao = async () => {
+    if (!log?.dados_extras) { setReuniao(null); return; }
+    try {
+      const extras = JSON.parse(log.dados_extras);
+      if (!extras.reuniao_id) { setReuniao(null); return; }
+      const res = await api.get(`/reunioes/${extras.reuniao_id}`);
+      setReuniao(res.data);
+    } catch {
+      setReuniao(null);
+    }
   };
 
   const getTipoLabel = (tipo: string) => {
@@ -187,6 +202,59 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
                   <p className="text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
                     {log.descricao}
                   </p>
+                </div>
+              </>
+            )}
+
+            {reuniao && (
+              <>
+                <Separator />
+                <div>
+                  <label className="text-sm font-medium text-gray-500 mb-2 block flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Detalhes da Reunião
+                  </label>
+                  <div className="space-y-2 bg-purple-50 p-3 rounded-lg">
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-muted-foreground">Duração:</span>
+                      <span className="font-medium">
+                        {reuniao.duracao_segundos != null
+                          ? (() => {
+                              const h = Math.floor(reuniao.duracao_segundos! / 3600);
+                              const m = Math.floor((reuniao.duracao_segundos! % 3600) / 60);
+                              return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                            })()
+                          : '—'}
+                      </span>
+                    </div>
+                    {reuniao.itens && reuniao.itens.length > 0 && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Itens criados ({reuniao.itens.length}):</span>
+                        <div className="mt-1 space-y-1">
+                          {reuniao.itens.map((item) => {
+                            const icons: Record<string, React.ReactNode> = {
+                              log_processo: <MessageSquare className="h-3 w-3" />,
+                              tarefa: <CheckSquare className="h-3 w-3" />,
+                              transacao: <DollarSign className="h-3 w-3" />,
+                              documento: <FileIcon className="h-3 w-3" />,
+                            };
+                            const labels: Record<string, string> = {
+                              log_processo: 'Registo',
+                              tarefa: 'Tarefa',
+                              transacao: 'Transação',
+                              documento: 'Documento',
+                            };
+                            return (
+                              <div key={item.id} className="flex items-center gap-1.5 text-xs">
+                                {icons[item.tipo_item]}
+                                <span>{labels[item.tipo_item] || item.tipo_item} #{item.item_id}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}

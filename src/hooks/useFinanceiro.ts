@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { useMeeting } from '@/contexts/MeetingContext';
 import type {
   TransacaoFinanceira,
   TransacaoFinanceiraCreate,
@@ -22,6 +23,7 @@ interface ListTransacoesParams {
 export const useTransacoes = (params: ListTransacoesParams = {}) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { trackItem } = useMeeting();
 
   const queryKey = ['transacoes', params];
 
@@ -49,10 +51,11 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       const response = await api.post('/financeiro/transacao', data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      if (data?.id) trackItem('transacao', data.id, data.descricao);
       toast({ title: 'Sucesso', description: 'Transacao criada com sucesso.' });
     },
     onError: (error: any) => {

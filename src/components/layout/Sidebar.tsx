@@ -23,7 +23,8 @@ import {
   Trash2,
   Settings,
   BookOpen,
-  ScanSearch
+  ScanSearch,
+  Car
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -50,6 +51,7 @@ const navItems: NavItem[] = [
   { icon: CheckSquare, label: 'Compromissos', path: '/tarefas', modulo: 'tarefas' },
   { icon: Truck, label: 'Diligências Externas', path: '/servicos-externos', modulo: 'servicos_externos' },
   { icon: Building, label: 'Registos Prediais', path: '/registos-prediais', modulo: 'registos_prediais' },
+  { icon: Car, label: 'Registos Automóveis', path: '/registos-automoveis', modulo: 'registos_automoveis' },
   { icon: Wallet, label: 'Caixa', path: '/caixa', managerOrAdmin: true, modulo: 'caixa' },
   { icon: Landmark, label: 'Conta Corrente', path: '/conta-corrente', managerOrAdmin: true, modulo: 'financeiro' },
   { icon: FileTemplate, label: 'Templates', path: '/templates', adminOnly: true },

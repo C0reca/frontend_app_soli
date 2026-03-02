@@ -138,6 +138,7 @@ export const TEMPLATE_VARIABLES: TemplateVariableGroup[] = [
       { campo: 'estado', label: 'Estado', tipo: 'texto' },
       { campo: 'valor', label: 'Valor', tipo: 'numero' },
       { campo: 'criado_em', label: 'Data de Criação', tipo: 'data' },
+      { campo: 'referencia', label: 'Referência', tipo: 'texto' },
     ],
   },
   {
@@ -158,6 +159,15 @@ export const TEMPLATE_VARIABLES: TemplateVariableGroup[] = [
       { campo: 'cargo', label: 'Cargo', tipo: 'texto' },
       { campo: 'departamento', label: 'Departamento', tipo: 'texto' },
       { campo: 'telefone', label: 'Telefone', tipo: 'texto' },
+    ],
+  },
+  {
+    grupo: 'Solicitador',
+    prefixo: 'solicitador',
+    campos: [
+      { campo: 'nome', label: 'Nome', tipo: 'texto' },
+      { campo: 'titulo', label: 'Título', tipo: 'texto' },
+      { campo: 'cedula', label: 'Cédula', tipo: 'texto' },
     ],
   },
   {

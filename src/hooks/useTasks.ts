@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { useMeeting } from '@/contexts/MeetingContext';
 
 export interface Adiamento {
   id: number;
@@ -62,6 +63,7 @@ function formatApiErrorDetail(detail: unknown, fallback: string): string {
 export const useTasks = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { trackItem } = useMeeting();
 
   const {
     data: tasks = [],
@@ -85,8 +87,9 @@ export const useTasks = () => {
       const response = await api.post('/tarefas', task);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (data?.id) trackItem('tarefa', data.id, data.titulo);
       toast({
         title: "Sucesso",
         description: "Tarefa criada com sucesso.",

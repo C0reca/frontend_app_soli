@@ -28,7 +28,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Client, useClients } from '@/hooks/useClients';
 import { ProcessoEntidadesSecundariasTab } from '@/components/ProcessoEntidadesSecundariasTab';
+import { StartMeetingModal } from '@/components/modals/StartMeetingModal';
+import { useMeeting } from '@/contexts/MeetingContext';
 import { useSolicitadoresAtivos } from '@/hooks/useSolicitadores';
+import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { GenerateFromTemplateModal } from '@/components/modals/GenerateFromTemplateModal';
 import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
 import FullCalendar from '@fullcalendar/react';
@@ -103,6 +106,8 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [privadoLocal, setPrivadoLocal] = React.useState(false);
   const [autorizadosIdsLocal, setAutorizadosIdsLocal] = React.useState<number[]>([]);
   const [gerandoCapa, setGerandoCapa] = React.useState(false);
+  const [isStartMeetingOpen, setIsStartMeetingOpen] = React.useState(false);
+  const { isActive: meetingActive } = useMeeting();
   React.useEffect(() => {
     if (process) {
       setPrivadoLocal(process.privado ?? false);
@@ -111,25 +116,42 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   }, [process]);
 
   const { data: solicitadoresAtivos } = useSolicitadoresAtivos();
+  const { templates: docTemplates, generateDocument } = useDocumentTemplates();
+
+  // Find "Capa" template (by categoria)
+  const capaTemplate = React.useMemo(
+    () => docTemplates.find((t) => t.categoria === 'Capa'),
+    [docTemplates],
+  );
 
   const handleGerarCapa = async (solicitadorId: number) => {
     if (!process) return;
     setGerandoCapa(true);
     try {
-      const response = await api.get(`/processos/${process.id}/capa-pdf`, {
-        params: { solicitador_id: solicitadorId },
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `capa_processo_${process.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast({ title: 'Capa gerada com sucesso' });
+      if (capaTemplate) {
+        // Use template system
+        await generateDocument.mutateAsync({
+          templateId: capaTemplate.id,
+          processoId: process.id,
+          solicitadorId,
+        });
+      } else {
+        // Fallback: hardcoded PDF endpoint
+        const response = await api.get(`/processos/${process.id}/capa-pdf`, {
+          params: { solicitador_id: solicitadorId },
+          responseType: 'blob',
+        });
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `capa_processo_${process.id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast({ title: 'Capa gerada com sucesso' });
+      }
     } catch (err) {
       console.error('Erro ao gerar capa:', err);
       toast({ title: 'Erro ao gerar capa', description: 'Tente novamente.', variant: 'destructive' });
@@ -1131,10 +1153,18 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
             <TabsContent value="timeline" className="space-y-6 mt-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Timeline do Processo</h3>
-                <Button onClick={handleAddLog} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Registo
-                </Button>
+                <div className="flex gap-2">
+                  {!meetingActive && (
+                    <Button onClick={() => setIsStartMeetingOpen(true)} size="sm" variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Iniciar Reunião
+                    </Button>
+                  )}
+                  <Button onClick={handleAddLog} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Registo
+                  </Button>
+                </div>
               </div>
               
               {loadingLogs ? (
@@ -1465,6 +1495,14 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               // silently fail
             }
           }}
+        />
+      )}
+      {process && (
+        <StartMeetingModal
+          isOpen={isStartMeetingOpen}
+          onClose={() => setIsStartMeetingOpen(false)}
+          processoId={process.id}
+          processoTitulo={process.titulo}
         />
       )}
     </Dialog>
