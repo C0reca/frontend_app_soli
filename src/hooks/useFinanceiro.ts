@@ -55,7 +55,7 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
-      if (data?.id) trackItem('transacao', data.id, data.descricao);
+      if (data?.id) trackItem('transacao', data.id, 'criado', data.descricao);
       toast({ title: 'Sucesso', description: 'Transacao criada com sucesso.' });
     },
     onError: (error: any) => {
@@ -69,10 +69,11 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       const response = await api.put(`/financeiro/transacao/${id}`, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      trackItem('transacao', variables.id, 'atualizado', data?.descricao);
       toast({ title: 'Sucesso', description: 'Transacao atualizada com sucesso.' });
     },
     onError: (error: any) => {
@@ -84,11 +85,13 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
   const deleteTransacao = useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/financeiro/transacao/${id}`);
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, id: number) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      trackItem('transacao', id, 'eliminado');
       toast({ title: 'Sucesso', description: 'Transacao eliminada.' });
     },
     onError: (error: any) => {

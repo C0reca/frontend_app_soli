@@ -26,12 +26,12 @@ import { MinimizeProvider } from "@/contexts/MinimizeContext";
 import { MeetingProvider } from "@/contexts/MeetingContext";
 import { MinimizeDock } from "@/components/MinimizeDock";
 import { MinimizeRenderer } from "@/components/MinimizeRenderer";
-import { MeetingWidget } from "@/components/MeetingWidget";
 import { ServicosExternos } from "@/pages/ServicosExternos";
 import { ContaCorrente } from "@/pages/ContaCorrente";
 import { Profile } from "@/pages/Profile";
 import { Notifications } from "@/pages/Notifications";
 import { ErroReports } from "@/pages/ErroReports";
+import { ErrorLogs } from "@/pages/ErrorLogs";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { Changelog } from "@/pages/Changelog";
 import { Settings } from "@/pages/Settings";
@@ -115,6 +115,7 @@ const AppRoutes = () => {
         <Route path="perfil" element={<Profile />} />
         <Route path="notificacoes" element={<Notifications />} />
         <Route path="erro-reports" element={<AdminRoute><ErroReports /></AdminRoute>} />
+        <Route path="error-logs" element={<AdminRoute><ErrorLogs /></AdminRoute>} />
         <Route path="admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
         <Route path="definicoes" element={<ManagerRoute><Settings /></ManagerRoute>} />
         <Route path="assistente-documentos" element={<DocumentExtraction />} />
@@ -139,7 +140,6 @@ const App = () => (
                 <AppRoutes />
                 <MinimizeDock />
                 <MinimizeRenderer />
-                <MeetingWidget />
               </MinimizeProvider>
             </MeetingProvider>
           </BrowserRouter>

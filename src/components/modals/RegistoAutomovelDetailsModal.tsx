@@ -170,11 +170,11 @@ export const RegistoAutomovelDetailsModal: React.FC<Props> = ({ isOpen, onClose,
           )}
 
           {/* Sujeito Ativo */}
-          {registo.sa_nome && (
+          {(registo.sa_nome || registo.comprador) && (
             <>
               <Separator />
               <div className="space-y-3">
-                <h4 className="font-medium flex items-center"><User className="h-4 w-4 mr-2" />Sujeito Ativo (Comprador)</h4>
+                <h4 className="font-medium flex items-center"><User className="h-4 w-4 mr-2" />Sujeito Ativo (Comprador){registo.comprador ? ` — ${registo.comprador.nome}` : ''}</h4>
                 <div className="bg-gray-50 p-3 rounded-lg grid grid-cols-2 gap-4">
                   <Field label="Nome" value={registo.sa_nome} />
                   <Field label="NIF" value={registo.sa_nif} />
@@ -191,11 +191,11 @@ export const RegistoAutomovelDetailsModal: React.FC<Props> = ({ isOpen, onClose,
           )}
 
           {/* Sujeito Passivo */}
-          {registo.sp_nome && (
+          {(registo.sp_nome || registo.vendedor) && (
             <>
               <Separator />
               <div className="space-y-3">
-                <h4 className="font-medium flex items-center"><User className="h-4 w-4 mr-2" />Sujeito Passivo (Vendedor)</h4>
+                <h4 className="font-medium flex items-center"><User className="h-4 w-4 mr-2" />Sujeito Passivo (Vendedor){registo.vendedor ? ` — ${registo.vendedor.nome}` : ''}</h4>
                 <div className="bg-gray-50 p-3 rounded-lg grid grid-cols-2 gap-4">
                   <Field label="Nome" value={registo.sp_nome} />
                   <Field label="NIF" value={registo.sp_nif} />

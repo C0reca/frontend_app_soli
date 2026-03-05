@@ -24,7 +24,7 @@ export interface RegistoPredial {
   apresentacao_complementar?: string;
   data_criacao: string;
   outras_observacoes?: string;
-  estado: 'Concluído' | 'Desistência' | 'Recusado' | 'Provisórios';
+  estado: string;
   cliente?: {
     id: number;
     nome: string;

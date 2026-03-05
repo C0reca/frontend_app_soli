@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Client, IndividualClient, CorporateClient, getEffectiveTipo } from '@/hooks/useClients';
 import { useDossies, Dossie } from '@/hooks/useDossies';
 import { useContaCorrenteCliente } from '@/hooks/useContaCorrente';
@@ -38,6 +38,7 @@ import {
   TrendingDown,
   Loader2,
   Printer,
+  Check,
 } from 'lucide-react';
 import api from '@/services/api';
 import { printRGPD } from '@/utils/printRGPD';
@@ -199,6 +200,61 @@ const DetailField = ({ label, value, valueClassName, className }: { label: strin
   </div>
 );
 
+/** Campo editável inline — clique no lápis para editar, Enter/blur para gravar. */
+const EditableField = ({ label, value, clientId, field, onSaved }: { label: string; value?: string | null; clientId: number; field: string; onSaved: () => void }) => {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value || '');
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const save = async () => {
+    if (val === (value || '')) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await api.patch(`/clientes/${clientId}`, { [field]: val });
+      onSaved();
+      setEditing(false);
+    } catch {
+      toast({ title: 'Erro', description: 'Erro ao guardar.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="space-y-1">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        <div className="flex items-center gap-1">
+          <Input
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setVal(value || ''); setEditing(false); } }}
+            autoFocus
+            className="h-7 text-sm"
+            disabled={saving}
+          />
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={save} disabled={saving}>
+            <Check className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <p className="text-sm">{value || '-'}</p>
+        <button onClick={() => { setVal(value || ''); setEditing(true); }} className="text-muted-foreground hover:text-foreground" title="Editar">
+          <Edit className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Secção de morada uniforme
 const MoradaSection = ({ morada, codigo_postal, localidade, concelho, distrito, pais }: { morada?: string; codigo_postal?: string; localidade?: string; concelho?: string; distrito?: string; pais?: string }) => {
   const temAlgo = morada || codigo_postal || localidade || concelho || distrito || pais;
@@ -223,6 +279,13 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
   client,
 }) => {
   const entidadeId = client?.id != null ? Number(client.id) : undefined;
+  const queryClient = useQueryClient();
+
+  const refreshCliente = () => {
+    queryClient.invalidateQueries({ queryKey: ['client-detail', entidadeId] });
+    queryClient.invalidateQueries({ queryKey: ['cliente', entidadeId] });
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
+  };
 
   // Buscar dados completos do cliente (inclui representantes)
   const { data: clienteCompleto } = useQuery({
@@ -571,6 +634,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                 <DetailField label="NIF" value={client.nif} />
                 <DetailField label="Cartão de Cidadão" value={client.num_cc} />
                 <DetailField label="Validade CC" value={client.validade_cc ? new Date(client.validade_cc).toLocaleDateString('pt-PT') : null} />
+                <EditableField label="Senha Finanças" value={client.senha_financas} clientId={Number(client.id)} field="senha_financas" onSaved={refreshCliente} />
                 <DetailField label="Data de Nascimento" value={client.data_nascimento ? new Date(client.data_nascimento).toLocaleDateString('pt-PT') : null} />
                 <DetailField label="Nacionalidade" value={client.nacionalidade} />
                 <DetailField label="Naturalidade (Freguesia)" value={client.naturalidade_freguesia} />
@@ -580,6 +644,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                 <DetailField label="Incapacidade" value={client.incapacidade != null ? `${client.incapacidade}%` : null} />
                 <DetailField label="Nº Segurança Social" value={client.num_ss} />
                 <DetailField label="Nº Utente de Saúde" value={client.num_sns} />
+                <EditableField label="Senha Seg. Social" value={client.senha_ss} clientId={Number(client.id)} field="senha_ss" onSaved={refreshCliente} />
                 <DetailField label="Nº Identificação Civil" value={client.num_ident_civil} />
               </div>
             </CardContent>
@@ -761,8 +826,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                 <DetailField label="NIF" value={client.nif_empresa} />
                 <DetailField label="Nº Registo Comercial" value={client.registo_comercial} />
                 <DetailField label="Forma Jurídica" value={client.forma_juridica} />
+                <EditableField label="Senha Finanças" value={client.senha_financas} clientId={Number(client.id)} field="senha_financas" onSaved={refreshCliente} />
                 <DetailField label="Data de Constituição" value={client.data_constituicao ? new Date(client.data_constituicao).toLocaleDateString('pt-PT') : null} />
                 <DetailField label="CAE Principal" value={client.cae} />
+                <EditableField label="Senha Seg. Social" value={client.senha_ss} clientId={Number(client.id)} field="senha_ss" onSaved={refreshCliente} />
                 <DetailField label="Capital Social" value={client.capital_social ? `${client.capital_social}` : null} />
               </div>
               <Separator />

@@ -32,6 +32,7 @@ import {
   PdfPageInfo,
 } from '@/hooks/useDocumentTemplates';
 import { useCabecalhoTemplates } from '@/hooks/useCabecalhoTemplates';
+import { useOpcoes } from '@/hooks/useConfiguracaoOpcoes';
 import type { OverlayFieldData } from '@/components/editor/OverlayFieldRect';
 
 interface TemplateEditorPageProps {
@@ -39,7 +40,7 @@ interface TemplateEditorPageProps {
   onBack: () => void;
 }
 
-const CATEGORIAS = ['Contrato', 'Requerimento', 'Procuração', 'Declaração', 'Relatório', 'Fatura', 'Capa', 'Outros'];
+const CATEGORIAS_FALLBACK = ['Contrato', 'Requerimento', 'Procuração', 'Declaração', 'Relatório', 'Fatura', 'Capa', 'Outros'];
 
 export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
   templateId,
@@ -51,6 +52,10 @@ export const TemplateEditorPage: React.FC<TemplateEditorPageProps> = ({
     existingTemplate?.tipo_template === 'pdf_overlay' && existingTemplate?.has_pdf ? templateId : null,
   );
   const { cabecalhos } = useCabecalhoTemplates();
+  const { data: opcoesCategoria } = useOpcoes('categoria_template');
+  const CATEGORIAS = opcoesCategoria?.length
+    ? opcoesCategoria.map((o: any) => o.label)
+    : CATEGORIAS_FALLBACK;
 
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');

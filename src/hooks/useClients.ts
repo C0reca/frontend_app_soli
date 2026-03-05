@@ -166,11 +166,12 @@ export const useClients = () => {
 
   const updateClient = useMutation({
     mutationFn: async ({ id, ...client }: Partial<Client> & { id: string }) => {
-      const response = await api.put(`/clientes/${id}`, client);
+      const response = await api.patch(`/clientes/${id}`, client);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['cliente', Number(variables.id)] });
     },
   });
 

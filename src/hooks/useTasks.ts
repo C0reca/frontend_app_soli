@@ -89,7 +89,7 @@ export const useTasks = () => {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      if (data?.id) trackItem('tarefa', data.id, data.titulo);
+      if (data?.id) trackItem('tarefa', data.id, 'criado', data.titulo);
       toast({
         title: "Sucesso",
         description: "Tarefa criada com sucesso.",
@@ -109,8 +109,9 @@ export const useTasks = () => {
       const response = await api.put(`/tarefas/${id}`, task);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (data?.id) trackItem('tarefa', data.id, 'atualizado', data.titulo);
       toast({
         title: "Sucesso",
         description: "Tarefa atualizada com sucesso.",
@@ -128,9 +129,11 @@ export const useTasks = () => {
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/tarefas/${id}`);
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, id: string) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      trackItem('tarefa', Number(id), 'eliminado');
       toast({
         title: "Sucesso",
         description: "Tarefa excluída com sucesso.",
@@ -153,8 +156,10 @@ export const useTasks = () => {
       const response = await api.patch(`/tarefas/status/${id}`, payload);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      const acao = variables.concluida ? 'concluida' : 'reaberta';
+      trackItem('tarefa', Number(variables.id), acao, data?.titulo);
       toast({
         title: "Sucesso",
         description: "Status da tarefa atualizado.",
@@ -174,8 +179,10 @@ export const useTasks = () => {
       const response = await api.patch(`/tarefas/externo/${id}`, { servico_externo });
       return response.data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (_data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      trackItem('tarefa', Number(variables.id), 'externo_alterado',
+        variables.servico_externo ? 'Movido para diligência externa' : 'Removido de diligência externa');
       toast({
         title: 'Sucesso',
         description: variables.servico_externo ? 'Movido para Diligência Externa.' : 'Removido de Diligência Externa.',

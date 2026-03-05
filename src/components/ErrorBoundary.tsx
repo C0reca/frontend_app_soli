@@ -1,46 +1,61 @@
 import React, { Component, ErrorInfo } from 'react';
-import { Bug, RefreshCw } from 'lucide-react';
+import { Bug, RefreshCw, CheckCircle, Loader2 } from 'lucide-react';
+import api from '@/services/api';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
-  onReportError?: (error: { mensagem_erro: string; stack_trace: string }) => void;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  reported: boolean;
+  reportFailed: boolean;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, reported: false, reportFailed: false };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught:', error, errorInfo);
+    this.reportError(error, errorInfo);
   }
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: null });
+  reportError = async (error: Error, errorInfo?: ErrorInfo) => {
+    try {
+      await api.post('/admin/error-logs/report', {
+        error_message: error.message,
+        error_type: error.name || 'FrontendError',
+        stack_trace: [error.stack, errorInfo?.componentStack].filter(Boolean).join('\n\n--- Component Stack ---\n'),
+        path: window.location.pathname,
+        browser_info: navigator.userAgent,
+      });
+      this.setState({ reported: true, reportFailed: false });
+    } catch {
+      this.setState({ reportFailed: true });
+    }
   };
 
-  handleReport = () => {
-    const { error } = this.state;
-    if (error && this.props.onReportError) {
-      this.props.onReportError({
-        mensagem_erro: error.message,
-        stack_trace: error.stack || '',
-      });
+  handleReset = () => {
+    this.setState({ hasError: false, error: null, reported: false, reportFailed: false });
+  };
+
+  handleManualReport = () => {
+    if (this.state.error) {
+      this.reportError(this.state.error);
     }
   };
 
   render() {
     if (this.state.hasError) {
+      const { reported, reportFailed } = this.state;
       return (
         <div className="min-h-[400px] flex items-center justify-center p-8">
           <div className="text-center max-w-md">
@@ -51,12 +66,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               Algo correu mal
             </h2>
             <p className="text-gray-500 mb-4">
-              Ocorreu um erro inesperado. Pode tentar recarregar ou reportar o problema.
+              Ocorreu um erro inesperado. Pode tentar recarregar a página.
             </p>
             {this.state.error && (
               <pre className="text-xs text-left bg-gray-100 rounded-md p-3 mb-4 overflow-auto max-h-32 text-red-600">
                 {this.state.error.message}
               </pre>
+            )}
+            {reported && (
+              <p className="text-sm text-green-600 mb-4 flex items-center justify-center gap-1.5">
+                <CheckCircle className="h-4 w-4" />
+                Erro reportado automaticamente ao administrador.
+              </p>
             )}
             <div className="flex gap-3 justify-center">
               <button
@@ -66,9 +87,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <RefreshCw className="h-4 w-4" />
                 Tentar de novo
               </button>
-              {this.props.onReportError && (
+              {reportFailed && (
                 <button
-                  onClick={this.handleReport}
+                  onClick={this.handleManualReport}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-colors"
                 >
                   <Bug className="h-4 w-4" />

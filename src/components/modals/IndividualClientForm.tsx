@@ -159,6 +159,23 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="senha_financas">Senha Finanças</Label>
+                <Input
+                  id="senha_financas"
+                  {...register('senha_financas')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="senha_ss">Senha Segurança Social</Label>
+                <Input
+                  id="senha_ss"
+                  {...register('senha_ss')}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="designacao">Designação</Label>
               <Input
@@ -420,22 +437,6 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="senha_financas">Senha Finanças</Label>
-                <Input
-                  id="senha_financas"
-                  {...form.register('senha_financas')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="senha_ss">Senha Segurança Social</Label>
-                <Input
-                  id="senha_ss"
-                  {...form.register('senha_ss')}
-                />
-              </div>
-            </div>
           </CardContent>
         </Card>
       </TabsContent>

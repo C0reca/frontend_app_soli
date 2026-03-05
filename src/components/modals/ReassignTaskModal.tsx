@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, UserPlus } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
@@ -30,6 +31,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
   const { toast } = useToast();
   const [novoResponsavelId, setNovoResponsavelId] = useState<number | null>(null);
   const [motivo, setMotivo] = useState('');
+  const [novaData, setNovaData] = useState('');
   const [subtarefasParaMover, setSubtarefasParaMover] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,6 +41,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
   const resetForm = () => {
     setNovoResponsavelId(null);
     setMotivo('');
+    setNovaData('');
     setSubtarefasParaMover(new Set());
   };
 
@@ -82,7 +85,7 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
         responsavel_id: novoResponsavelId,
         prioridade: task.prioridade,
         concluida: false,
-        data_fim: task.data_fim && new Date(task.data_fim) >= new Date(new Date().toDateString()) ? task.data_fim : new Date().toISOString(),
+        data_fim: novaData || (task.data_fim && new Date(task.data_fim) >= new Date(new Date().toDateString()) ? task.data_fim.slice(0, 10) : new Date().toISOString().slice(0, 10)),
         autor_id: task.autor_id ?? null,
         parent_id: parentId,
         tipo: (task as any).tipo ?? null,
@@ -154,6 +157,19 @@ export const ReassignTaskModal: React.FC<ReassignTaskModalProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Nova data limite</Label>
+            <Input
+              type="date"
+              value={novaData}
+              onChange={(e) => setNovaData(e.target.value)}
+              min={new Date().toISOString().slice(0, 10)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {novaData ? '' : 'Se não indicar, mantém a data original ou usa a data de hoje.'}
+            </p>
           </div>
 
           <div className="space-y-2">

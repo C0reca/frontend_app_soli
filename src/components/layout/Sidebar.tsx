@@ -24,7 +24,8 @@ import {
   Settings,
   BookOpen,
   ScanSearch,
-  Car
+  Car,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -61,6 +62,7 @@ const navItems: NavItem[] = [
   { icon: ScanSearch, label: 'Assistente Docs', path: '/assistente-documentos', modulo: 'extracao_documentos' },
   { icon: BookOpen, label: 'Base de Conhecimento', path: '/base-conhecimento' },
   { icon: Bug, label: 'Reportes', path: '/erro-reports', adminOnly: true },
+  { icon: AlertTriangle, label: 'Logs de Erros', path: '/error-logs', adminOnly: true },
   { icon: Settings, label: 'Definições', path: '/definicoes', managerOrAdmin: true },
   { icon: Shield, label: 'Administração', path: '/admin', adminOnly: true },
   { icon: Megaphone, label: 'Novidades', path: '/changelog' },
@@ -87,14 +89,14 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="h-full w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-full w-64 min-h-0 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-gray-900">ProcessFlow</h1>
         <p className="text-sm text-gray-500">{panelLabel}</p>
         <p className="text-xs text-gray-400 mt-1">{user?.nome}</p>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
         {navItems.filter(item => isItemVisible(item)).map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;

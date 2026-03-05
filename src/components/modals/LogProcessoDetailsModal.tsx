@@ -229,7 +229,7 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
                     </div>
                     {reuniao.itens && reuniao.itens.length > 0 && (
                       <div>
-                        <span className="text-sm text-muted-foreground">Itens criados ({reuniao.itens.length}):</span>
+                        <span className="text-sm text-muted-foreground">Atividade registada ({reuniao.itens.length}):</span>
                         <div className="mt-1 space-y-1">
                           {reuniao.itens.map((item) => {
                             const icons: Record<string, React.ReactNode> = {

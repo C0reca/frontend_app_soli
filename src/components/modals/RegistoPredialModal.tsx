@@ -105,7 +105,7 @@ const formSchema = z.object({
   data: z.string().min(1, 'Data é obrigatória'),
   apresentacao_complementar: z.string().optional(),
   outras_observacoes: z.string().optional(),
-  estado: z.enum(['Concluído', 'Desistência', 'Recusado', 'Provisórios', 'Registo']),
+  estado: z.string().min(1, 'Estado é obrigatório'),
 });
 
 type FormData = z.infer<typeof formSchema>;

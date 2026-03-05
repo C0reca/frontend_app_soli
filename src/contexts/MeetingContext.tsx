@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useReuniao, Reuniao } from '@/hooks/useReuniao';
 
-interface TrackedItem {
+export interface TrackedItem {
   tipo_item: string;
   item_id: number;
+  acao: string; // 'criado', 'atualizado', 'status_alterado', 'concluida', 'eliminado', etc.
   label?: string;
+  timestamp: number; // epoch ms
 }
 
 interface MeetingState {
@@ -27,7 +29,7 @@ interface MeetingContextValue {
   startMeeting: (processoId: number | null, processoTitulo: string, titulo: string) => Promise<void>;
   endMeeting: () => Promise<void>;
   cancelMeeting: () => Promise<void>;
-  trackItem: (tipo: string, id: number, label?: string) => void;
+  trackItem: (tipo: string, id: number, acao: string, label?: string) => void;
   togglePause: () => void;
   setNotas: (notas: string) => void;
 }
@@ -54,11 +56,23 @@ function saveToStorage(state: MeetingState | null) {
   }
 }
 
+/** Calculate elapsed active seconds from meeting state */
+function calcElapsed(m: MeetingState): number {
+  const now = Date.now();
+  if (m.pausedAt) {
+    return Math.max(0, Math.floor((m.pausedAt - m.startTime - m.accumulatedPause) / 1000));
+  }
+  return Math.max(0, Math.floor((now - m.startTime - m.accumulatedPause) / 1000));
+}
+
 export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [meeting, setMeeting] = useState<MeetingState | null>(loadFromStorage);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const { iniciarReuniao, terminarReuniao, cancelarReuniao, ativa, isLoadingAtiva } = useReuniao();
   const hasRestoredRef = useRef(false);
+  // Keep a ref to meeting so endMeeting always reads the latest
+  const meetingRef = useRef(meeting);
+  meetingRef.current = meeting;
 
   // Restore from backend on mount if localStorage is empty
   useEffect(() => {
@@ -74,7 +88,12 @@ export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         startTime: new Date(ativa.inicio).getTime(),
         pausedAt: null,
         accumulatedPause: 0,
-        items: (ativa.itens || []).map((i) => ({ tipo_item: i.tipo_item, item_id: i.item_id })),
+        items: (ativa.itens || []).map((i) => ({
+          tipo_item: i.tipo_item,
+          item_id: i.item_id,
+          acao: 'criado',
+          timestamp: new Date(i.criado_em).getTime(),
+        })),
         notas: ativa.notas || '',
       };
       setMeeting(restored);
@@ -95,14 +114,7 @@ export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     const tick = () => {
-      const now = Date.now();
-      if (meeting.pausedAt) {
-        const active = meeting.pausedAt - meeting.startTime - meeting.accumulatedPause;
-        setElapsedSeconds(Math.floor(active / 1000));
-      } else {
-        const active = now - meeting.startTime - meeting.accumulatedPause;
-        setElapsedSeconds(Math.floor(active / 1000));
-      }
+      setElapsedSeconds(calcElapsed(meeting));
     };
 
     tick();
@@ -143,45 +155,49 @@ export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const endMeeting = useCallback(async () => {
-    if (!meeting) return;
+    // Always read latest state from ref to avoid stale closures
+    const current = meetingRef.current;
+    if (!current) return;
+    // Calculate duration directly from timestamps — never use elapsedSeconds state
+    const duracao = calcElapsed(current);
     await terminarReuniao.mutateAsync({
-      id: meeting.id,
+      id: current.id,
       data: {
-        notas: meeting.notas || undefined,
-        duracao_segundos: elapsedSeconds,
-        itens: meeting.items.map((i) => ({ tipo_item: i.tipo_item, item_id: i.item_id })),
+        notas: current.notas || undefined,
+        duracao_segundos: duracao,
+        itens: current.items.map((i) => ({ tipo_item: i.tipo_item, item_id: i.item_id })),
       },
     });
     setMeeting(null);
-  }, [meeting, elapsedSeconds, terminarReuniao]);
+  }, [terminarReuniao]);
 
   const cancelMeeting = useCallback(async () => {
-    if (!meeting) return;
-    await cancelarReuniao.mutateAsync(meeting.id);
+    const current = meetingRef.current;
+    if (!current) return;
+    await cancelarReuniao.mutateAsync(current.id);
     setMeeting(null);
-  }, [meeting, cancelarReuniao]);
+  }, [cancelarReuniao]);
 
   const trackItem = useCallback(
-    (tipo: string, id: number, label?: string) => {
-      if (!meeting) return;
+    (tipo: string, id: number, acao: string, label?: string) => {
       setMeeting((prev) => {
         if (!prev) return prev;
-        if (prev.items.some((i) => i.tipo_item === tipo && i.item_id === id)) return prev;
-        return { ...prev, items: [...prev.items, { tipo_item: tipo, item_id: id, label }] };
+        return {
+          ...prev,
+          items: [...prev.items, { tipo_item: tipo, item_id: id, acao, label, timestamp: Date.now() }],
+        };
       });
     },
-    [meeting !== null],
+    [],
   );
 
   const togglePause = useCallback(() => {
     setMeeting((prev) => {
       if (!prev) return prev;
       if (prev.pausedAt) {
-        // Resume: add pause duration to accumulated
         const pauseDuration = Date.now() - prev.pausedAt;
         return { ...prev, pausedAt: null, accumulatedPause: prev.accumulatedPause + pauseDuration };
       } else {
-        // Pause
         return { ...prev, pausedAt: Date.now() };
       }
     });

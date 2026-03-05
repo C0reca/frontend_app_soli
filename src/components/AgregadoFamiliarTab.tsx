@@ -1,4 +1,11 @@
 import React, { useState } from 'react';
+
+/** Extrai mensagem legível de error.response.data.detail (string ou array Pydantic). */
+function extractDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) return detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ');
+  return fallback;
+}
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -283,7 +290,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.detail || 'Erro ao atualizar morada.',
+        description: extractDetail(error.response?.data?.detail, 'Erro ao atualizar morada.'),
         variant: 'destructive',
       });
     } finally {
@@ -356,7 +363,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.detail || 'Erro ao atualizar moradas.',
+        description: extractDetail(error.response?.data?.detail, 'Erro ao atualizar moradas.'),
         variant: 'destructive',
       });
     } finally {
@@ -885,7 +892,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                   } catch (error: any) {
                     toast({
                       title: 'Erro',
-                      description: error.response?.data?.detail || 'Erro ao atualizar password.',
+                      description: extractDetail(error.response?.data?.detail, 'Erro ao atualizar password.'),
                       variant: 'destructive',
                     });
                   } finally {
@@ -977,7 +984,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 } catch (error: any) {
                   toast({
                     title: 'Erro',
-                    description: error.response?.data?.detail || 'Erro ao atualizar incapacidade.',
+                    description: extractDetail(error.response?.data?.detail, 'Erro ao atualizar incapacidade.'),
                     variant: 'destructive',
                   });
                 } finally {
@@ -1064,7 +1071,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 } catch (error: any) {
                   toast({
                     title: 'Erro',
-                    description: error.response?.data?.detail || 'Erro ao atualizar incapacidade.',
+                    description: extractDetail(error.response?.data?.detail, 'Erro ao atualizar incapacidade.'),
                     variant: 'destructive',
                   });
                 } finally {
@@ -1156,7 +1163,7 @@ export const AgregadoFamiliarTab: React.FC<AgregadoFamiliarTabProps> = ({ client
                 } catch (error: any) {
                   toast({
                     title: 'Erro',
-                    description: error.response?.data?.detail || 'Erro ao atualizar password.',
+                    description: extractDetail(error.response?.data?.detail, 'Erro ao atualizar password.'),
                     variant: 'destructive',
                   });
                 } finally {

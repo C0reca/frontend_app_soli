@@ -52,7 +52,7 @@ export const useLogsProcesso = (processoId?: number) => {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['logs-processo'] });
-      if (data?.id) trackItem('log_processo', data.id, data.titulo);
+      if (data?.id) trackItem('log_processo', data.id, 'criado', data.titulo);
       toast({
         title: "Sucesso",
         description: "Log criado com sucesso.",
@@ -72,8 +72,9 @@ export const useLogsProcesso = (processoId?: number) => {
       const response = await api.put(`/logs-processo/${id}`, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['logs-processo'] });
+      if (data?.id) trackItem('log_processo', data.id, 'atualizado', data.titulo);
       toast({
         title: "Sucesso",
         description: "Log atualizado com sucesso.",
@@ -91,10 +92,11 @@ export const useLogsProcesso = (processoId?: number) => {
   const deleteLog = useMutation({
     mutationFn: async (id: number) => {
       const response = await api.delete(`/logs-processo/${id}`);
-      return response.data;
+      return { ...response.data, _deletedId: id };
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, id: number) => {
       queryClient.invalidateQueries({ queryKey: ['logs-processo'] });
+      trackItem('log_processo', id, 'eliminado');
       toast({
         title: "Sucesso",
         description: "Log excluído com sucesso.",

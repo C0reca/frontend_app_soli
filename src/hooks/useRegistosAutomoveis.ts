@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 export interface RegistoAutomovel {
   id: number;
   entidade_id?: number;
+  comprador_id?: number;
+  vendedor_id?: number;
   tipo: string;
   pago_por?: string;
   estado_pagamento: string;
@@ -106,7 +108,9 @@ export interface RegistoAutomovel {
   declaracao_aprovacao_sp?: boolean;
 
   // Relationships
-  entidade?: { id: number; nome: string };
+  entidade?: { id: number; nome: string; nif?: string };
+  comprador?: { id: number; nome: string; nif?: string };
+  vendedor?: { id: number; nome: string; nif?: string };
   criado_por?: { id: number; nome: string };
   anexos?: { id: number; registo_automovel_id: number; nome_original: string; tipo?: string; criado_em?: string }[];
 }

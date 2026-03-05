@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Dialog,
@@ -28,11 +28,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Upload, ChevronLeft, ChevronRight, Check, AlertTriangle, UserCheck, RefreshCw } from 'lucide-react';
 import { useRegistosAutomoveis, RegistoAutomovel } from '@/hooks/useRegistosAutomoveis';
 import { useClients } from '@/hooks/useClients';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface RegistoAutomovelModalProps {
   isOpen: boolean;
@@ -51,13 +53,42 @@ const STEPS = [
   { label: 'Declarações & Observações', shortLabel: '8' },
 ];
 
+// Mapeamento de campos do formulário para campos do cliente
+const FIELD_MAP_SA = {
+  sa_nome: 'nome',
+  sa_nif: 'nif',
+  sa_morada: 'morada',
+  sa_codigo_postal: 'codigo_postal',
+  sa_localidade: 'localidade',
+  sa_email: 'email',
+  sa_telemovel: 'telefone',
+  sa_numero_identificacao: 'num_cc',
+} as const;
+
+const FIELD_MAP_SP = {
+  sp_nome: 'nome',
+  sp_nif: 'nif',
+  sp_morada: 'morada',
+  sp_codigo_postal: 'codigo_postal',
+  sp_localidade: 'localidade',
+  sp_email: 'email',
+  sp_telemovel: 'telefone',
+  sp_numero_identificacao: 'num_cc',
+} as const;
+
+const FIELD_LABELS: Record<string, string> = {
+  nome: 'Nome', nif: 'NIF', morada: 'Morada', codigo_postal: 'Código Postal',
+  localidade: 'Localidade', email: 'Email', telefone: 'Telemóvel', num_cc: 'N.º CC',
+};
+
 export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
   isOpen,
   onClose,
   registo,
 }) => {
   const { createRegisto, updateRegisto, importPdf, uploadAnexo } = useRegistosAutomoveis();
-  const { clients } = useClients();
+  const { clients, updateClient } = useClients();
+  const { toast } = useToast();
   const isEditing = !!registo;
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -76,6 +107,8 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
     tipo: r?.tipo || 'particular',
     pago_por: r?.pago_por || 'particular',
     entidade_id: r?.entidade_id || undefined,
+    comprador_id: r?.comprador_id || undefined,
+    vendedor_id: r?.vendedor_id || undefined,
     outras_observacoes: r?.outras_observacoes || '',
     numero_pedido: r?.numero_pedido || '',
     data_pedido: toDateInputValue(r?.data_pedido),
@@ -162,6 +195,217 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
   }, [registo]);
 
   const tipo = form.watch('tipo');
+  const compradorId = form.watch('comprador_id');
+  const vendedorId = form.watch('vendedor_id');
+
+  // Procurar entidade por NIF nos dados do formulário
+  const findClientByNif = (nif: string | undefined) => {
+    if (!nif || !nif.trim()) return null;
+    return clients.find((c: any) => {
+      const clientNif = c.nif || c.nif_empresa || '';
+      return clientNif && clientNif.replace(/\s/g, '') === nif.replace(/\s/g, '');
+    }) || null;
+  };
+
+  // Sugestões baseadas nos dados do PDF (por NIF)
+  const saNif = form.watch('sa_nif');
+  const spNif = form.watch('sp_nif');
+
+  const suggestedComprador = useMemo(() => findClientByNif(saNif), [saNif, clients]);
+  const suggestedVendedor = useMemo(() => findClientByNif(spNif), [spNif, clients]);
+
+  // Comparar dados do formulário com dados da entidade e encontrar diferenças
+  const getDifferences = (clientId: number | undefined, fieldMap: Record<string, string>, prefix: string) => {
+    if (!clientId) return [];
+    const client = clients.find((c: any) => Number(c.id) === Number(clientId)) as any;
+    if (!client) return [];
+    const diffs: { field: string; label: string; formValue: string; clientValue: string }[] = [];
+    for (const [formField, clientField] of Object.entries(fieldMap)) {
+      const formValue = (form.getValues(formField as any) || '').toString().trim();
+      const clientValue = (client[clientField] || '').toString().trim();
+      if (formValue && clientValue && formValue !== clientValue) {
+        diffs.push({
+          field: clientField,
+          label: FIELD_LABELS[clientField] || clientField,
+          formValue,
+          clientValue,
+        });
+      }
+    }
+    return diffs;
+  };
+
+  // Verificar campos em falta na entidade que o PDF tem
+  const getMissingFields = (clientId: number | undefined, fieldMap: Record<string, string>) => {
+    if (!clientId) return [];
+    const client = clients.find((c: any) => Number(c.id) === Number(clientId)) as any;
+    if (!client) return [];
+    const missing: { field: string; label: string; formValue: string }[] = [];
+    for (const [formField, clientField] of Object.entries(fieldMap)) {
+      const formValue = (form.getValues(formField as any) || '').toString().trim();
+      const clientValue = (client[clientField] || '').toString().trim();
+      if (formValue && !clientValue) {
+        missing.push({
+          field: clientField,
+          label: FIELD_LABELS[clientField] || clientField,
+          formValue,
+        });
+      }
+    }
+    return missing;
+  };
+
+  // Atualizar dados da entidade com os valores do formulário
+  const handleUpdateClient = async (clientId: number, fieldMap: Record<string, string>, mode: 'diff' | 'missing') => {
+    const client = clients.find((c: any) => Number(c.id) === Number(clientId)) as any;
+    if (!client) return;
+
+    const updates: Record<string, any> = {};
+    if (mode === 'diff' || mode === 'missing') {
+      for (const [formField, clientField] of Object.entries(fieldMap)) {
+        const formValue = (form.getValues(formField as any) || '').toString().trim();
+        const clientValue = (client[clientField] || '').toString().trim();
+        if (mode === 'diff' && formValue && clientValue && formValue !== clientValue) {
+          updates[clientField] = formValue;
+        }
+        if (mode === 'missing' && formValue && !clientValue) {
+          updates[clientField] = formValue;
+        }
+      }
+    }
+
+    if (Object.keys(updates).length === 0) return;
+
+    try {
+      await updateClient.mutateAsync({ id: String(clientId), ...updates });
+      toast({ title: 'Entidade atualizada', description: `Dados de ${client.nome || client.nome_empresa} atualizados com sucesso.` });
+    } catch {
+      toast({ title: 'Erro', description: 'Erro ao atualizar entidade.', variant: 'destructive' });
+    }
+  };
+
+  // Auto-preenche campos do sujeito a partir de uma entidade
+  const fillFromClient = (clientId: number | undefined, prefix: 'sa' | 'sp') => {
+    if (!clientId) return;
+    const client = clients.find((c: any) => Number(c.id) === Number(clientId));
+    if (!client) return;
+    const c = client as any;
+    form.setValue(`${prefix}_nome`, c.nome || c.nome_empresa || '');
+    form.setValue(`${prefix}_nif`, c.nif || c.nif_empresa || '');
+    form.setValue(`${prefix}_morada`, c.morada || '');
+    form.setValue(`${prefix}_codigo_postal`, c.codigo_postal || '');
+    form.setValue(`${prefix}_localidade`, c.localidade || '');
+    form.setValue(`${prefix}_doc_identificacao`, c.num_cc ? 'Cartão de Cidadão' : '');
+    form.setValue(`${prefix}_numero_identificacao`, c.num_cc || '');
+    form.setValue(`${prefix}_email`, c.email || '');
+    form.setValue(`${prefix}_telemovel`, c.telefone || '');
+    form.setValue(`${prefix}_certidao_online`, c.certidao_permanente || '');
+  };
+
+  // Componente de sugestão de entidade
+  const EntitySuggestion = ({ suggested, currentId, onAccept, prefix, role }: {
+    suggested: any;
+    currentId: number | undefined;
+    onAccept: (id: number) => void;
+    prefix: 'sa' | 'sp';
+    role: string;
+  }) => {
+    if (!suggested || currentId) return null;
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <UserCheck className="h-4 w-4 text-blue-600 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-blue-900 truncate">
+              Entidade encontrada: <strong>{suggested.nome || suggested.nome_empresa}</strong>
+            </p>
+            <p className="text-xs text-blue-700">NIF {suggested.nif || suggested.nif_empresa} — Associar como {role}?</p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+          onClick={() => onAccept(Number(suggested.id))}
+        >
+          Associar
+        </Button>
+      </div>
+    );
+  };
+
+  // Componente de diferenças entre formulário e entidade
+  const EntityDiffBanner = ({ clientId, fieldMap, prefix }: {
+    clientId: number | undefined;
+    fieldMap: Record<string, string>;
+    prefix: string;
+  }) => {
+    const diffs = getDifferences(clientId, fieldMap, prefix);
+    const missing = getMissingFields(clientId, fieldMap);
+
+    if (diffs.length === 0 && missing.length === 0) return null;
+
+    return (
+      <div className="space-y-2">
+        {diffs.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-start gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">Dados diferentes da entidade</p>
+                <div className="mt-1 space-y-1">
+                  {diffs.map(d => (
+                    <p key={d.field} className="text-xs text-amber-800">
+                      <strong>{d.label}:</strong> Entidade: "{d.clientValue}" → Documento: "{d.formValue}"
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-amber-300 text-amber-700 hover:bg-amber-100 gap-1"
+              onClick={() => handleUpdateClient(clientId!, fieldMap, 'diff')}
+            >
+              <RefreshCw className="h-3 w-3" />
+              Atualizar entidade com dados do documento
+            </Button>
+          </div>
+        )}
+
+        {missing.length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-start gap-2 mb-2">
+              <UserCheck className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-green-900">Dados em falta na entidade</p>
+                <div className="mt-1 space-y-1">
+                  {missing.map(m => (
+                    <p key={m.field} className="text-xs text-green-800">
+                      <strong>{m.label}:</strong> {m.formValue}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-green-300 text-green-700 hover:bg-green-100 gap-1"
+              onClick={() => handleUpdateClient(clientId!, fieldMap, 'missing')}
+            >
+              <RefreshCw className="h-3 w-3" />
+              Preencher dados em falta na entidade
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -238,7 +482,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
   const goPrev = () => setCurrentStep(s => Math.max(s - 1, 0));
   const isLastStep = currentStep === STEPS.length - 1;
 
-  // Step 0: Geral (PDF upload + tipo/entidade/pago_por)
+  // Step 0: Geral (PDF upload + tipo/pago_por)
   const StepGeral = () => (
     <div className="space-y-4">
       {!isEditing && (
@@ -263,7 +507,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           control={form.control}
           name="tipo"
@@ -281,23 +525,6 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
                   <SelectItem value="stand">Stand</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="entidade_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Vendedor (Entidade)</FormLabel>
-              <ClientCombobox
-                clients={clients}
-                value={field.value}
-                onChange={field.onChange}
-                isLoading={false}
-              />
               <FormMessage />
             </FormItem>
           )}
@@ -467,100 +694,218 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
   );
 
   // Step 4: Sujeito Ativo (Comprador)
-  const StepSujeitoAtivo = () => (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="pt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="sa_nome" render={({ field }) => (
-              <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+  const StepSujeitoAtivo = () => {
+    const selectedClient = compradorId
+      ? clients.find((c: any) => Number(c.id) === Number(compradorId))
+      : null;
+
+    return (
+      <div className="space-y-4">
+        {/* Sugestão automática baseada no NIF do PDF */}
+        <EntitySuggestion
+          suggested={suggestedComprador}
+          currentId={compradorId}
+          prefix="sa"
+          role="comprador"
+          onAccept={(id) => {
+            form.setValue('comprador_id', id);
+          }}
+        />
+
+        <Card>
+          <CardContent className="pt-4 space-y-4">
+            <FormField
+              control={form.control}
+              name="comprador_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Associar entidade</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <ClientCombobox
+                        clients={clients}
+                        value={field.value}
+                        onChange={(val) => {
+                          field.onChange(val);
+                        }}
+                        isLoading={false}
+                      />
+                    </div>
+                    {field.value && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-gray-500"
+                        onClick={() => field.onChange(undefined)}
+                      >
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
+                  {selectedClient && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Entidade associada. Os campos abaixo contêm os dados do documento.
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Banners de diferenças / dados em falta */}
+            <EntityDiffBanner clientId={compradorId} fieldMap={FIELD_MAP_SA} prefix="sa" />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="sa_nome" render={({ field }) => (
+                <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sa_nif" render={({ field }) => (
+                <FormItem><FormLabel>NIF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="sa_morada" render={({ field }) => (
+              <FormItem><FormLabel>Morada</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
             )} />
-            <FormField control={form.control} name="sa_nif" render={({ field }) => (
-              <FormItem><FormLabel>NIF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-          <FormField control={form.control} name="sa_morada" render={({ field }) => (
-            <FormItem><FormLabel>Morada</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-          )} />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="sa_codigo_postal" render={({ field }) => (
-              <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input placeholder="0000-000" {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sa_localidade" render={({ field }) => (
-              <FormItem><FormLabel>Localidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="sa_doc_identificacao" render={({ field }) => (
-              <FormItem><FormLabel>Doc. Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sa_numero_identificacao" render={({ field }) => (
-              <FormItem><FormLabel>N.º Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <FormField control={form.control} name="sa_certidao_online" render={({ field }) => (
-              <FormItem><FormLabel>Certidão Online</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sa_email" render={({ field }) => (
-              <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sa_telemovel" render={({ field }) => (
-              <FormItem><FormLabel>Telemóvel</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="sa_codigo_postal" render={({ field }) => (
+                <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input placeholder="0000-000" {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sa_localidade" render={({ field }) => (
+                <FormItem><FormLabel>Localidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="sa_doc_identificacao" render={({ field }) => (
+                <FormItem><FormLabel>Doc. Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sa_numero_identificacao" render={({ field }) => (
+                <FormItem><FormLabel>N.º Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField control={form.control} name="sa_certidao_online" render={({ field }) => (
+                <FormItem><FormLabel>Certidão Online</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sa_email" render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sa_telemovel" render={({ field }) => (
+                <FormItem><FormLabel>Telemóvel</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   // Step 5: Sujeito Passivo (Vendedor)
-  const StepSujeitoPassivo = () => (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="pt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="sp_nome" render={({ field }) => (
-              <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+  const StepSujeitoPassivo = () => {
+    const selectedClient = vendedorId
+      ? clients.find((c: any) => Number(c.id) === Number(vendedorId))
+      : null;
+
+    return (
+      <div className="space-y-4">
+        {/* Sugestão automática baseada no NIF do PDF */}
+        <EntitySuggestion
+          suggested={suggestedVendedor}
+          currentId={vendedorId}
+          prefix="sp"
+          role="vendedor"
+          onAccept={(id) => {
+            form.setValue('vendedor_id', id);
+          }}
+        />
+
+        <Card>
+          <CardContent className="pt-4 space-y-4">
+            <FormField
+              control={form.control}
+              name="vendedor_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Associar entidade</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <ClientCombobox
+                        clients={clients}
+                        value={field.value}
+                        onChange={(val) => {
+                          field.onChange(val);
+                        }}
+                        isLoading={false}
+                      />
+                    </div>
+                    {field.value && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-gray-500"
+                        onClick={() => field.onChange(undefined)}
+                      >
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
+                  {selectedClient && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Entidade associada. Os campos abaixo contêm os dados do documento.
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Banners de diferenças / dados em falta */}
+            <EntityDiffBanner clientId={vendedorId} fieldMap={FIELD_MAP_SP} prefix="sp" />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="sp_nome" render={({ field }) => (
+                <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sp_nif" render={({ field }) => (
+                <FormItem><FormLabel>NIF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="sp_morada" render={({ field }) => (
+              <FormItem><FormLabel>Morada</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
             )} />
-            <FormField control={form.control} name="sp_nif" render={({ field }) => (
-              <FormItem><FormLabel>NIF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-          <FormField control={form.control} name="sp_morada" render={({ field }) => (
-            <FormItem><FormLabel>Morada</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-          )} />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="sp_codigo_postal" render={({ field }) => (
-              <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input placeholder="0000-000" {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sp_localidade" render={({ field }) => (
-              <FormItem><FormLabel>Localidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="sp_doc_identificacao" render={({ field }) => (
-              <FormItem><FormLabel>Doc. Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sp_numero_identificacao" render={({ field }) => (
-              <FormItem><FormLabel>N.º Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <FormField control={form.control} name="sp_certidao_online" render={({ field }) => (
-              <FormItem><FormLabel>Certidão Online</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sp_email" render={({ field }) => (
-              <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>
-            )} />
-            <FormField control={form.control} name="sp_telemovel" render={({ field }) => (
-              <FormItem><FormLabel>Telemóvel</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="sp_codigo_postal" render={({ field }) => (
+                <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input placeholder="0000-000" {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sp_localidade" render={({ field }) => (
+                <FormItem><FormLabel>Localidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="sp_doc_identificacao" render={({ field }) => (
+                <FormItem><FormLabel>Doc. Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sp_numero_identificacao" render={({ field }) => (
+                <FormItem><FormLabel>N.º Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField control={form.control} name="sp_certidao_online" render={({ field }) => (
+                <FormItem><FormLabel>Certidão Online</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sp_email" render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="sp_telemovel" render={({ field }) => (
+                <FormItem><FormLabel>Telemóvel</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   // Step 6: Emolumentos + Pagamento IRN
   const StepPagamento = () => (
