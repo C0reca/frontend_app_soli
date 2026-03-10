@@ -28,7 +28,7 @@ import { DynamicSelect } from '@/components/ui/DynamicSelect';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRegistosPrediais, RegistoPredial, Predio } from '@/hooks/useRegistosPrediais';
 import { useClients } from '@/hooks/useClients';
 import { ClientCombobox } from '@/components/ui/clientcombobox';
@@ -98,14 +98,14 @@ const formSchema = z.object({
   numero_processo: z.string().min(1, 'Número do processo é obrigatório'),
   cliente_id: z.number({ invalid_type_error: 'Cliente é obrigatório' }).min(1, 'Cliente é obrigatório'),
   predios: z.array(predioSchema).min(1, 'Pelo menos um prédio é obrigatório'),
-  registo: z.string().min(1, 'Registo é obrigatório'),
-  conservatoria: z.string().min(1, 'Conservatória é obrigatória'),
-  requisicao: z.string().min(1, 'Facto de Registo é obrigatório'),
-  apresentacao: z.string().min(1, 'Apresentação é obrigatória'),
-  data: z.string().min(1, 'Data é obrigatória'),
+  registo: z.string().optional(),
+  conservatoria: z.string().optional(),
+  requisicao: z.string().optional(),
+  apresentacao: z.string().optional(),
+  data: z.string().optional(),
   apresentacao_complementar: z.string().optional(),
   outras_observacoes: z.string().optional(),
-  estado: z.string().min(1, 'Estado é obrigatório'),
+  estado: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -124,6 +124,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
   const { createRegisto, updateRegisto } = useRegistosPrediais();
   const { clients } = useClients();
   const isEditing = !!registo;
+  const [showDetalhes, setShowDetalhes] = React.useState(false);
 
   const toDateInputValue = (value: any): string => {
     if (!value) return '';
@@ -157,7 +158,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
       data: '',
       apresentacao_complementar: '',
       outras_observacoes: '',
-      estado: 'Provisórios',
+      estado: 'Em Registo',
       codigo_certidao_permanente: '',
     },
   });
@@ -169,6 +170,10 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
 
   React.useEffect(() => {
     if (registo) {
+      // Expandir detalhes se já tiver dados preenchidos
+      if (registo.registo || registo.conservatoria || registo.requisicao || registo.apresentacao || registo.data) {
+        setShowDetalhes(true);
+      }
       // Se tiver prédios na lista, usar; senão, usar o campo antigo para compatibilidade
       const predios = registo.predios && registo.predios.length > 0
         ? registo.predios.map(p => ({ predio: p.predio || '', freguesia: p.freguesia || '', codigo_certidao_permanente: p.codigo_certidao_permanente || '' }))
@@ -199,7 +204,7 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
         data: '',
         apresentacao_complementar: '',
         outras_observacoes: '',
-        estado: 'Provisórios',
+        estado: 'Em Registo',
       });
     }
   }, [registo, form]);
@@ -378,97 +383,24 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="registo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Registo *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Número do registo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="conservatoria"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Conservatória *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome da conservatória" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="requisicao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Facto de Registo *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Número do facto de registo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="apresentacao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Apresentação *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Detalhes da apresentação" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="data"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data *</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="estado"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Estado *</FormLabel>
+                  <FormLabel>Estado</FormLabel>
                   <FormControl>
                     <DynamicSelect
                       categoria="estado_registo_predial"
-                      value={field.value}
+                      value={field.value || ''}
                       onValueChange={field.onChange}
                       placeholder="Selecione o estado"
                       fallbackOptions={[
-                        { value: "pendente", label: "Pendente" },
-                        { value: "em_curso", label: "Em Curso" },
-                        { value: "concluido", label: "Concluído" },
-                        { value: "recusado", label: "Recusado" },
+                        { value: "Em Registo", label: "Em Registo" },
+                        { value: "Em Curso", label: "Em Curso" },
+                        { value: "Concluído", label: "Concluído" },
+                        { value: "Recusado", label: "Recusado" },
+                        { value: "Desistência", label: "Desistência" },
                       ]}
                     />
                   </FormControl>
@@ -477,34 +409,123 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="apresentacao_complementar"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Apresentação Complementar (Opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Detalhes adicionais da apresentação complementar..."
-                      className="resize-none"
-                      {...field}
+            {/* Detalhes do registo — secção colapsável */}
+            <div className="border rounded-lg">
+              <button
+                type="button"
+                className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+                onClick={() => setShowDetalhes(!showDetalhes)}
+              >
+                <span>Detalhes do Registo</span>
+                {showDetalhes ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+
+              {showDetalhes && (
+                <div className="px-4 pb-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="registo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Registo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Número do registo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+
+                    <FormField
+                      control={form.control}
+                      name="conservatoria"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Conservatória</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nome da conservatória" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="requisicao"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Facto de Registo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Número do facto de registo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="apresentacao"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Apresentação</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Detalhes da apresentação" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="data"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="apresentacao_complementar"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Apres. Complementar</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Detalhes adicionais" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               )}
-            />
+            </div>
 
             <FormField
               control={form.control}
               name="outras_observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Outras Observações (Opcional)</FormLabel>
+                  <FormLabel>Observações</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Observações adicionais..."
                       className="resize-none"
+                      rows={2}
                       {...field}
                     />
                   </FormControl>

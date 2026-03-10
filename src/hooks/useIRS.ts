@@ -126,6 +126,27 @@ export const useIRS = (emAberto?: boolean) => {
     },
   });
 
+  const bulkUpdateIRS = useMutation({
+    mutationFn: async (data: { ids: number[]; estado?: string; estado_entrega?: string }) => {
+      const response = await api.put('/irs/bulk-update', data);
+      return response.data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['irs'] });
+      toast({
+        title: 'Sucesso',
+        description: data.msg || 'IRS atualizados com sucesso.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.detail || 'Erro ao atualizar IRS em massa.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const generateRecibo = async (id: number) => {
     try {
       const response = await api.post(`/irs/${id}/recibo`, {}, {
@@ -184,6 +205,7 @@ export const useIRS = (emAberto?: boolean) => {
     createIRS,
     updateIRS,
     deleteIRS,
+    bulkUpdateIRS,
     generateRecibo,
     registrarHistorico,
   };

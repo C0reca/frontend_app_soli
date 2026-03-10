@@ -64,7 +64,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
       data: new Date().toISOString().slice(0, 10),
       metodo_pagamento: 'dinheiro',
       referencia: '',
-      gerar_movimento_caixa: true,
+      gerar_movimento_caixa: false,
       transacao_original_id: null,
       dias_lembrete: null,
     },
@@ -82,7 +82,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
           data: transacao.data ? transacao.data.slice(0, 10) : new Date().toISOString().slice(0, 10),
           metodo_pagamento: (transacao.metodo_pagamento as any) || 'dinheiro',
           referencia: transacao.referencia || '',
-          gerar_movimento_caixa: true,
+          gerar_movimento_caixa: !!transacao.caixa_movimento_id,
           transacao_original_id: transacao.transacao_original_id || null,
           dias_lembrete: null,
         });
@@ -94,7 +94,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
           data: new Date().toISOString().slice(0, 10),
           metodo_pagamento: (reembolsoDe.metodo_pagamento as any) || 'dinheiro',
           referencia: '',
-          gerar_movimento_caixa: true,
+          gerar_movimento_caixa: false,
           transacao_original_id: reembolsoDe.id,
           dias_lembrete: 7,
         });
@@ -106,7 +106,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
           data: new Date().toISOString().slice(0, 10),
           metodo_pagamento: 'dinheiro',
           referencia: '',
-          gerar_movimento_caixa: true,
+          gerar_movimento_caixa: false,
           transacao_original_id: null,
           dias_lembrete: null,
         });

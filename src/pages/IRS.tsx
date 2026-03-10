@@ -27,7 +27,6 @@ export const IRS: React.FC = () => {
   const [selectedIRSDetails, setSelectedIRSDetails] = useState<IRS | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [irsToMarkAsPaid, setIrsToMarkAsPaid] = useState<IRS | null>(null);
-  const [confirmStep, setConfirmStep] = useState(1);
   const [openDetailsInReciboTab, setOpenDetailsInReciboTab] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskInitialData, setTaskInitialData] = useState<any>(null);
@@ -38,8 +37,12 @@ export const IRS: React.FC = () => {
     showConcluidos: true, // Por padrão mostrar todos os IRS, incluindo concluídos
   });
   
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkAction, setBulkAction] = useState<{ field: string; value: string } | null>(null);
+
   // Sempre buscar todos os IRS, filtrar no frontend
-  const { irsList, isLoading, generateRecibo, updateIRS, deleteIRS } = useIRS(undefined);
+  const { irsList, isLoading, generateRecibo, updateIRS, deleteIRS, bulkUpdateIRS } = useIRS(undefined);
   const { clients } = useClients();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -188,45 +191,62 @@ export const IRS: React.FC = () => {
 
   const handleMarkAsPaid = (irs: IRS) => {
     setIrsToMarkAsPaid(irs);
-    setConfirmStep(1);
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmStep1 = () => {
-    setConfirmStep(2);
-  };
-
-  const handleConfirmStep2 = async () => {
+  const handleConfirmPaid = async () => {
     if (!irsToMarkAsPaid) return;
-    
-    // Atualizar estado para Pago
+
     await updateIRS.mutateAsync({
       id: irsToMarkAsPaid.id,
       data: { estado: 'Pago' }
     });
-    
-    // Fechar modal de confirmação
+
     setIsConfirmModalOpen(false);
-    setConfirmStep(1);
-    
-    // Criar o IRS atualizado com estado "Pago" para abrir o modal de detalhes na aba Recibo
+
     const irsWithPagoState: IRS = {
       ...irsToMarkAsPaid,
       estado: 'Pago' as const
     };
-    
+
     setOpenDetailsInReciboTab(true);
     setSelectedIRSDetails(irsWithPagoState);
     setIsDetailsModalOpen(true);
-    // O IRSDetailsModal vai abrir na aba "Recibo"
-    
+
     setIrsToMarkAsPaid(null);
   };
 
   const handleCancelConfirm = () => {
     setIsConfirmModalOpen(false);
-    setConfirmStep(1);
     setIrsToMarkAsPaid(null);
+  };
+
+  const handleToggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredIRS.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredIRS.map((irs: IRS) => irs.id)));
+    }
+  };
+
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedIds.size === 0) return;
+    const payload: any = { ids: Array.from(selectedIds) };
+    if (bulkAction.field === 'estado') payload.estado = bulkAction.value;
+    else payload.estado_entrega = bulkAction.value;
+    await bulkUpdateIRS.mutateAsync(payload);
+    setSelectedIds(new Set());
+    setIsBulkModalOpen(false);
+    setBulkAction(null);
   };
 
   const handleToggleEstado = async (irs: IRS) => {
@@ -415,11 +435,66 @@ export const IRS: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Barra de ações em massa */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+              <span className="text-sm font-medium text-blue-700">
+                {selectedIds.size} selecionado{selectedIds.size > 1 ? 's' : ''}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setBulkAction({ field: 'estado', value: 'Pago' });
+                  setIsBulkModalOpen(true);
+                }}
+              >
+                <CheckCircle className="w-3 h-3 mr-1" />Marcar Pago
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setBulkAction({ field: 'estado_entrega', value: 'Concluído' });
+                  setIsBulkModalOpen(true);
+                }}
+              >
+                <Check className="w-3 h-3 mr-1" />Marcar Concluído
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setBulkAction({ field: 'estado_entrega', value: 'Enviado' });
+                  setIsBulkModalOpen(true);
+                }}
+              >
+                Marcar Enviado
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs ml-auto"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                <X className="w-3 h-3 mr-1" />Limpar
+              </Button>
+            </div>
+          )}
 
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={filteredIRS.length > 0 && selectedIds.size === filteredIRS.length}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Nº IRS</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Ano</TableHead>
@@ -431,17 +506,23 @@ export const IRS: React.FC = () => {
               <TableBody>
                 {filteredIRS.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500">
+                    <TableCell colSpan={7} className="text-center text-gray-500">
                       Nenhum IRS encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredIRS.map((irs: IRS) => (
-                    <TableRow 
+                    <TableRow
                       key={irs.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className={`cursor-pointer hover:bg-gray-50 ${selectedIds.has(irs.id) ? 'bg-blue-50' : ''}`}
                       onClick={() => handleViewDetails(irs)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(irs.id)}
+                          onCheckedChange={() => handleToggleSelect(irs.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium font-mono">
                         {irs.numero_recibo || '-'}
                       </TableCell>
@@ -630,18 +711,13 @@ export const IRS: React.FC = () => {
         />
       )}
 
-      {/* Modal de Confirmação em Dois Passos */}
+      {/* Modal de Confirmação de Pagamento */}
       <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {confirmStep === 1 ? 'Confirmar Pagamento' : 'Confirmação Final'}
-            </DialogTitle>
+            <DialogTitle>Confirmar Pagamento</DialogTitle>
             <DialogDescription>
-              {confirmStep === 1 
-                ? 'Tem certeza que deseja marcar este IRS como Pago?'
-                : 'Esta ação irá marcar o IRS como Pago e abrir o wizard do recibo. Deseja continuar?'
-              }
+              Marcar este IRS como Pago e abrir o wizard do recibo?
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -651,34 +727,41 @@ export const IRS: React.FC = () => {
                   <strong>Cliente:</strong> {irsToMarkAsPaid.cliente?.nome || `Cliente #${irsToMarkAsPaid.cliente_id}`}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <strong>Ano:</strong> {irsToMarkAsPaid.ano}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Fase:</strong> {irsToMarkAsPaid.fase}
+                  <strong>Ano:</strong> {irsToMarkAsPaid.ano} &bull; <strong>Fase:</strong> {irsToMarkAsPaid.fase}
                 </p>
               </div>
             )}
           </div>
           <DialogFooter>
-            {confirmStep === 1 ? (
-              <>
-                <Button variant="outline" onClick={handleCancelConfirm}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleConfirmStep1}>
-                  Continuar
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setConfirmStep(1)}>
-                  Voltar
-                </Button>
-                <Button onClick={handleConfirmStep2}>
-                  Confirmar e Abrir Recibo
-                </Button>
-              </>
-            )}
+            <Button variant="outline" onClick={handleCancelConfirm}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmPaid}>
+              Confirmar e Abrir Recibo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmação de Ação em Massa */}
+      <Dialog open={isBulkModalOpen} onOpenChange={setIsBulkModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ação em Massa</DialogTitle>
+            <DialogDescription>
+              {bulkAction?.field === 'estado'
+                ? `Marcar ${selectedIds.size} IRS como "${bulkAction?.value}"?`
+                : `Alterar estado de entrega de ${selectedIds.size} IRS para "${bulkAction?.value}"?`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsBulkModalOpen(false); setBulkAction(null); }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleBulkAction} disabled={bulkUpdateIRS.isPending}>
+              {bulkUpdateIRS.isPending ? 'A atualizar...' : 'Confirmar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

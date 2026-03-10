@@ -10,6 +10,7 @@ export interface RegistoAutomovel {
   tipo: string;
   pago_por?: string;
   estado_pagamento: string;
+  estado: string;
   stand_semana_id?: number;
   outras_observacoes?: string;
   data_criacao?: string;
@@ -211,6 +212,19 @@ export const useRegistosAutomoveis = (params?: {
     },
   });
 
+  const changeEstado = useMutation({
+    mutationFn: async ({ id, estado }: { id: number; estado: string }) => {
+      const response = await api.patch(`/registos-automoveis/${id}/estado?estado=${estado}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Erro ao alterar estado.", variant: "destructive" });
+    },
+  });
+
   const deleteAnexo = useMutation({
     mutationFn: async ({ registoId, anexoId }: { registoId: number; anexoId: number }) => {
       await api.delete(`/registos-automoveis/${registoId}/anexo/${anexoId}`);
@@ -234,5 +248,6 @@ export const useRegistosAutomoveis = (params?: {
     importPdf,
     uploadAnexo,
     deleteAnexo,
+    changeEstado,
   };
 };

@@ -39,33 +39,46 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
 
   const clienteNome = clienteData?.nome || clienteData?.nome_empresa || registo.cliente?.nome || `ID: ${registo.cliente_id}`;
 
+  const normalizeEstado = (estado: string) => {
+    const e = estado?.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim() || '';
+    if (e.includes('concluido')) return 'concluido';
+    if (e.includes('desistencia')) return 'desistencia';
+    if (e.includes('recusado')) return 'recusado';
+    if (e.includes('em_curso') || e.includes('em curso')) return 'em_curso';
+    return 'em_registo';
+  };
+
   const getStatusColor = (estado: string) => {
-    switch (estado) {
-      case 'Concluído':
+    switch (normalizeEstado(estado)) {
+      case 'concluido':
         return 'bg-green-100 text-green-800';
-      case 'Desistência':
-        return 'bg-gray-100 text-gray-800';
-      case 'Recusado':
-        return 'bg-red-100 text-red-800';
-      case 'Provisórios':
+      case 'desistencia':
         return 'bg-yellow-100 text-yellow-800';
+      case 'recusado':
+        return 'bg-red-100 text-red-800';
+      case 'em_registo':
+        return 'bg-orange-100 text-orange-800';
+      case 'em_curso':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusLabel = (estado: string) => {
-    switch (estado) {
-      case 'Concluído':
+    switch (normalizeEstado(estado)) {
+      case 'concluido':
         return 'Concluído';
-      case 'Desistência':
+      case 'desistencia':
         return 'Desistência';
-      case 'Recusado':
+      case 'recusado':
         return 'Recusado';
-      case 'Provisórios':
-        return 'Provisórios';
+      case 'em_registo':
+        return 'Em Registo';
+      case 'em_curso':
+        return 'Em Curso';
       default:
-        return 'Desconhecido';
+        return estado || 'Desconhecido';
     }
   };
 

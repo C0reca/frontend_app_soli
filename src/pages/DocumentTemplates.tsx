@@ -567,6 +567,7 @@ export const DocumentTemplates: React.FC = () => {
             </div>
           )}
         </TabsContent>
+
       </Tabs>
 
       <DocumentTemplateDetailsModal

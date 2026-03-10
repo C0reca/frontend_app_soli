@@ -131,6 +131,22 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
     },
   });
 
+  const enviarParaCaixa = useMutation({
+    mutationFn: async (transacaoId: number) => {
+      const response = await api.post(`/financeiro/transacao/${transacaoId}/enviar-caixa`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      toast({ title: 'Sucesso', description: 'Movimento de caixa criado.' });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || 'Erro ao enviar para caixa.';
+      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+    },
+  });
+
   return {
     transacoes,
     isLoading,
@@ -140,6 +156,7 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
     deleteTransacao,
     uploadAnexo,
     deleteAnexo,
+    enviarParaCaixa,
   };
 };
 

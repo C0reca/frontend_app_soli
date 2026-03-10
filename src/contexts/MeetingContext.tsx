@@ -12,6 +12,7 @@ export interface TrackedItem {
 interface MeetingState {
   id: number;
   processoId: number | null;
+  clienteId: number | null;
   processoTitulo: string;
   titulo: string;
   startTime: number; // epoch ms
@@ -26,7 +27,7 @@ interface MeetingContextValue {
   isActive: boolean;
   isPaused: boolean;
   elapsedSeconds: number;
-  startMeeting: (processoId: number | null, processoTitulo: string, titulo: string) => Promise<void>;
+  startMeeting: (processoId: number | null, processoTitulo: string, titulo: string, clienteId?: number | null) => Promise<void>;
   endMeeting: () => Promise<void>;
   cancelMeeting: () => Promise<void>;
   trackItem: (tipo: string, id: number, acao: string, label?: string) => void;
@@ -83,6 +84,7 @@ export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const restored: MeetingState = {
         id: ativa.id,
         processoId: ativa.processo_id,
+        clienteId: null,
         processoTitulo: '',
         titulo: ativa.titulo,
         startTime: new Date(ativa.inicio).getTime(),
@@ -133,7 +135,7 @@ export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [meeting !== null]);
 
   const startMeeting = useCallback(
-    async (processoId: number | null, processoTitulo: string, titulo: string) => {
+    async (processoId: number | null, processoTitulo: string, titulo: string, clienteId?: number | null) => {
       const result = await iniciarReuniao.mutateAsync({
         processo_id: processoId || undefined,
         titulo,
@@ -141,6 +143,7 @@ export const MeetingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const state: MeetingState = {
         id: result.id,
         processoId: result.processo_id,
+        clienteId: clienteId ?? null,
         processoTitulo,
         titulo: result.titulo,
         startTime: new Date(result.inicio).getTime(),

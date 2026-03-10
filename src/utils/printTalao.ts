@@ -3,6 +3,7 @@ import type { MovimentoCaixa } from '@/hooks/useCaixa';
 interface TalaoOptions {
   clienteNome?: string | null;
   processoTitulo?: string | null;
+  notasExtra?: string;
 }
 
 export function printTalao(movimento: MovimentoCaixa, options: TalaoOptions = {}) {
@@ -41,6 +42,13 @@ export function printTalao(movimento: MovimentoCaixa, options: TalaoOptions = {}
         <td class="label">Processo:</td>
         <td class="value">${options.processoTitulo}</td>
       </tr>`
+    : '';
+
+  const notasHtml = options.notasExtra
+    ? `<div class="descricao">
+        <div class="label">Notas</div>
+        <div class="text">${options.notasExtra}</div>
+      </div>`
     : '';
 
   const html = `<!DOCTYPE html>
@@ -186,6 +194,8 @@ export function printTalao(movimento: MovimentoCaixa, options: TalaoOptions = {}
     <div class="label">Descricao</div>
     <div class="text">${movimento.descricao}</div>
   </div>
+
+  ${notasHtml}
 
   <div class="footer">
     <div class="id">Mov. #${movimento.id}</div>

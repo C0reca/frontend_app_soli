@@ -11,6 +11,7 @@ import { CreditCard, Scan } from 'lucide-react';
 import { IndividualClient } from '@/hooks/useClients';
 import { useToast } from '@/hooks/use-toast';
 import { ClienteContactosTab } from '@/components/ClienteContactosTab';
+import { CodigoPostalInput } from '@/components/ui/CodigoPostalInput';
 
 interface IndividualClientFormProps {
   form: UseFormReturn<any>;
@@ -35,6 +36,13 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
   const { register, formState: { errors } } = form;
   const { toast } = useToast();
   const [isReadingCC, setIsReadingCC] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('identification');
+
+  const tabs = ['identification', 'contact', 'documents'] as const;
+  const tabLabels = { identification: 'Identificação', contact: 'Contacto / Morada', documents: 'Documentos' };
+  const currentIdx = tabs.indexOf(activeTab as typeof tabs[number]);
+  const goNext = () => { if (currentIdx < tabs.length - 1) setActiveTab(tabs[currentIdx + 1]); };
+  const goPrev = () => { if (currentIdx > 0) setActiveTab(tabs[currentIdx - 1]); };
 
   const handleCitizenCardScan = async () => {
     if (isReadingCC) return;
@@ -64,25 +72,36 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
         return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
       };
 
+      // Só atualiza o campo se o valor do CC não for vazio E (o campo estiver vazio OU for um campo de identificação do CC)
+      const ccFields = ['nome', 'nif', 'num_cc', 'validade_cc', 'data_nascimento', 'nacionalidade', 'num_ss', 'num_sns', 'num_ident_civil', 'morada', 'codigo_postal', 'localidade', 'concelho', 'distrito', 'pais'];
+      const setIfEmpty = (field: string, value: string) => {
+        if (!value) return;
+        const current = form.getValues(field);
+        // Campos de identificação CC são sempre atualizados (vêm do cartão, são fonte de verdade)
+        const alwaysUpdate = ['nome', 'nif', 'num_cc', 'validade_cc', 'data_nascimento', 'num_ss', 'num_sns', 'num_ident_civil'];
+        if (alwaysUpdate.includes(field) || !current || current === '') {
+          setValue(field, value);
+        }
+      };
 
-      setValue('nome', `${data.givenName ?? ''} ${data.surname ?? ''}`.trim());
-      setValue('nif', data.taxNo ?? '');
-      setValue('num_cc', data.documentNumber ?? '');
-      setValue('validade_cc', formatDate(data.validityEndDate));
-      setValue('data_nascimento', formatDate(data.dateOfBirth));
-      setValue('nacionalidade', data.nationality ?? '');
-      setValue('num_ss', data.socialSecurityNumber ?? '');
-      setValue('num_sns', data.healthNumber ?? '');
-      setValue('num_ident_civil', data.civilianIdNumber ?? '');
+      setIfEmpty('nome', `${data.givenName ?? ''} ${data.surname ?? ''}`.trim());
+      setIfEmpty('nif', data.taxNo ?? '');
+      setIfEmpty('num_cc', data.documentNumber ?? '');
+      setIfEmpty('validade_cc', formatDate(data.validityEndDate));
+      setIfEmpty('data_nascimento', formatDate(data.dateOfBirth));
+      setIfEmpty('nacionalidade', data.nationality ?? '');
+      setIfEmpty('num_ss', data.socialSecurityNumber ?? '');
+      setIfEmpty('num_sns', data.healthNumber ?? '');
+      setIfEmpty('num_ident_civil', data.civilianIdNumber ?? '');
 
-      // Morada
+      // Morada — só atualiza se campos estiverem vazios (preserva morada editada manualmente)
       const address = data.address ?? {};
-      setValue('morada', address.street ?? '');
-      setValue('codigo_postal', address.postalCode ?? '');
-      setValue('localidade', address.parish ?? address.municipality ?? '');
-      setValue('concelho', address.municipality ?? '');
-      setValue('distrito', address.district ?? '');
-      setValue('pais', address.countryCode ?? 'Portugal');
+      setIfEmpty('morada', address.street ?? '');
+      setIfEmpty('codigo_postal', address.postalCode ?? '');
+      setIfEmpty('localidade', address.parish ?? address.municipality ?? '');
+      setIfEmpty('concelho', address.municipality ?? '');
+      setIfEmpty('distrito', address.district ?? '');
+      setIfEmpty('pais', address.countryCode ?? 'Portugal');
 
       toast({
         title: "Dados preenchidos com sucesso",
@@ -105,11 +124,14 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
 
 
   return (
-    <Tabs defaultValue="identification" className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="identification">Identificação</TabsTrigger>
-        <TabsTrigger value="contact">Contacto / Morada</TabsTrigger>
-        <TabsTrigger value="documents">Documentos</TabsTrigger>
+        {tabs.map((tab, i) => (
+          <TabsTrigger key={tab} value={tab} className="flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">{i + 1}</span>
+            {tabLabels[tab]}
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       <TabsContent value="identification" className="space-y-4">
@@ -358,10 +380,15 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="codigo_postal">Código postal</Label>
-                  <Input
-                      id="codigo_postal"
-                      {...register('codigo_postal')}
-                      placeholder="1234-567"
+                  <CodigoPostalInput
+                      value={watch('codigo_postal') || ''}
+                      onChange={(val) => setValue('codigo_postal', val)}
+                      onSelect={(result) => {
+                        // Auto-preencher localidade, concelho e distrito ao selecionar código postal
+                        if (result.localidade && !watch('localidade')) setValue('localidade', result.localidade);
+                        if (result.concelho && !watch('concelho')) setValue('concelho', result.concelho);
+                        if (result.distrito && !watch('distrito')) setValue('distrito', result.distrito);
+                      }}
                   />
                 </div>
 
@@ -440,6 +467,19 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
           </CardContent>
         </Card>
       </TabsContent>
+
+      {/* Navegação entre passos */}
+      <div className="flex justify-between pt-2">
+        <Button type="button" variant="outline" size="sm" onClick={goPrev} disabled={currentIdx === 0}>
+          Anterior
+        </Button>
+        <span className="text-xs text-muted-foreground self-center">
+          Passo {currentIdx + 1} de {tabs.length}
+        </span>
+        <Button type="button" variant="outline" size="sm" onClick={goNext} disabled={currentIdx === tabs.length - 1}>
+          Seguinte
+        </Button>
+      </div>
     </Tabs>
   );
 };

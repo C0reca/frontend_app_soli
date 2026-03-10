@@ -39,6 +39,18 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import BaseConhecimento from "@/pages/BaseConhecimento";
 import { DocumentExtraction } from "@/pages/DocumentExtraction";
 import { TemplatesLixeira } from "@/pages/TemplatesLixeira";
+import { CorrespondenciaPage } from "@/pages/Correspondencia";
+import { MarketingPage } from "@/pages/Marketing";
+import { WorkModePage } from "@/pages/WorkMode";
+import { WorkModeProvider } from "@/contexts/WorkModeContext";
+import { StandUsers } from "@/pages/StandUsers";
+import { FormulariosPublicos } from "@/pages/FormulariosPublicos";
+import { PortalStand } from "@/pages/PortalStand";
+import { FormularioPublicoPage } from "@/pages/FormularioPublicoPage";
+import { Conservatorias } from "@/pages/Conservatorias";
+import { AutoFinanceiro } from "@/pages/AutoFinanceiro";
+import { EmailInbox } from "@/pages/EmailInbox";
+import { WhatsAppPage } from "@/pages/WhatsAppPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -120,8 +132,20 @@ const AppRoutes = () => {
         <Route path="definicoes" element={<ManagerRoute><Settings /></ManagerRoute>} />
         <Route path="assistente-documentos" element={<DocumentExtraction />} />
         <Route path="base-conhecimento" element={<BaseConhecimento />} />
+        <Route path="correspondencia" element={<CorrespondenciaPage />} />
+        <Route path="marketing" element={<MarketingPage />} />
+        <Route path="modo-trabalho" element={<WorkModePage />} />
         <Route path="changelog" element={<Changelog />} />
+        <Route path="stand-users" element={<ManagerRoute><StandUsers /></ManagerRoute>} />
+        <Route path="formularios-publicos" element={<FormulariosPublicos />} />
+        <Route path="conservatorias" element={<Conservatorias />} />
+        <Route path="auto-financeiro" element={<ManagerRoute><AutoFinanceiro /></ManagerRoute>} />
+        <Route path="email-inbox" element={<EmailInbox />} />
+        <Route path="whatsapp" element={<WhatsAppPage />} />
       </Route>
+      {/* Public routes (no auth required) */}
+      <Route path="/portal-stand" element={<PortalStand />} />
+      <Route path="/formulario/:token" element={<FormularioPublicoPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -136,11 +160,13 @@ const App = () => (
         <ErrorBoundary>
           <BrowserRouter>
             <MeetingProvider>
+              <WorkModeProvider>
               <MinimizeProvider>
                 <AppRoutes />
                 <MinimizeDock />
                 <MinimizeRenderer />
               </MinimizeProvider>
+              </WorkModeProvider>
             </MeetingProvider>
           </BrowserRouter>
         </ErrorBoundary>

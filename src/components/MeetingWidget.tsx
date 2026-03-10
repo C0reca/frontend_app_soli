@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useMeeting, TrackedItem } from '@/contexts/MeetingContext';
+import { useMarketingResumoCliente } from '@/hooks/useMarketing';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
   Play, Pause, Square, X, Clock, FileText, CheckSquare, DollarSign,
   MessageSquare, PanelRightClose, PanelRightOpen, RefreshCw, Edit, Trash2, ArrowRightLeft,
+  ShieldCheck, TrendingUp,
 } from 'lucide-react';
 
 function formatTime(seconds: number): string {
@@ -50,6 +52,48 @@ function ItemRow({ item }: { item: TrackedItem }) {
         {acaoCfg.icon && <span className="mr-0.5 inline-flex">{acaoCfg.icon}</span>}
         {acaoCfg.label}
       </Badge>
+    </div>
+  );
+}
+
+function MarketingAlert({ clienteId }: { clienteId: number | null }) {
+  const { data } = useMarketingResumoCliente(clienteId);
+  if (!clienteId) return null;
+
+  if (!data || !data.abordado) {
+    return (
+      <div className="rounded-md border border-amber-200 bg-amber-50 p-2.5">
+        <p className="text-xs font-medium text-amber-800 flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Falar sobre seguros/créditos com este cliente
+        </p>
+      </div>
+    );
+  }
+
+  const ultima = data.interacoes[0];
+  const dataStr = ultima?.data_interacao
+    ? new Date(ultima.data_interacao).toLocaleDateString('pt-PT')
+    : '';
+
+  if (ultima?.estado === 'interessado') {
+    return (
+      <div className="rounded-md border border-green-200 bg-green-50 p-2.5">
+        <p className="text-xs font-medium text-green-800 flex items-center gap-1.5">
+          <TrendingUp className="h-3.5 w-3.5" />
+          Cliente interessado em {ultima.tipo_servico}
+          {ultima.email_enviado_em && ' — email enviado'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-blue-200 bg-blue-50 p-2.5">
+      <p className="text-xs text-blue-800">
+        Já falou sobre {ultima?.tipo_servico || 'serviços'} em {dataStr}
+        {ultima?.estado === 'nao_interessado' && ' (não interessado)'}
+      </p>
     </div>
   );
 }
@@ -140,6 +184,9 @@ export const MeetingWidget: React.FC = () => {
 
       {/* Body — scrollable */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Marketing Alert */}
+        <MarketingAlert clienteId={meeting.clienteId} />
+
         {/* Notas */}
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Notas</label>

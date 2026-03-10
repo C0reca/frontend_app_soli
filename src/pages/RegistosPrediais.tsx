@@ -62,15 +62,32 @@ export const RegistosPrediais: React.FC = () => {
       case 'concluido':
         return 'bg-green-100 text-green-800';
       case 'desistencia':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-yellow-100 text-yellow-800';
       case 'recusado':
         return 'bg-red-100 text-red-800';
-      case 'provisorios':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'registo':
+      case 'em_registo':
+        return 'bg-orange-100 text-orange-800';
+      case 'em_curso':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getCardBgColor = (estado: string) => {
+    switch (estado) {
+      case 'concluido':
+        return 'border-green-200 bg-green-50';
+      case 'desistencia':
+        return 'border-yellow-200 bg-yellow-50';
+      case 'recusado':
+        return 'border-red-200 bg-red-50';
+      case 'em_registo':
+        return 'border-orange-200 bg-orange-50';
+      case 'em_curso':
+        return 'border-blue-200 bg-blue-50';
+      default:
+        return '';
     }
   };
 
@@ -82,10 +99,10 @@ export const RegistosPrediais: React.FC = () => {
         return 'Desistência';
       case 'recusado':
         return 'Recusado';
-      case 'provisorios':
-        return 'Provisórios';
-      case 'registo':
-        return 'Registo';
+      case 'em_registo':
+        return 'Em Registo';
+      case 'em_curso':
+        return 'Em Curso';
       default:
         return 'Desconhecido';
     }
@@ -96,12 +113,12 @@ export const RegistosPrediais: React.FC = () => {
       case 'concluido':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'desistencia':
-        return <XCircle className="h-4 w-4 text-gray-600" />;
+        return <XCircle className="h-4 w-4 text-yellow-600" />;
       case 'recusado':
         return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'provisorios':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'registo':
+      case 'em_registo':
+        return <Clock className="h-4 w-4 text-orange-600" />;
+      case 'em_curso':
         return <Building className="h-4 w-4 text-blue-600" />;
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-600" />;
@@ -202,28 +219,28 @@ export const RegistosPrediais: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setFilterEstado(filterEstado === 'registo' ? null : 'registo')}
-              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'registo' ? 'ring-2 ring-blue-500' : ''}`}
+              onClick={() => setFilterEstado(filterEstado === 'em_registo' ? null : 'em_registo')}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'em_registo' ? 'ring-2 ring-orange-500' : ''}`}
             >
-              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
-                <Building className="h-4 w-4 shrink-0" />
-                Registos
+              <span className="text-xs sm:text-sm font-medium text-orange-600 flex items-center gap-1">
+                <Clock className="h-4 w-4 shrink-0" />
+                Em Registo
               </span>
-              <span className="text-lg font-bold text-blue-600">
-                {registos.filter((r: any) => r.estado_key === 'registo').length}
+              <span className="text-lg font-bold text-orange-600">
+                {registos.filter((r: any) => r.estado_key === 'em_registo').length}
               </span>
             </button>
             <button
               type="button"
-              onClick={() => setFilterEstado(filterEstado === 'provisorios' ? null : 'provisorios')}
-              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'provisorios' ? 'ring-2 ring-yellow-500' : ''}`}
+              onClick={() => setFilterEstado(filterEstado === 'em_curso' ? null : 'em_curso')}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'em_curso' ? 'ring-2 ring-blue-500' : ''}`}
             >
-              <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
-                <Clock className="h-4 w-4 shrink-0" />
-                Provisórios
+              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
+                <Building className="h-4 w-4 shrink-0" />
+                Em Curso
               </span>
-              <span className="text-lg font-bold text-yellow-600">
-                {registos.filter((r: any) => r.estado_key === 'provisorios').length}
+              <span className="text-lg font-bold text-blue-600">
+                {registos.filter((r: any) => r.estado_key === 'em_curso').length}
               </span>
             </button>
             <button
@@ -242,13 +259,13 @@ export const RegistosPrediais: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilterEstado(filterEstado === 'desistencia' ? null : 'desistencia')}
-              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow col-span-3 sm:col-span-1 ${filterEstado === 'desistencia' ? 'ring-2 ring-gray-500' : ''}`}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow col-span-3 sm:col-span-1 ${filterEstado === 'desistencia' ? 'ring-2 ring-yellow-500' : ''}`}
             >
-              <span className="text-xs sm:text-sm font-medium text-gray-600 flex items-center gap-1">
+              <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
                 <XCircle className="h-4 w-4 shrink-0" />
                 Desistências
               </span>
-              <span className="text-lg font-bold text-gray-600">
+              <span className="text-lg font-bold text-yellow-600">
                 {registos.filter((r: any) => r.estado_key === 'desistencia').length}
               </span>
             </button>
@@ -304,7 +321,7 @@ export const RegistosPrediais: React.FC = () => {
             {sortedRegistos.map((registo: any) => (
               <Card
                 key={registo.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
+                className={`hover:shadow-md transition-shadow cursor-pointer ${getCardBgColor(registo.estado_key)}`}
                 onClick={() => handleView(registo)}
               >
                 <CardContent className="p-4">

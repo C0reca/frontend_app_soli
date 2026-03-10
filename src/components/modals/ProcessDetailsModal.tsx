@@ -17,7 +17,7 @@ import { TaskModal } from '@/components/modals/TaskModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
 import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock, Printer, DollarSign } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock, Printer, DollarSign, FolderPlus, Folder, Bot } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
@@ -34,6 +34,9 @@ import { useSolicitadoresAtivos } from '@/hooks/useSolicitadores';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import { GenerateFromTemplateModal } from '@/components/modals/GenerateFromTemplateModal';
 import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
+import { ProcessCorreioTab } from '@/components/ProcessCorreioTab';
+import { AssistenteIA } from '@/components/AssistenteIA';
+import { ProcessChecklistTab } from '@/components/ProcessChecklistTab';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -70,6 +73,15 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     enabled: !!process?.funcionario_id,
   });
 
+  const { data: funcionariosList = [] } = useQuery({
+    queryKey: ['funcionarios-list'],
+    queryFn: async () => {
+      const response = await api.get('/funcionarios');
+      return response.data;
+    },
+    enabled: isOpen,
+  });
+
   const clienteNome = clienteData?.nome || clienteData?.nome_empresa || process?.cliente?.nome || (process ? `Cliente ID: ${process.cliente_id}` : '');
   const funcionarioNome = funcionarioData?.nome || process?.funcionario?.nome || (process?.funcionario_id ? `Funcionário ID: ${process.funcionario_id}` : 'N/A');
   const { getTasksByProcess } = useTasks();
@@ -78,6 +90,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [loadingTasks, setLoadingTasks] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = React.useState(false);
+  const [showIA, setShowIA] = React.useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
   const [taskFilters, setTaskFilters] = React.useState({
     searchTerm: '',
@@ -94,6 +107,9 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [loadingDocuments, setLoadingDocuments] = React.useState(false);
   const [uploadingDoc, setUploadingDoc] = React.useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = React.useState(false);
+  const [docGrupos, setDocGrupos] = React.useState<{id: number; nome: string; processo_id: number; ordem: number}[]>([]);
+  const [activeGrupoFilter, setActiveGrupoFilter] = React.useState<number | 'all' | 'ungrouped'>('all');
+  const [newGrupoNome, setNewGrupoNome] = React.useState('');
   const [selectedClient, setSelectedClient] = React.useState<Client | null>(null);
   const [isClientDetailsOpen, setIsClientDetailsOpen] = React.useState(false);
   const { minimize } = useMinimize();
@@ -185,10 +201,13 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     let cancelled = false;
 
     setLoadingDocuments(true);
-    api.get(`/documentos/processo-completo/${process.id}`)
-      .then(res => {
+    Promise.all([
+      api.get(`/documentos/processo-completo/${process.id}`),
+      api.get(`/documentos/grupos/processo/${process.id}`).catch(() => ({ data: [] })),
+    ]).then(([docsRes, gruposRes]) => {
         if (!cancelled) {
-          setAllDocuments(Array.isArray(res.data) ? res.data : []);
+          setAllDocuments(Array.isArray(docsRes.data) ? docsRes.data : []);
+          setDocGrupos(Array.isArray(gruposRes.data) ? gruposRes.data : []);
         }
       })
       .catch(error => {
@@ -467,7 +486,9 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className={`max-h-[90vh] overflow-hidden [&>button]:hidden transition-all p-0 ${showIA ? 'max-w-[1400px]' : 'max-w-5xl'}`}>
+        <div className="flex h-full">
+        <div className={`flex-1 min-w-0 p-6 flex flex-col overflow-hidden`}>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -519,6 +540,15 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 </Button>
               )}
               <Button
+                variant={showIA ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowIA(!showIA)}
+                aria-label="Assistente IA"
+                title="Assistente IA"
+              >
+                <Bot className="h-4 w-4" />
+              </Button>
+              <Button
                 variant="outline"
                 size="icon"
                 onClick={() => {
@@ -541,7 +571,8 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex gap-4 overflow-hidden" style={{ height: 'calc(90vh - 120px)' }}>
+        <div className="w-full overflow-y-auto space-y-6">
           <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -581,11 +612,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Compromissos</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
               <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+              <TabsTrigger value="correio">Correio</TabsTrigger>
               <TabsTrigger value="calendar">Calendário</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
@@ -617,7 +649,47 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <User className="h-4 w-4" />
                       <span>Responsável</span>
                     </label>
-                    <p className="text-sm">{loadingFuncionario ? 'A carregar...' : (funcionarioNome || 'N/A')}</p>
+                    <Select
+                      value={process.funcionario_id ? String(process.funcionario_id) : "none"}
+                      onValueChange={(val) => {
+                        const newId = val === "none" ? null : Number(val);
+                        updateProcess.mutate({ id: process.id, funcionario_id: newId as any });
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm mt-1">
+                        <SelectValue placeholder="Selecionar..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem responsável</SelectItem>
+                        {funcionariosList.map((f: any) => (
+                          <SelectItem key={f.id} value={String(f.id)}>{f.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
+                      <User className="h-4 w-4" />
+                      <span>Titular</span>
+                    </label>
+                    <Select
+                      value={process.titular_id ? String(process.titular_id) : "none"}
+                      onValueChange={(val) => {
+                        const newId = val === "none" ? null : Number(val);
+                        updateProcess.mutate({ id: process.id, titular_id: newId as any });
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm mt-1">
+                        <SelectValue placeholder="Selecionar..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Não atribuído</SelectItem>
+                        {funcionariosList.map((f: any) => (
+                          <SelectItem key={f.id} value={String(f.id)}>{f.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>
@@ -675,8 +747,48 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       </p>
                     </div>
                   )}
+
+                  {process.tipo_processo && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Tipo de Processo</label>
+                      <p className="text-sm">{process.tipo_processo.nome}</p>
+                    </div>
+                  )}
                 </div>
+
+                {/* Campos Personalizados */}
+                {(process as any).campos_personalizados && Object.keys((process as any).campos_personalizados).length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Campos Personalizados</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries((process as any).campos_personalizados).map(([key, value]: [string, any]) => (
+                        <div key={key}>
+                          <label className="text-xs font-medium text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</label>
+                          <p className="text-sm">{value != null && value !== '' ? String(value) : 'N/A'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Subprocessos */}
+              {process.subprocessos && process.subprocessos.length > 0 && (
+                <>
+                  <Separator className="my-4" />
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Subprocessos ({process.subprocessos.length})</label>
+                    <div className="space-y-1">
+                      {process.subprocessos.map((sub: any) => (
+                        <div key={sub.id} className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50">
+                          <span>{sub.titulo}</span>
+                          <Badge variant="outline" className="text-xs">{sub.estado?.replace('_', ' ') || 'pendente'}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               {canManageVisibility && (
                 <>
@@ -778,6 +890,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                     tipo: clienteData.tipo,
                   } : null}
                 />
+              </div>
+
+              {/* Checklist dentro da tab Geral */}
+              <div className="border-t pt-4">
+                <ProcessChecklistTab processoId={process.id} />
               </div>
             </TabsContent>
 
@@ -1115,6 +1232,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               )}
             </TabsContent>
 
+            <TabsContent value="correio" className="space-y-6 mt-6">
+              {process && <ProcessCorreioTab processoId={process.id} clienteId={process.cliente_id} />}
+            </TabsContent>
+
             <TabsContent value="calendar" className="space-y-6 mt-6">
               <h3 className="text-lg font-semibold">Calendário do processo</h3>
               <p className="text-sm text-muted-foreground">Compromissos e prazos deste processo.</p>
@@ -1310,7 +1431,6 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                           title: "Sucesso",
                           description: "Documento enviado com sucesso.",
                         });
-                        // Recarregar todos os documentos (endpoint bulk)
                         const allDocs = await api.get(`/documentos/processo-completo/${process.id}`);
                         setAllDocuments(Array.isArray(allDocs.data) ? allDocs.data : []);
                       } catch (error: any) {
@@ -1329,7 +1449,70 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                   />
                 </div>
               </div>
-              
+
+              {/* Document Groups Bar */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={activeGrupoFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveGrupoFilter('all')}
+                >
+                  Todos ({allDocuments.length})
+                </Button>
+                <Button
+                  variant={activeGrupoFilter === 'ungrouped' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveGrupoFilter('ungrouped')}
+                >
+                  Sem grupo ({allDocuments.filter(d => !d.documento_grupo_id).length})
+                </Button>
+                {docGrupos.map(g => (
+                  <Button
+                    key={g.id}
+                    variant={activeGrupoFilter === g.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveGrupoFilter(g.id)}
+                    className="gap-1"
+                  >
+                    <Folder className="h-3 w-3" />
+                    {g.nome} ({allDocuments.filter(d => d.documento_grupo_id === g.id).length})
+                  </Button>
+                ))}
+                <div className="flex items-center gap-1 ml-2">
+                  <Input
+                    placeholder="Nova pasta..."
+                    value={newGrupoNome}
+                    onChange={(e) => setNewGrupoNome(e.target.value)}
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter' && newGrupoNome.trim() && process) {
+                        e.preventDefault();
+                        try {
+                          const res = await api.post('/documentos/grupos', { nome: newGrupoNome.trim(), processo_id: process.id });
+                          setDocGrupos(prev => [...prev, res.data]);
+                          setNewGrupoNome('');
+                        } catch {}
+                      }
+                    }}
+                    className="h-8 w-32 text-xs"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={async () => {
+                      if (!newGrupoNome.trim() || !process) return;
+                      try {
+                        const res = await api.post('/documentos/grupos', { nome: newGrupoNome.trim(), processo_id: process.id });
+                        setDocGrupos(prev => [...prev, res.data]);
+                        setNewGrupoNome('');
+                      } catch {}
+                    }}
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
               {loadingDocuments ? (
                 <div className="flex justify-center py-8">
                   <div className="text-muted-foreground">Carregando documentos...</div>
@@ -1340,7 +1523,13 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {allDocuments.map((doc, idx) => (
+                  {allDocuments
+                    .filter(doc => {
+                      if (activeGrupoFilter === 'all') return true;
+                      if (activeGrupoFilter === 'ungrouped') return !doc.documento_grupo_id;
+                      return doc.documento_grupo_id === activeGrupoFilter;
+                    })
+                    .map((doc, idx) => (
                     <Card key={`doc-${doc.id}-${doc.origem}-${doc.origem_id}-${idx}`} className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1356,19 +1545,37 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                             </a>
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
+                            <div className="flex items-center gap-2 text-sm flex-wrap">
                               <span className="text-gray-500 font-medium">Origem:</span>
                               <Badge variant="outline" className="text-xs">
                                 {doc.origem}
                               </Badge>
                               <span className="text-gray-700 font-semibold">{doc.origem_nome}</span>
+                              {docGrupos.length > 0 && (
+                                <select
+                                  className="ml-auto h-7 text-xs rounded border border-input bg-background px-2"
+                                  value={doc.documento_grupo_id || ''}
+                                  onChange={async (e) => {
+                                    const grupoId = e.target.value ? Number(e.target.value) : null;
+                                    try {
+                                      await api.patch(`/documentos/${doc.id}/grupo`, null, { params: { grupo_id: grupoId } });
+                                      setAllDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, documento_grupo_id: grupoId } : d));
+                                    } catch {}
+                                  }}
+                                >
+                                  <option value="">Sem pasta</option>
+                                  {docGrupos.map(g => (
+                                    <option key={g.id} value={g.id}>{g.nome}</option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
                             {doc.criado_em && (
                               <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <Calendar className="h-3 w-3" />
-                                <span>Adicionado em {new Date(doc.criado_em).toLocaleDateString('pt-BR', { 
-                                  day: '2-digit', 
-                                  month: '2-digit', 
+                                <span>Adicionado em {new Date(doc.criado_em).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
                                   year: 'numeric',
                                   hour: '2-digit',
                                   minute: '2-digit'
@@ -1409,9 +1616,33 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                 </div>
               )}
             </TabsContent>
+
           </Tabs>
         </div>
+
+        </div>
+        </div>{/* end main content */}
+
+        {/* IA Side Panel — inside DialogContent */}
+        {showIA && (
+          <div className="w-[370px] flex-shrink-0 border-l flex flex-col overflow-hidden bg-background">
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4" />
+                <span className="text-sm font-semibold">Assistente IA</span>
+              </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowIA(false)}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <AssistenteIA processoId={process?.id} clienteId={process?.cliente_id} />
+            </div>
+          </div>
+        )}
+        </div>{/* end flex container */}
       </DialogContent>
+
       <TaskDetailsModal isOpen={isTaskDetailsOpen} onClose={() => setIsTaskDetailsOpen(false)} task={selectedTask} />
       <TaskModal
         isOpen={isTaskModalOpen}
@@ -1503,6 +1734,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           onClose={() => setIsStartMeetingOpen(false)}
           processoId={process.id}
           processoTitulo={process.titulo}
+          clienteId={process.cliente_id}
         />
       )}
     </Dialog>

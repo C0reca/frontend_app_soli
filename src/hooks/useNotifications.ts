@@ -1,3 +1,4 @@
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 
@@ -17,14 +18,124 @@ interface NotificationCount {
   nao_lidas: number;
 }
 
+// --- WebSocket singleton ---
+
+function getWsUrl(): string {
+  const token = localStorage.getItem('token');
+  if (!token) return '';
+  const { protocol, host } = window.location;
+  const isLocal =
+    host === 'localhost' ||
+    host.startsWith('localhost:') ||
+    host === '127.0.0.1' ||
+    host.startsWith('127.0.0.1:');
+  let wsBase: string;
+  if (import.meta.env.DEV && isLocal) {
+    wsBase = 'ws://127.0.0.1:8000/api';
+  } else if (protocol === 'https:') {
+    wsBase = `wss://${host}/api`;
+  } else {
+    wsBase = `ws://${host}/api`;
+  }
+  return `${wsBase}/ws/notificacoes?token=${encodeURIComponent(token)}`;
+}
+
+type WsListener = (data: any) => void;
+const wsListeners = new Set<WsListener>();
+let wsInstance: WebSocket | null = null;
+let wsConnected = false;
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+let pingTimer: ReturnType<typeof setInterval> | undefined;
+
+function connectWs() {
+  const url = getWsUrl();
+  if (!url || wsInstance) return;
+
+  try {
+    const ws = new WebSocket(url);
+    wsInstance = ws;
+
+    ws.onopen = () => { wsConnected = true; };
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        wsListeners.forEach((fn) => fn(data));
+      } catch { /* pong */ }
+    };
+    ws.onclose = () => {
+      wsConnected = false;
+      wsInstance = null;
+      reconnectTimer = setTimeout(connectWs, 5000);
+    };
+    ws.onerror = () => { ws.close(); };
+
+    clearInterval(pingTimer);
+    pingTimer = setInterval(() => {
+      if (wsInstance?.readyState === WebSocket.OPEN) wsInstance.send('ping');
+    }, 30_000);
+  } catch {
+    wsConnected = false;
+  }
+}
+
+function disconnectWs() {
+  clearTimeout(reconnectTimer);
+  clearInterval(pingTimer);
+  wsInstance?.close();
+  wsInstance = null;
+  wsConnected = false;
+}
+
+/**
+ * Hook that connects to WebSocket for live notifications.
+ * Should be called once from the NotificationDropdown (always mounted).
+ */
+export function useWebSocketNotifications() {
+  const queryClient = useQueryClient();
+  const [connected, setConnected] = useState(wsConnected);
+
+  useEffect(() => {
+    const listener: WsListener = (data) => {
+      if (data.type === 'nova_notificacao') {
+        queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications-page'] });
+      }
+      // Novos emails sincronizados automaticamente pelo backend
+      if (data.tipo === 'novos_emails') {
+        queryClient.invalidateQueries({ queryKey: ['email-inbox'] });
+        queryClient.invalidateQueries({ queryKey: ['email-inbox-nao-lidos'] });
+      }
+    };
+
+    wsListeners.add(listener);
+    connectWs();
+
+    // Track connected state
+    const check = setInterval(() => setConnected(wsConnected), 2000);
+
+    return () => {
+      wsListeners.delete(listener);
+      clearInterval(check);
+      if (wsListeners.size === 0) disconnectWs();
+    };
+  }, [queryClient]);
+
+  return { connected };
+}
+
+// --- React Query hooks ---
+
 export function useNotificationCount() {
+  const { connected } = useWebSocketNotifications();
+
   return useQuery<NotificationCount>({
     queryKey: ['notifications-count'],
     queryFn: async () => {
       const { data } = await api.get('/notificacoes/count');
       return data;
     },
-    refetchInterval: 30_000,
+    refetchInterval: connected ? 120_000 : 30_000,
     staleTime: 10_000,
   });
 }

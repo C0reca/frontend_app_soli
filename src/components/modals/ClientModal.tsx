@@ -19,6 +19,7 @@ import { printRGPD } from '@/utils/printRGPD';
 import { IndividualClientForm } from './IndividualClientForm';
 import { CorporateClientForm, RepresentanteLocal } from './CorporateClientForm';
 import { useToast } from '@/hooks/use-toast';
+import { DynamicSelect } from '@/components/ui/DynamicSelect';
 
 // Schema base para campos comuns
 const baseClientSchema = z.object({
@@ -672,6 +673,24 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                       <SelectItem value="inactive">Inativo</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Categoria</Label>
+                  <DynamicSelect
+                    categoria="categoria_entidade"
+                    value={watch('categoria') || ''}
+                    onValueChange={(value) => setValue('categoria', value)}
+                    placeholder="Selecionar categoria..."
+                    fallbackOptions={[
+                      { value: 'particular', label: 'Particular' },
+                      { value: 'stand', label: 'Stand' },
+                      { value: 'banco', label: 'Banco' },
+                      { value: 'empresa', label: 'Empresa' },
+                      { value: 'seguradora', label: 'Seguradora' },
+                      { value: 'outro', label: 'Outro' },
+                    ]}
+                  />
                 </div>
               </div>
 

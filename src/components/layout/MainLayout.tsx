@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MeetingWidget } from '@/components/MeetingWidget';
+import { WorkModePanel } from '@/components/WorkModePanel';
 
 export const MainLayout: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ export const MainLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+      <WorkModePanel />
       <MeetingWidget />
     </div>
   );

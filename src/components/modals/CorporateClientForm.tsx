@@ -13,6 +13,7 @@ import { ClientCombobox } from '@/components/ui/clientcombobox';
 import { ClientModal } from './ClientModal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, X, AlertTriangle } from 'lucide-react';
+import { CodigoPostalInput } from '@/components/ui/CodigoPostalInput';
 
 export interface RepresentanteLocal {
   id?: number;
@@ -49,6 +50,12 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
 }) => {
   const { register, formState: { errors } } = form;
   const { clients, isLoading: isClientsLoading } = useClients();
+  const [activeTab, setActiveTab] = useState('identification');
+  const corpTabs = ['identification', 'contact', 'documents'] as const;
+  const corpTabLabels = { identification: 'Identificação', contact: 'Contacto', documents: 'Documentos' };
+  const corpIdx = corpTabs.indexOf(activeTab as typeof corpTabs[number]);
+  const goNextCorp = () => { if (corpIdx < corpTabs.length - 1) setActiveTab(corpTabs[corpIdx + 1]); };
+  const goPrevCorp = () => { if (corpIdx > 0) setActiveTab(corpTabs[corpIdx - 1]); };
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [newRepClienteId, setNewRepClienteId] = useState<number | undefined>(undefined);
   const [newRepCargo, setNewRepCargo] = useState('');
@@ -102,11 +109,14 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
 
   return (
     <>
-    <Tabs defaultValue="identification" className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="identification">Identificação</TabsTrigger>
-        <TabsTrigger value="contact">Contacto</TabsTrigger>
-        <TabsTrigger value="documents">Documentos</TabsTrigger>
+        {corpTabs.map((tab, i) => (
+          <TabsTrigger key={tab} value={tab} className="flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">{i + 1}</span>
+            {corpTabLabels[tab]}
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       <TabsContent value="identification" className="space-y-4">
@@ -380,10 +390,14 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="codigo_postal">Código postal</Label>
-                <Input
-                  id="codigo_postal"
-                  {...register('codigo_postal')}
-                  placeholder="1234-567"
+                <CodigoPostalInput
+                  value={watch('codigo_postal') || ''}
+                  onChange={(val) => setValue('codigo_postal', val)}
+                  onSelect={(result) => {
+                    if (result.localidade && !watch('localidade')) setValue('localidade', result.localidade);
+                    if (result.concelho && !watch('concelho')) setValue('concelho', result.concelho);
+                    if (result.distrito && !watch('distrito')) setValue('distrito', result.distrito);
+                  }}
                 />
               </div>
 
@@ -481,6 +495,19 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
           </CardContent>
         </Card>
       </TabsContent>
+
+      {/* Navegação entre passos */}
+      <div className="flex justify-between pt-2">
+        <Button type="button" variant="outline" size="sm" onClick={goPrevCorp} disabled={corpIdx === 0}>
+          Anterior
+        </Button>
+        <span className="text-xs text-muted-foreground self-center">
+          Passo {corpIdx + 1} de {corpTabs.length}
+        </span>
+        <Button type="button" variant="outline" size="sm" onClick={goNextCorp} disabled={corpIdx === corpTabs.length - 1}>
+          Seguinte
+        </Button>
+      </div>
     </Tabs>
     <ClientModal
       isOpen={isClientModalOpen}

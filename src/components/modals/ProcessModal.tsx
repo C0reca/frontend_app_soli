@@ -25,6 +25,7 @@ import { useProcesses, Process } from "@/hooks/useProcesses";
 import { useClients } from "@/hooks/useClients";
 import { useEmployeeList } from "@/hooks/useEmployees";
 import { useDossies } from "@/hooks/useDossies";
+import { useTiposProcesso, useTipoProcesso, TipoProcessoSimple, WizardConfig, WizardStepConfig, CustomFieldDef } from "@/hooks/useTiposProcesso";
 import {
     Form,
     FormControl,
@@ -104,6 +105,9 @@ const processSchemaBase = z.object({
     cliente_id: z.number().optional(),
     dossie_id: z.number().optional(),
     funcionario_id: z.number().optional(),
+    titular_id: z.number().optional().nullable(),
+    tipo_processo_id: z.number().optional().nullable(),
+    parent_processo_id: z.number().optional().nullable(),
     estado: z.enum(["pendente", "em_curso", "concluido"]).default("pendente"),
     valor: z.coerce.number().nullable().optional(),
 });
@@ -135,10 +139,31 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const { clients = [], isLoading: isClientsLoading } = useClients();
     const { data: employees = [], isLoading: isEmployeesLoading } = useEmployeeList();
     const { minimize } = useMinimize();
+    const { data: tiposProcesso = [] } = useTiposProcesso(true);
 
     const [step, setStep] = useState(0);
     const isWizard = !process;
-    const totalSteps = 3;
+    const [selectedTipoProcessoId, setSelectedTipoProcessoId] = useState<number | null>(null);
+    const { data: selectedTipoDetail } = useTipoProcesso(selectedTipoProcessoId);
+
+    const wizardSteps: WizardStepConfig[] = useMemo(() => {
+        const wc = selectedTipoDetail?.wizard_config;
+        if (wc?.steps && wc.steps.length > 0) return wc.steps;
+        return [
+            { id: 'entidade', title: 'Entidade e Arquivo', fields: [{ key: 'cliente_id', required: true }] },
+            { id: 'detalhes', title: 'Detalhes do Processo', fields: [
+                { key: 'titulo', required: true },
+                { key: 'descricao', required: false },
+                { key: 'estado', required: true },
+                { key: 'funcionario_id', required: false },
+                { key: 'titular_id', required: false },
+                { key: 'valor', required: false },
+                { key: 'onde_estao', required: false },
+            ]},
+        ];
+    }, [selectedTipoDetail?.wizard_config]);
+
+    const totalSteps = 1 + wizardSteps.length;
 
     const [customTypes, setCustomTypes] = useState<string[]>(() => loadCustomTypes());
     const [hiddenDefaultTypes, setHiddenDefaultTypes] = useState<string[]>(() => loadHiddenTypes());
@@ -146,9 +171,17 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const [showManageTypes, setShowManageTypes] = useState(false);
 
     const visibleTypeList = useMemo(() => {
+        // Se há tipos configurados no backend, usar esses
+        if (tiposProcesso.length > 0) {
+            const backendNames = tiposProcesso.map(t => t.nome);
+            // Adicionar tipos locais que não existem no backend
+            const localOnly = [...DEFAULT_PROCESS_TYPES.filter(t => !hiddenDefaultTypes.includes(t)), ...customTypes]
+                .filter(t => !backendNames.some(bn => bn.toLowerCase() === t.toLowerCase()));
+            return [...backendNames, ...localOnly];
+        }
         const defaults = DEFAULT_PROCESS_TYPES.filter((t) => !hiddenDefaultTypes.includes(t));
         return [...defaults, ...customTypes];
-    }, [hiddenDefaultTypes, customTypes]);
+    }, [hiddenDefaultTypes, customTypes, tiposProcesso]);
 
     const removeFromList = (label: string) => {
         if (form.getValues("tipo") === label) {
@@ -192,6 +225,12 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
 
     const [createdDossieId, setCreatedDossieId] = useState<number | null>(null);
     const [showExtracao, setShowExtracao] = useState(false);
+    const [camposPersonalizados, setCamposPersonalizados] = useState<Record<string, any>>({});
+
+    // Custom field definitions from wizard config
+    const customFieldDefs = useMemo(() => {
+        return selectedTipoDetail?.wizard_config?.custom_fields ?? [];
+    }, [selectedTipoDetail?.wizard_config?.custom_fields]);
     const { data: extracaoStatus } = useExtracaoStatus();
     const extracao = useExtrairDocumento();
 
@@ -208,6 +247,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
             cliente_id: initialData?.cliente_id ?? undefined,
             dossie_id: (initialData as any)?.dossie_id ?? undefined,
             funcionario_id: initialData?.funcionario_id ?? undefined,
+            titular_id: (initialData as any)?.titular_id ?? null,
+            tipo_processo_id: (initialData as any)?.tipo_processo_id ?? null,
+            parent_processo_id: (initialData as any)?.parent_processo_id ?? null,
             estado: initialData?.estado ?? "pendente",
             valor: (initialData as any)?.valor ?? null,
         },
@@ -215,7 +257,12 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
 
     const clienteId = form.watch("cliente_id");
     const dossieId = form.watch("dossie_id");
-    
+    const watchedTipoProcessoId = form.watch("tipo_processo_id");
+
+    React.useEffect(() => {
+        setSelectedTipoProcessoId(watchedTipoProcessoId ?? null);
+    }, [watchedTipoProcessoId]);
+
     React.useEffect(() => {
         setSelectedClienteId(clienteId);
     }, [clienteId]);
@@ -227,13 +274,19 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
         }
     }, [dossieId, selectedCliente, clienteId, form]);
 
+    // Find which wizard step (1-based) contains cliente_id
+    const entityStepIdx = useMemo(() => {
+        const idx = wizardSteps.findIndex(s => s.fields.some(f => f.key === 'cliente_id'));
+        return idx >= 0 ? idx + 1 : -1; // +1 because step 0 is tipo selection
+    }, [wizardSteps]);
+
     const showNoDossiePrompt = Boolean(
-        isWizard && step === 0 && selectedClienteId && !isDossieLoading && dossieEntidade == null
+        isWizard && step === entityStepIdx && selectedClienteId && !isDossieLoading && dossieEntidade == null
     );
 
     useEffect(() => {
-        if (step !== 0) setCreatedDossieId(null);
-    }, [step]);
+        if (step !== entityStepIdx) setCreatedDossieId(null);
+    }, [step, entityStepIdx]);
 
     // Associar automaticamente o dossiê da entidade ao processo (arquivo selecionado automaticamente)
     useEffect(() => {
@@ -255,6 +308,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 cliente_id: process.cliente_id || undefined,
                 dossie_id: (process as any).dossie_id ?? undefined,
                 funcionario_id: process.funcionario_id || undefined,
+                titular_id: process.titular_id ?? null,
+                tipo_processo_id: process.tipo_processo_id ?? null,
+                parent_processo_id: process.parent_processo_id ?? null,
                 estado: process.estado,
                 valor: (process as any).valor ?? null,
             });
@@ -270,6 +326,9 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 cliente_id: initialData?.cliente_id ?? undefined,
                 dossie_id: (initialData as any)?.dossie_id ?? undefined,
                 funcionario_id: initialData?.funcionario_id ?? undefined,
+                titular_id: (initialData as any)?.titular_id ?? null,
+                tipo_processo_id: (initialData as any)?.tipo_processo_id ?? null,
+                parent_processo_id: (initialData as any)?.parent_processo_id ?? null,
                 estado: initialData?.estado ?? "pendente",
                 valor: (initialData as any)?.valor ?? null,
             });
@@ -291,6 +350,8 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                     ...data,
                 });
             } else {
+                // Build campos_personalizados from custom field values
+                const cp = Object.keys(camposPersonalizados).length > 0 ? camposPersonalizados : undefined;
                 await createProcess.mutateAsync({
                     titulo: data.titulo ?? "",
                     descricao: data.descricao,
@@ -299,8 +360,12 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                     cliente_id: data.cliente_id,
                     dossie_id: data.dossie_id,
                     funcionario_id: data.funcionario_id,
+                    titular_id: data.titular_id,
+                    tipo_processo_id: data.tipo_processo_id,
+                    parent_processo_id: data.parent_processo_id,
                     estado: data.estado ?? "pendente",
-                });
+                    campos_personalizados: cp,
+                } as any);
             }
             onClose();
         } catch (error) {
@@ -309,6 +374,407 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     };
 
     const isLoading = isClientsLoading || isEmployeesLoading;
+
+    // ── Dynamic field rendering based on wizard config ─────────────────────
+    const renderField = (fieldKey: string, required: boolean) => {
+        switch (fieldKey) {
+            case 'cliente_id':
+                return (
+                    <React.Fragment key="cliente_id">
+                        {showNoDossiePrompt ? (
+                            <div className="space-y-4 rounded-md border p-4 bg-muted/30">
+                                <p className="text-sm">
+                                    A entidade <strong>{selectedCliente?.nome || selectedCliente?.nome_empresa || "selecionada"}</strong> nao tem dossie. Deseja criar um?
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            const nome = selectedCliente ? (selectedCliente.nome || selectedCliente.nome_empresa || "Entidade") : "Entidade";
+                                            createDossie
+                                                .mutateAsync({ entidade_id: selectedClienteId!, nome: `Arquivo - ${nome}` })
+                                                .then((data: { id?: number }) => {
+                                                    if (data?.id) {
+                                                        form.setValue("dossie_id", data.id);
+                                                        setCreatedDossieId(data.id);
+                                                    }
+                                                })
+                                                .catch(() => {});
+                                        }}
+                                        disabled={createDossie.isPending}
+                                    >
+                                        {createDossie.isPending ? "A criar..." : "Sim, criar"}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            form.setValue("cliente_id", undefined);
+                                            form.setValue("dossie_id", undefined);
+                                            setSelectedClienteId(undefined);
+                                            setCreatedDossieId(null);
+                                        }}
+                                    >
+                                        Nao, voltar
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {createdDossieId != null && (
+                                    <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+                                        Dossie criado. ID: <strong>{createdDossieId}</strong>
+                                    </div>
+                                )}
+                                <FormField
+                                    control={form.control}
+                                    name="cliente_id"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Entidade {required ? '*' : ''}</FormLabel>
+                                            <ClientCombobox
+                                                clients={clients ?? []}
+                                                value={field.value}
+                                                onChange={(value) => {
+                                                    field.onChange(value);
+                                                    setSelectedClienteId(value);
+                                                    setCreatedDossieId(null);
+                                                }}
+                                                isLoading={isClientsLoading}
+                                                insideDialog
+                                            />
+                                            <FormMessage />
+                                            {isWizard && selectedCliente && dossieEntidade && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    O arquivo da entidade sera associado automaticamente ao processo.
+                                                </p>
+                                            )}
+                                        </FormItem>
+                                    )}
+                                />
+                            </>
+                        )}
+                        {/* Inline extraction */}
+                        {isWizard && extracaoStatus?.habilitado && (
+                            <div className="mt-4 border border-gray-200 rounded-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowExtracao(!showExtracao)}
+                                    className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <ScanSearch className="h-4 w-4" />
+                                        Preencher a partir de documento
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 transition-transform ${showExtracao ? 'rotate-180' : ''}`} />
+                                </button>
+                                {showExtracao && (
+                                    <div className="px-3 pb-3">
+                                        <ExtracaoUploadZone
+                                            onExtrair={(ficheiro, tipo) => {
+                                                extracao.mutate(
+                                                    { ficheiro, tipo_processo: tipo },
+                                                    {
+                                                        onSuccess: (data) => {
+                                                            if (data.processo?.titulo_sugerido) form.setValue("titulo", data.processo.titulo_sugerido);
+                                                            if (data.processo?.tipo_sugerido) form.setValue("tipo", data.processo.tipo_sugerido);
+                                                            if (data.processo?.descricao) form.setValue("descricao", data.processo.descricao);
+                                                            setShowExtracao(false);
+                                                        },
+                                                    },
+                                                );
+                                            }}
+                                            isLoading={extracao.isPending}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </React.Fragment>
+                );
+            case 'titulo':
+                return (
+                    <FormField
+                        key="titulo"
+                        control={form.control}
+                        name="titulo"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Titulo do Processo {required ? '*' : ''}</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Digite o titulo do processo" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case 'descricao':
+                return (
+                    <FormField
+                        key="descricao"
+                        control={form.control}
+                        name="descricao"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Descricao</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="Digite a descricao do processo" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case 'estado':
+                return (
+                    <FormField
+                        key="estado"
+                        control={form.control}
+                        name="estado"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Estado</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione o estado" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="pendente">Pendente</SelectItem>
+                                        <SelectItem value="em_curso">Em Curso</SelectItem>
+                                        <SelectItem value="concluido">Concluido</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case 'funcionario_id':
+                return (
+                    <FormField
+                        key="funcionario_id"
+                        control={form.control}
+                        name="funcionario_id"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Responsavel</FormLabel>
+                                <Select
+                                    onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                                    value={field.value?.toString() || undefined}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {employees.map((emp: any) => (
+                                            <SelectItem key={emp.id} value={emp.id.toString()}>
+                                                {emp.nome}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case 'titular_id':
+                return (
+                    <FormField
+                        key="titular_id"
+                        control={form.control}
+                        name="titular_id"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Titular</FormLabel>
+                                <Select
+                                    onValueChange={(v) => field.onChange(v ? Number(v) : null)}
+                                    value={field.value?.toString() || undefined}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {employees.map((emp: any) => (
+                                            <SelectItem key={emp.id} value={emp.id.toString()}>
+                                                {emp.nome}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case 'valor':
+                return (
+                    <FormField
+                        key="valor"
+                        control={form.control}
+                        name="valor"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Valor (EUR)</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="0.00"
+                                        {...field}
+                                        value={field.value ?? ''}
+                                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case 'onde_estao':
+                return (
+                    <FormField
+                        key="onde_estao"
+                        control={form.control}
+                        name="onde_estao"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Localizacao</FormLabel>
+                                <FormControl>
+                                    <DynamicSelect
+                                        categoria="onde_estao"
+                                        value={field.value != null && field.value !== "" ? field.value : undefined}
+                                        onValueChange={(v) => field.onChange(v)}
+                                        placeholder="Selecione a localizacao"
+                                        fallbackOptions={[
+                                            { value: "Casa", label: "Casa" },
+                                            { value: "Cartorio", label: "Cartorio" },
+                                            { value: "Camara/GaiaUrb", label: "Camara/GaiaUrb" },
+                                            { value: "DPA Agendado", label: "DPA Agendado" },
+                                            { value: "Armario DPA", label: "Armario DPA" },
+                                            { value: "PEPEX", label: "PEPEX" },
+                                            { value: "Conservatoria Civil/Comercial", label: "Conservatoria Civil/Comercial" },
+                                            { value: "Reunioes", label: "Reunioes" },
+                                            { value: "Conservatoria Predial", label: "Conservatoria Predial" },
+                                            { value: "Servico Financas", label: "Servico Financas" },
+                                            { value: "Imposto Selo / Participacoes", label: "Imposto Selo / Participacoes" },
+                                            { value: "Servico Financas Pendentes", label: "Servico Financas Pendentes" },
+                                            { value: "Aguarda Doc Cliente/Informacoes", label: "Aguarda Doc Cliente/Informacoes" },
+                                            { value: "Aguarda Doc", label: "Aguarda Doc" },
+                                            { value: "Decorre Prazo", label: "Decorre Prazo" },
+                                            { value: "Pendentes", label: "Pendentes" },
+                                            { value: "Injuncoes", label: "Injuncoes" },
+                                            { value: "Execucoes", label: "Execucoes" },
+                                            { value: "Inventario Judicial", label: "Inventario Judicial" },
+                                        ]}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            default:
+                // Custom field
+                if (fieldKey.startsWith('custom_')) {
+                    const cfDef = customFieldDefs.find((cf: CustomFieldDef) => cf.key === fieldKey);
+                    if (!cfDef) return null;
+                    return (
+                        <div key={fieldKey} className="space-y-2">
+                            <label className="text-sm font-medium leading-none">
+                                {cfDef.label} {required ? '*' : ''}
+                            </label>
+                            {cfDef.type === 'text' && (
+                                <Input
+                                    placeholder={cfDef.placeholder || `Introduza ${cfDef.label.toLowerCase()}`}
+                                    value={camposPersonalizados[fieldKey] ?? ''}
+                                    onChange={(e) => setCamposPersonalizados(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+                                />
+                            )}
+                            {cfDef.type === 'number' && (
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    placeholder={cfDef.placeholder || '0'}
+                                    value={camposPersonalizados[fieldKey] ?? ''}
+                                    onChange={(e) => setCamposPersonalizados(prev => ({ ...prev, [fieldKey]: e.target.value ? Number(e.target.value) : '' }))}
+                                />
+                            )}
+                            {cfDef.type === 'date' && (
+                                <Input
+                                    type="date"
+                                    value={camposPersonalizados[fieldKey] ?? ''}
+                                    onChange={(e) => setCamposPersonalizados(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+                                />
+                            )}
+                            {cfDef.type === 'textarea' && (
+                                <Textarea
+                                    placeholder={cfDef.placeholder || `Introduza ${cfDef.label.toLowerCase()}`}
+                                    value={camposPersonalizados[fieldKey] ?? ''}
+                                    onChange={(e) => setCamposPersonalizados(prev => ({ ...prev, [fieldKey]: e.target.value }))}
+                                />
+                            )}
+                            {cfDef.type === 'select' && cfDef.options && (
+                                <Select
+                                    onValueChange={(v) => setCamposPersonalizados(prev => ({ ...prev, [fieldKey]: v }))}
+                                    value={camposPersonalizados[fieldKey] ?? undefined}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={cfDef.placeholder || `Selecione ${cfDef.label.toLowerCase()}`} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {cfDef.options.map((opt) => (
+                                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
+                    );
+                }
+                return null;
+        }
+    };
+
+    const renderWizardStepFields = (stepConfig: WizardStepConfig) => {
+        // Group funcionario_id + titular_id side by side if both in same step
+        const fields = stepConfig.fields;
+        const result: React.ReactNode[] = [];
+        let i = 0;
+        while (i < fields.length) {
+            const f = fields[i];
+            // Check if we should pair funcionario + titular
+            if (f.key === 'funcionario_id' && i + 1 < fields.length && fields[i + 1].key === 'titular_id') {
+                result.push(
+                    <div key="func-tit-pair" className="grid grid-cols-2 gap-4">
+                        {renderField('funcionario_id', f.required)}
+                        {renderField('titular_id', fields[i + 1].required)}
+                    </div>
+                );
+                i += 2;
+            } else if (f.key === 'titular_id' && i + 1 < fields.length && fields[i + 1].key === 'funcionario_id') {
+                result.push(
+                    <div key="tit-func-pair" className="grid grid-cols-2 gap-4">
+                        {renderField('titular_id', f.required)}
+                        {renderField('funcionario_id', fields[i + 1].required)}
+                    </div>
+                );
+                i += 2;
+            } else {
+                result.push(renderField(f.key, f.required));
+                i++;
+            }
+        }
+        return result;
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -348,149 +814,29 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             {isWizard && (
-                                <div className="flex items-center gap-2 py-2">
-                                    {Array.from({ length: totalSteps }, (_, i) => i).map((i) => (
-                                        <span key={i} className="flex items-center">
-                                            <div
-                                                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                                                    step === i ? "bg-primary text-primary-foreground" : step > i ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                                                }`}
-                                            >
-                                                {step > i ? "✓" : i + 1}
-                                            </div>
-                                            {i < totalSteps - 1 && <div className="h-px flex-1 bg-border max-w-[40px]" />}
-                                        </span>
-                                    ))}
-                                    <span className="ml-2 text-sm text-muted-foreground">Passo {step + 1} de {totalSteps}</span>
-                                </div>
-                            )}
-
-                            {/* Passo 1: Entidade e Arquivo */}
-                            {(!isWizard || step === 0) && (
-                                <div className="space-y-4">
-                                    {showNoDossiePrompt ? (
-                                        <div className="space-y-4 rounded-md border p-4 bg-muted/30">
-                                            <p className="text-sm">
-                                                A entidade <strong>{selectedCliente?.nome || selectedCliente?.nome_empresa || "selecionada"}</strong> não tem dossiê. Deseja criar um?
-                                            </p>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const nome = selectedCliente ? (selectedCliente.nome || selectedCliente.nome_empresa || "Entidade") : "Entidade";
-                                                        createDossie
-                                                            .mutateAsync({ entidade_id: selectedClienteId!, nome: `Arquivo - ${nome}` })
-                                                            .then((data: { id?: number }) => {
-                                                                if (data?.id) {
-                                                                    form.setValue("dossie_id", data.id);
-                                                                    setCreatedDossieId(data.id);
-                                                                }
-                                                            })
-                                                            .catch(() => {});
-                                                    }}
-                                                    disabled={createDossie.isPending}
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 py-2">
+                                        {Array.from({ length: totalSteps }, (_, i) => i).map((i) => (
+                                            <span key={i} className="flex items-center">
+                                                <div
+                                                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                                                        step === i ? "bg-primary text-primary-foreground" : step > i ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                                                    }`}
                                                 >
-                                                    {createDossie.isPending ? "A criar..." : "Sim, criar"}
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        form.setValue("cliente_id", undefined);
-                                                        form.setValue("dossie_id", undefined);
-                                                        setSelectedClienteId(undefined);
-                                                        setCreatedDossieId(null);
-                                                    }}
-                                                >
-                                                    Não, voltar à escolha da entidade
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                    {createdDossieId != null && (
-                                        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
-                                            Dossiê criado. ID atribuído: <strong>{createdDossieId}</strong>
-                                        </div>
-                                    )}
-                            <FormField
-                                control={form.control}
-                                name="cliente_id"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>
-                                            {isEditing ? 'Cliente' : 'Entidade *'}
-                                        </FormLabel>
-                                        <ClientCombobox
-                                            clients={clients ?? []}
-                                            value={field.value}
-                                            onChange={(value) => {
-                                                field.onChange(value);
-                                                setSelectedClienteId(value);
-                                                setCreatedDossieId(null);
-                                            }}
-                                            isLoading={isClientsLoading}
-                                            insideDialog
-                                        />
-                                        <FormMessage />
-                                        {isWizard && selectedCliente && dossieEntidade && (
-                                            <p className="text-xs text-muted-foreground">
-                                                O arquivo da entidade será associado automaticamente ao processo.
-                                            </p>
-                                        )}
-                                    </FormItem>
-                                )}
-                            />
-                                        </>
-                                    )}
-
-                                    {/* Inline extraction */}
-                                    {isWizard && extracaoStatus?.habilitado && (
-                                        <div className="mt-4 border border-gray-200 rounded-lg">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowExtracao(!showExtracao)}
-                                                className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    <ScanSearch className="h-4 w-4" />
-                                                    Preencher a partir de documento
-                                                </span>
-                                                <ChevronDown className={`h-4 w-4 transition-transform ${showExtracao ? 'rotate-180' : ''}`} />
-                                            </button>
-                                            {showExtracao && (
-                                                <div className="px-3 pb-3">
-                                                    <ExtracaoUploadZone
-                                                        onExtrair={(ficheiro, tipo) => {
-                                                            extracao.mutate(
-                                                                { ficheiro, tipo_processo: tipo },
-                                                                {
-                                                                    onSuccess: (data) => {
-                                                                        if (data.processo?.titulo_sugerido) {
-                                                                            form.setValue("titulo", data.processo.titulo_sugerido);
-                                                                        }
-                                                                        if (data.processo?.tipo_sugerido) {
-                                                                            form.setValue("tipo", data.processo.tipo_sugerido);
-                                                                        }
-                                                                        if (data.processo?.descricao) {
-                                                                            form.setValue("descricao", data.processo.descricao);
-                                                                        }
-                                                                        setShowExtracao(false);
-                                                                    },
-                                                                },
-                                                            );
-                                                        }}
-                                                        isLoading={extracao.isPending}
-                                                    />
+                                                    {step > i ? "✓" : i + 1}
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
+                                                {i < totalSteps - 1 && <div className="h-px flex-1 bg-border max-w-[40px]" />}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Passo {step + 1} de {totalSteps}: {step === 0 ? 'Tipo de Processo' : wizardSteps[step - 1]?.title ?? ''}
+                                    </p>
                                 </div>
                             )}
 
-                            {/* Passo 2: Tipo de processo */}
-                            {(!isWizard || step === 1) && (
+                            {/* Passo 1: Tipo de processo */}
+                            {(!isWizard || step === 0) && (
                                 <div className="space-y-4">
                                     {isWizard ? (
                                         <>
@@ -501,7 +847,12 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     <FormItem>
                                                         <FormLabel>Tipo de processo *</FormLabel>
                                                         <Select
-                                                            onValueChange={field.onChange}
+                                                            onValueChange={(val) => {
+                                                                field.onChange(val);
+                                                                // Associar tipo_processo_id se for do backend
+                                                                const backendTipo = tiposProcesso.find(t => t.nome === val);
+                                                                form.setValue("tipo_processo_id", backendTipo?.id ?? null);
+                                                            }}
                                                             value={field.value && visibleTypeList.includes(field.value) ? field.value : undefined}
                                                         >
                                                             <FormControl>
@@ -597,124 +948,26 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                 </div>
                             )}
 
-                            {/* Passo 3: Título, descrição, localização, estado */}
-                            {(!isWizard || step === 2) && (
+                            {/* Dynamic wizard steps */}
+                            {isWizard && step > 0 && step <= wizardSteps.length && (
                                 <div className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="titulo"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Título do Processo *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Digite o título do processo" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                                    {renderWizardStepFields(wizardSteps[step - 1])}
+                                </div>
+                            )}
 
-                            <FormField
-                                control={form.control}
-                                name="descricao"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descrição</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="Digite a descrição do processo" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="onde_estao"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Localização</FormLabel>
-                                        <FormControl>
-                                            <DynamicSelect
-                                                categoria="onde_estao"
-                                                value={field.value != null && field.value !== "" ? field.value : undefined}
-                                                onValueChange={(v) => field.onChange(v)}
-                                                placeholder="Selecione a localização"
-                                                fallbackOptions={[
-                                                    { value: "Casa", label: "Casa" },
-                                                    { value: "Cartorio", label: "Cartorio" },
-                                                    { value: "Camara/GaiaUrb", label: "Camara/GaiaUrb" },
-                                                    { value: "DPA Agendado", label: "DPA Agendado" },
-                                                    { value: "Armário DPA", label: "Armário DPA" },
-                                                    { value: "PEPEX", label: "PEPEX" },
-                                                    { value: "Conservatoria Civil/Comercial", label: "Conservatoria Civil/Comercial" },
-                                                    { value: "Reuniões", label: "Reuniões" },
-                                                    { value: "Conservatoria Predial", label: "Conservatoria Predial" },
-                                                    { value: "Serviço Finanças", label: "Serviço Finanças" },
-                                                    { value: "Imposto Selo / Participações", label: "Imposto Selo / Participações" },
-                                                    { value: "Serviço Finanças Pendentes", label: "Serviço Finanças Pendentes" },
-                                                    { value: "Aguarda Doc Cliente/Informações", label: "Aguarda Doc Cliente/Informações" },
-                                                    { value: "Aguarda Doc", label: "Aguarda Doc" },
-                                                    { value: "Decorre Prazo", label: "Decorre Prazo" },
-                                                    { value: "Pendentes", label: "Pendentes" },
-                                                    { value: "Injunções", label: "Injunções" },
-                                                    { value: "Execuções", label: "Execuções" },
-                                                    { value: "Inventário Judicial", label: "Inventário Judicial" },
-                                                ]}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="estado"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Estado</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value || undefined}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione o estado" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="pendente">Pendente</SelectItem>
-                                                <SelectItem value="em_curso">Em Curso</SelectItem>
-                                                <SelectItem value="concluido">Concluído</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="valor"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Valor (EUR)</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                placeholder="0.00"
-                                                {...field}
-                                                value={field.value ?? ''}
-                                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Edit mode - show all fields */}
+                            {!isWizard && (
+                                <div className="space-y-4">
+                                    {renderField('cliente_id', false)}
+                                    {renderField('titulo', false)}
+                                    {renderField('descricao', false)}
+                                    {renderField('onde_estao', false)}
+                                    {renderField('estado', false)}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {renderField('funcionario_id', false)}
+                                        {renderField('titular_id', false)}
+                                    </div>
+                                    {renderField('valor', false)}
                                 </div>
                             )}
 
@@ -734,22 +987,43 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                         type="button"
                                         onClick={() => {
                                             if (step === 0) {
-                                                const cid = form.getValues("cliente_id");
-                                                if (cid == null || cid === 0) {
-                                                    form.setError("cliente_id", { type: "manual", message: "Selecione a entidade." });
-                                                    return;
-                                                }
-                                                const did = form.getValues("dossie_id");
-                                                if (did == null || did === 0) {
-                                                    form.setError("cliente_id", { type: "manual", message: "A entidade não tem arquivo. Crie um arquivo primeiro." });
-                                                    return;
-                                                }
-                                            }
-                                            if (step === 1) {
                                                 const tipo = form.getValues("tipo");
                                                 if (!tipo || !tipo.trim()) {
                                                     form.setError("tipo", { type: "manual", message: "Selecione ou adicione um tipo de processo." });
                                                     return;
+                                                }
+                                            }
+                                            // Validate required fields in dynamic wizard steps
+                                            if (step > 0 && step <= wizardSteps.length) {
+                                                const currentStep = wizardSteps[step - 1];
+                                                for (const f of currentStep.fields) {
+                                                    if (!f.required) continue;
+                                                    if (f.key === 'cliente_id') {
+                                                        const cid = form.getValues("cliente_id");
+                                                        if (cid == null || cid === 0) {
+                                                            form.setError("cliente_id", { type: "manual", message: "Selecione a entidade." });
+                                                            return;
+                                                        }
+                                                        const did = form.getValues("dossie_id");
+                                                        if (did == null || did === 0) {
+                                                            form.setError("cliente_id", { type: "manual", message: "A entidade nao tem arquivo. Crie um arquivo primeiro." });
+                                                            return;
+                                                        }
+                                                    } else if (f.key === 'titulo') {
+                                                        const titulo = form.getValues("titulo");
+                                                        if (!titulo?.trim()) {
+                                                            form.setError("titulo", { type: "manual", message: "Titulo e obrigatorio." });
+                                                            return;
+                                                        }
+                                                    } else if (f.key.startsWith('custom_')) {
+                                                        const val = camposPersonalizados[f.key];
+                                                        if (val == null || val === '') {
+                                                            // Can't use form.setError for custom fields, use alert
+                                                            const cfDef = customFieldDefs.find((cf: CustomFieldDef) => cf.key === f.key);
+                                                            alert(`Campo "${cfDef?.label ?? f.key}" e obrigatorio.`);
+                                                            return;
+                                                        }
+                                                    }
                                                 }
                                             }
                                             setStep(step + 1);

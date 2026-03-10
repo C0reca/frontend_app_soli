@@ -22,12 +22,16 @@ interface CalendarEvent {
   title: string;
   description?: string;
   date: Date;
-  type: 'task' | 'process' | 'registo';
+  endDate?: Date;
+  type: 'task' | 'process' | 'registo' | 'diligencia';
   status?: string;
   priority?: string;
   responsibleId?: number | null;
   responsibleName?: string;
   isUserResponsible?: boolean;
+  local?: string;
+  horaInicio?: string;
+  horaFim?: string;
 }
 
 export const Calendar: React.FC = () => {
@@ -59,9 +63,32 @@ export const Calendar: React.FC = () => {
   const events = useMemo(() => {
     const calendarEvents: CalendarEvent[] = [];
 
-    tasks?.forEach(task => {
+    tasks?.forEach((task: any) => {
+      const isUserResponsible = user && task.responsavel_id === parseInt(user.id);
+
+      // Diligências externas com agendamento → timed events
+      if (task.servico_externo && task.data_agendamento && task.hora_inicio) {
+        const dateStr = task.data_agendamento.slice(0, 10);
+        const startDate = new Date(`${dateStr}T${task.hora_inicio}:00`);
+        const endDate = task.hora_fim ? new Date(`${dateStr}T${task.hora_fim}:00`) : undefined;
+        calendarEvents.push({
+          id: `diligencia-${task.id}`,
+          title: `🚗 ${task.titulo}`,
+          description: task.descricao,
+          date: startDate,
+          endDate,
+          type: 'diligencia',
+          status: task.concluida ? 'concluida' : 'pendente',
+          priority: task.prioridade || undefined,
+          responsibleId: task.responsavel_id,
+          isUserResponsible,
+          local: task.local,
+          horaInicio: task.hora_inicio,
+          horaFim: task.hora_fim,
+        });
+      }
+
       if (task.data_fim) {
-        const isUserResponsible = user && task.responsavel_id === parseInt(user.id);
         calendarEvents.push({
           id: `task-${task.id}`,
           title: task.titulo,
@@ -117,16 +144,25 @@ export const Calendar: React.FC = () => {
   const fcEvents = useMemo(() => {
     return events
       .filter(ev => ev.responsibleId == null || visibleEmployees[ev.responsibleId])
-      .map(ev => ({
-        id: ev.id,
-        title: ev.title,
-        start: ev.date,
-        allDay: true,
-        extendedProps: ev,
-        backgroundColor: ev.type === 'task' && ev.responsibleId != null ? (employeeColors.get(ev.responsibleId) || '#64748b') : (ev.type === 'process' ? '#64748b' : ev.type === 'registo' ? '#94a3b8' : undefined),
-        borderColor: ev.type === 'task' && ev.responsibleId != null ? (employeeColors.get(ev.responsibleId) || '#64748b') : (ev.type === 'process' ? '#64748b' : ev.type === 'registo' ? '#94a3b8' : undefined),
-        textColor: '#ffffff',
-      }));
+      .map(ev => {
+        const isTimedEvent = ev.type === 'diligencia';
+        const color = ev.type === 'diligencia'
+          ? '#dc2626'
+          : ev.type === 'task' && ev.responsibleId != null
+            ? (employeeColors.get(ev.responsibleId) || '#64748b')
+            : ev.type === 'process' ? '#64748b' : '#94a3b8';
+        return {
+          id: ev.id,
+          title: ev.title,
+          start: ev.date,
+          end: ev.endDate,
+          allDay: !isTimedEvent,
+          extendedProps: ev,
+          backgroundColor: color,
+          borderColor: color,
+          textColor: '#ffffff',
+        };
+      });
   }, [events, visibleEmployees, employeeColors]);
 
   const selectedDateEvents = events.filter(event => isSameDay(event.date, selectedDate));

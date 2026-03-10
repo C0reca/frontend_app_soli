@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Lock, Copy } from 'lucide-react';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
@@ -23,7 +23,7 @@ import { normalizeString } from '@/lib/utils';
 
 export const Processes: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
-  const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess } = useProcesses();
+  const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess, duplicateProcess } = useProcesses();
   const { clients } = useClients();
   const { data: employees = [] } = useEmployeeList();
   const [searchTerm, setSearchTerm] = useState('');
@@ -398,6 +398,9 @@ export const Processes: React.FC = () => {
                         <div>
                           <span className="font-medium">Responsável:</span> {process.funcionario?.nome ?? getEmployeeNameById(process.funcionario_id) ?? (process.funcionario_id ? `ID: ${process.funcionario_id}` : 'Não atribuído')}
                         </div>
+                        <div>
+                          <span className="font-medium">Titular:</span> {process.titular?.nome || 'Não atribuído'}
+                        </div>
                         <div className="col-span-2">
                           <span className="font-medium">Localização:</span> {(process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || '-')}
                         </div>
@@ -425,6 +428,11 @@ export const Processes: React.FC = () => {
                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditLocation(process); }} title="Alterar localização">
                            <MapPin className="h-4 w-4" />
                          </Button>
+                         {canCreate('processos') && (
+                           <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); duplicateProcess.mutate(process.id); }} title="Duplicar processo">
+                             <Copy className="h-4 w-4" />
+                           </Button>
+                         )}
                       {showArchived ? (
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); unarchiveProcess.mutate(process.id); }}>
                           <ArchiveRestore className="h-4 w-4" />

@@ -31,7 +31,7 @@ export const RegistosAutomoveis: React.FC = () => {
   const [filterTipo, setFilterTipo] = useState<string>('todos');
   const [filterPagamento, setFilterPagamento] = useState<string>('todos');
 
-  const { registos, isLoading, deleteRegisto } = useRegistosAutomoveis();
+  const { registos, isLoading, deleteRegisto, changeEstado } = useRegistosAutomoveis();
   const { semanas, isLoading: isLoadingSemanas, fecharSemana, deleteSemana } = useStandSemanas();
   const { clients } = useClients();
 
@@ -94,6 +94,19 @@ export const RegistosAutomoveis: React.FC = () => {
   const totalStand = registos.filter((r: any) => r.tipo === 'stand').length;
   const totalPendente = registos.filter((r: any) => r.estado_pagamento === 'pendente').length;
   const totalPago = registos.filter((r: any) => r.estado_pagamento === 'pago').length;
+
+  const getEstadoClasses = (estado?: string) => {
+    switch (estado) {
+      case 'em_curso':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'concluido':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'recusado':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -241,6 +254,22 @@ export const RegistosAutomoveis: React.FC = () => {
                             <Badge variant="outline" className="text-xs">
                               {r.tipo === 'stand' ? 'Stand' : 'Particular'}
                             </Badge>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={r.estado || 'pendente'}
+                                onValueChange={(val) => changeEstado.mutate({ id: r.id, estado: val })}
+                              >
+                                <SelectTrigger className={`h-7 w-[130px] rounded-full border-2 text-xs font-medium ${getEstadoClasses(r.estado)}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pendente">Pendente</SelectItem>
+                                  <SelectItem value="em_curso">Em Curso</SelectItem>
+                                  <SelectItem value="concluido">Concluído</SelectItem>
+                                  <SelectItem value="recusado">Recusado</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <Badge className={r.estado_pagamento === 'pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
                               {r.estado_pagamento === 'pago' ? 'Pago' : 'Pendente'}
                             </Badge>

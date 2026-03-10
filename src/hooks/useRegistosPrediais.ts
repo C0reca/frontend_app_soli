@@ -56,8 +56,12 @@ export const useRegistosPrediais = () => {
         if (e.includes('concluido')) return 'concluido';
         if (e.includes('desistencia')) return 'desistencia';
         if (e.includes('recusado')) return 'recusado';
-        if (e.includes('provisorio')) return 'provisorios';
-        if (e.includes('registo')) return 'registo';
+        if (e.includes('em_curso') || e.includes('em curso')) return 'em_curso';
+        // Legacy mappings: provisório/registo/pendente → em_registo
+        if (e.includes('em_registo') || e.includes('em registo')) return 'em_registo';
+        if (e.includes('provisorio')) return 'em_registo';
+        if (e.includes('pendente')) return 'em_registo';
+        if (e.includes('registo')) return 'em_registo';
         return 'desconhecido';
       };
       return (response.data || []).map((r: any) => ({

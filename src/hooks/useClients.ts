@@ -22,6 +22,7 @@ export interface Representante {
 export interface BaseClient {
   id: string | number;
   tipo?: 'singular' | 'coletivo';
+  categoria?: string;
   internalNumber?: string;
   responsibleEmployee?: string;
   status?: 'active' | 'inactive';

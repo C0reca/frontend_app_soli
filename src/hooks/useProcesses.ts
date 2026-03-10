@@ -30,6 +30,18 @@ export interface Process {
     id: number;
     nome: string;
   };
+  titular_id?: number;
+  titular?: {
+    id: number;
+    nome: string;
+  };
+  tipo_processo_id?: number;
+  tipo_processo?: {
+    id: number;
+    nome: string;
+  };
+  parent_processo_id?: number;
+  subprocessos?: { id: number; titulo: string; estado?: string }[];
   privado?: boolean;
   autorizados?: { id: number; nome: string }[];
   valor?: number | null;
@@ -52,7 +64,21 @@ export const useProcesses = () => {
   });
 
   const createProcess = useMutation({
-    mutationFn: async (process: { titulo: string; descricao?: string; tipo?: string; onde_estao?: string; cliente_id?: number; dossie_id?: number; funcionario_id?: number; estado: 'pendente' | 'em_curso' | 'concluido' }) => {
+    mutationFn: async (process: {
+      titulo: string;
+      descricao?: string;
+      tipo?: string;
+      onde_estao?: string;
+      cliente_id?: number;
+      dossie_id?: number;
+      funcionario_id?: number;
+      titular_id?: number | null;
+      tipo_processo_id?: number | null;
+      parent_processo_id?: number | null;
+      estado: 'pendente' | 'em_curso' | 'concluido';
+      valor?: number | null;
+      campos_personalizados?: Record<string, any>;
+    }) => {
       const response = await api.post('/processos', process);
       return response.data;
     },
@@ -154,6 +180,21 @@ export const useProcesses = () => {
     }
   });
 
+  const duplicateProcess = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.post(`/processos/${id}/duplicar`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['processes'] });
+      toast({ title: 'Sucesso', description: 'Processo duplicado com sucesso.' });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail ?? 'Erro ao duplicar processo.';
+      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+    },
+  });
+
   const updateProcessVisibility = useMutation({
     mutationFn: async ({ processoId, privado, autorizados_ids }: { processoId: number; privado: boolean; autorizados_ids?: number[] }) => {
       const res = await api.put(`/processos/${processoId}/visibilidade`, { privado, autorizados_ids: autorizados_ids ?? [] });
@@ -176,6 +217,7 @@ export const useProcesses = () => {
     error,
     createProcess,
     updateProcess,
+    duplicateProcess,
     updateProcessVisibility,
     deleteProcess,
     getArchived,

@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useClients, getEffectiveTipo } from '@/hooks/useClients';
 import { printTalao } from '@/utils/printTalao';
+import { TalaoPreviewModal } from '@/components/modals/TalaoPreviewModal';
 import { ToastAction } from '@/components/ui/toast';
 
 export const Caixa: React.FC = () => {
@@ -38,6 +39,7 @@ export const Caixa: React.FC = () => {
   const [isExportingExtrato, setIsExportingExtrato] = useState(false);
   const [reconciliacaoMovimento, setReconciliacaoMovimento] = useState<MovimentoBancario | null>(null);
   const [filtroReconciliado, setFiltroReconciliado] = useState<string>('');
+  const [talaoPreviewMovimento, setTalaoPreviewMovimento] = useState<MovimentoCaixa | null>(null);
   const extratoFileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const {
@@ -248,9 +250,7 @@ export const Caixa: React.FC = () => {
   };
 
   const handleImprimirTalao = (movimento: MovimentoCaixa) => {
-    const clienteNome = getClientName(movimento.cliente_id);
-    const processoTitulo = movimento.processo_id ? `Processo #${movimento.processo_id}` : null;
-    printTalao(movimento, { clienteNome, processoTitulo });
+    setTalaoPreviewMovimento(movimento);
   };
 
   const movimentosFiltrados = movimentos.filter(movimento => {
@@ -859,6 +859,13 @@ const formatTransferType = (value?: string | null) => {
         }}
         initialData={movimentoSelecionado}
         mode={modalMode}
+      />
+      <TalaoPreviewModal
+        isOpen={!!talaoPreviewMovimento}
+        onClose={() => setTalaoPreviewMovimento(null)}
+        movimento={talaoPreviewMovimento}
+        clienteNome={talaoPreviewMovimento ? getClientName(talaoPreviewMovimento.cliente_id) : null}
+        processoTitulo={talaoPreviewMovimento?.processo_id ? `Processo #${talaoPreviewMovimento.processo_id}` : null}
       />
       <FecharCaixaModal
         isOpen={isFecharModalOpen}

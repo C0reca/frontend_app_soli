@@ -25,7 +25,16 @@ import {
   BookOpen,
   ScanSearch,
   Car,
-  AlertTriangle
+  AlertTriangle,
+  Mail,
+  Target,
+  Briefcase,
+  Link,
+  UserPlus,
+  MapPin,
+  TrendingUp,
+  Inbox,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -60,6 +69,14 @@ const navItems: NavItem[] = [
   { icon: Trash2, label: 'Lixeira Templates', path: '/document-templates/lixeira', managerOrAdmin: true },
   { icon: FileText, label: 'Documentos', path: '/documentos', managerOrAdmin: true, modulo: 'documentos' },
   { icon: ScanSearch, label: 'Assistente Docs', path: '/assistente-documentos', modulo: 'extracao_documentos' },
+  { icon: Briefcase, label: 'Modo Trabalho', path: '/modo-trabalho', adminOnly: true },
+  { icon: Inbox, label: 'Email Inbox', path: '/email-inbox', adminOnly: true },
+  { icon: MessageSquare, label: 'WhatsApp', path: '/whatsapp', adminOnly: true },
+  { icon: Mail, label: 'Correspondência', path: '/correspondencia', adminOnly: true },
+  { icon: Target, label: 'Marketing', path: '/marketing', adminOnly: true },
+  { icon: Link, label: 'Formulários', path: '/formularios-publicos', adminOnly: true },
+  { icon: UserPlus, label: 'Portal Stand', path: '/stand-users', adminOnly: true },
+  { icon: TrendingUp, label: 'Financeiro Auto', path: '/auto-financeiro', adminOnly: true },
   { icon: BookOpen, label: 'Base de Conhecimento', path: '/base-conhecimento' },
   { icon: Bug, label: 'Reportes', path: '/erro-reports', adminOnly: true },
   { icon: AlertTriangle, label: 'Logs de Erros', path: '/error-logs', adminOnly: true },

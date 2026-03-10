@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
-import { Input } from "@/components/ui/input";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Command, CommandInput, CommandItem, CommandList, CommandEmpty } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn, normalizeString } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import api from "@/services/api";
 
 interface Client {
     id: number | string;
@@ -23,38 +23,66 @@ interface ClientComboboxProps {
     value?: number | string;
     onChange: (value: number) => void;
     isLoading?: boolean;
-    /** Texto do botão quando nenhum cliente está selecionado (ex. "Selecione uma entidade") */
+    /** Texto do botão quando nenhum cliente está selecionado */
     placeholderEmpty?: string;
-    /** @deprecated Já não é necessário — o Popover base agora tem z-index suficiente */
+    /** @deprecated Já não é necessário */
     insideDialog?: boolean;
 }
 
 export function ClientCombobox({ clients = [], value, onChange, isLoading, placeholderEmpty = "Selecione um cliente", insideDialog: _insideDialog = false }: ClientComboboxProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [serverResults, setServerResults] = useState<Client[] | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-    const filteredClients = useMemo(() => {
+    // Server-side search when typing 2+ chars
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+
+        if (search.trim().length < 2) {
+            setServerResults(null);
+            return;
+        }
+
+        setIsSearching(true);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                const res = await api.get('/clientes/search', { params: { q: search.trim(), limit: 20 } });
+                setServerResults(res.data || []);
+            } catch {
+                setServerResults(null);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [search]);
+
+    // Use server results if available, otherwise fall back to local filtering
+    const displayClients = useMemo(() => {
+        if (serverResults !== null) return serverResults;
+
+        // Local filtering for <2 chars or when server hasn't responded yet
         const normSearch = normalizeString(search);
         const filtered = (clients ?? []).filter((client) => {
-            // Excluir entidades inativas
             if (client.ativo === false) return false;
-
+            if (!normSearch) return true;
             const nome = client?.nome || client?.nome_empresa || "";
             const nif = client?.tipo === 'coletivo'
                 ? (client?.nif_empresa || "")
                 : (client?.nif || "");
-
             return normalizeString(nome).includes(normSearch) ||
                    normalizeString(nif).includes(normSearch);
         });
-        
-        // Ordenar do maior ID para o menor (mais recentes primeiro)
+
         return filtered.sort((a, b) => {
             const idA = typeof a.id === 'string' ? parseInt(a.id, 10) : Number(a.id);
             const idB = typeof b.id === 'string' ? parseInt(b.id, 10) : Number(b.id);
             return idB - idA;
-        });
-    }, [clients, search]);
+        }).slice(0, 50);
+    }, [clients, search, serverResults]);
 
     const selectedClient = clients.find((c) => String(c.id) === String(value));
     const getClientDisplayName = (client: Client | undefined) => {
@@ -67,7 +95,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
             open={open}
             onOpenChange={(o) => {
                 setOpen(o);
-                if (!o) setSearch("");
+                if (!o) { setSearch(""); setServerResults(null); }
             }}
             modal={false}
         >
@@ -86,14 +114,17 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
                         onValueChange={setSearch}
                     />
                     <CommandList>
-                        {isLoading ? (
-                            <div className="p-4 text-sm text-muted-foreground">A carregar clientes...</div>
+                        {isLoading || isSearching ? (
+                            <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                A pesquisar...
+                            </div>
                         ) : (
                             <>
                                 <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                                {filteredClients.map((client) => {
+                                {displayClients.map((client) => {
                                     const nome = client.nome || client.nome_empresa || `Cliente #${client.id}`;
-                                    const nif = client.tipo === 'coletivo' 
+                                    const nif = client.tipo === 'coletivo'
                                         ? (client.nif_empresa || '')
                                         : (client.nif || '');
                                     const clientId = typeof client.id === 'string' ? parseInt(client.id, 10) : client.id;

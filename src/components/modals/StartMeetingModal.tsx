@@ -10,6 +10,7 @@ interface StartMeetingModalProps {
   onClose: () => void;
   processoId: number;
   processoTitulo: string;
+  clienteId?: number;
 }
 
 export const StartMeetingModal: React.FC<StartMeetingModalProps> = ({
@@ -17,6 +18,7 @@ export const StartMeetingModal: React.FC<StartMeetingModalProps> = ({
   onClose,
   processoId,
   processoTitulo,
+  clienteId,
 }) => {
   const [titulo, setTitulo] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export const StartMeetingModal: React.FC<StartMeetingModalProps> = ({
     if (!titulo.trim()) return;
     setLoading(true);
     try {
-      await startMeeting(processoId, processoTitulo, titulo.trim());
+      await startMeeting(processoId, processoTitulo, titulo.trim(), clienteId);
       setTitulo('');
       onClose();
     } finally {

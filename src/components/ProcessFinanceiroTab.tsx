@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Eye, Trash2, Pencil, Undo2 } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Eye, Trash2, Pencil, Undo2, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +60,7 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
   const [viewTransacaoId, setViewTransacaoId] = useState<number | null>(null);
   const [reembolsoDe, setReembolsoDe] = useState<TransacaoFinanceira | null>(null);
 
-  const { transacoes, isLoading, deleteTransacao } = useTransacoes({ processo_id: processoId });
+  const { transacoes, isLoading, deleteTransacao, enviarParaCaixa } = useTransacoes({ processo_id: processoId });
   const { data: resumo } = useResumoFinanceiroProcesso(processoId);
 
   const handleDelete = (id: number) => {
@@ -122,19 +122,20 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
               <TableHead className="text-sm">Tipo</TableHead>
               <TableHead className="text-sm">Valor</TableHead>
               <TableHead className="text-sm">Descrição</TableHead>
+              <TableHead className="text-sm">Caixa</TableHead>
               <TableHead className="text-sm text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   A carregar...
                 </TableCell>
               </TableRow>
             ) : transacoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   Nenhuma transação registada
                 </TableCell>
               </TableRow>
@@ -144,9 +145,26 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
                   <TableCell className="text-sm whitespace-nowrap">{formatDate(t.data)}</TableCell>
                   <TableCell className="text-sm">{getTipoBadge(t.tipo)}</TableCell>
                   <TableCell className="text-sm font-medium whitespace-nowrap">{formatCurrency(t.valor)}</TableCell>
-                  <TableCell className="text-sm max-w-[260px] truncate">
+                  <TableCell className="text-sm max-w-[200px] truncate">
                     {t.tarefa_id && <Badge variant="outline" className="text-xs mr-1">Tarefa</Badge>}
                     {t.descricao || '-'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {t.caixa_movimento_id ? (
+                      <Badge className="bg-green-100 text-green-800 text-xs">Enviado</Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs gap-1"
+                        onClick={() => enviarParaCaixa.mutate(t.id)}
+                        disabled={enviarParaCaixa.isPending}
+                        title="Enviar para Caixa"
+                      >
+                        <Banknote className="h-3 w-3" />
+                        Enviar
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-0.5">
