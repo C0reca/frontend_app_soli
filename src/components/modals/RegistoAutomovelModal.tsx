@@ -449,7 +449,9 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
           await uploadAnexo.mutateAsync({ registoId: novoRegisto.id, file: pdfFile, tipo: 'pdf_irn' });
         }
       }
+      form.reset(getDefaultValues(null));
       setPdfFile(null);
+      setCurrentStep(0);
       onClose();
     } catch (error) {
       console.error('Erro ao salvar registo:', error);
@@ -553,6 +555,30 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
           )}
         />
       </div>
+
+      {tipo === 'stand' && (
+        <FormField
+          control={form.control}
+          name="entidade_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Entidade (Stand) *</FormLabel>
+              <FormControl>
+                <ClientCombobox
+                  clients={clients}
+                  value={field.value ? String(field.value) : ''}
+                  onChange={(val) => field.onChange(val)}
+                  placeholderEmpty="Selecionar entidade..."
+                />
+              </FormControl>
+              <p className="text-xs text-gray-500">
+                Selecione a entidade a associar a este registo
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 

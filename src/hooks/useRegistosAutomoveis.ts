@@ -120,6 +120,9 @@ export const useRegistosAutomoveis = (params?: {
   search?: string;
   tipo?: string;
   estado_pagamento?: string;
+  data_inicio?: string;
+  data_fim?: string;
+  stand_entidade_id?: number;
 }) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -131,6 +134,9 @@ export const useRegistosAutomoveis = (params?: {
       if (params?.search) queryParams.set('search', params.search);
       if (params?.tipo) queryParams.set('tipo', params.tipo);
       if (params?.estado_pagamento) queryParams.set('estado_pagamento', params.estado_pagamento);
+      if (params?.data_inicio) queryParams.set('data_inicio', params.data_inicio);
+      if (params?.data_fim) queryParams.set('data_fim', params.data_fim);
+      if (params?.stand_entidade_id) queryParams.set('stand_entidade_id', params.stand_entidade_id.toString());
       const qs = queryParams.toString();
       const response = await api.get(`/registos-automoveis${qs ? `?${qs}` : ''}`);
       return response.data || [];

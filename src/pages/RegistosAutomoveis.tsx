@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Search, Car, Eye, Edit, Trash2, X, Calendar, Lock, CheckCircle, Clock,
+  ChevronLeft, ChevronRight, List,
 } from 'lucide-react';
 import { useRegistosAutomoveis, RegistoAutomovel } from '@/hooks/useRegistosAutomoveis';
 import { useStandSemanas, StandSemana } from '@/hooks/useStandSemanas';
@@ -25,15 +26,53 @@ import { ClickableClientName } from '@/components/ClickableClientName';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 
+// Helper: get Monday of a given date's week
+function getMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function formatDateISO(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDatePT(d?: string): string {
+  if (!d) return '-';
+  try { return new Date(d).toLocaleDateString('pt-PT'); } catch { return d; }
+}
+
 export const RegistosAutomoveis: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('todos');
   const [filterPagamento, setFilterPagamento] = useState<string>('todos');
 
+  // Date navigation for daily/weekly tabs
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(getMonday(new Date()));
+
   const { registos, isLoading, deleteRegisto, changeEstado } = useRegistosAutomoveis();
   const { semanas, isLoading: isLoadingSemanas, fecharSemana, deleteSemana } = useStandSemanas();
   const { clients } = useClients();
+
+  // Daily registos query
+  const dailyDateStr = formatDateISO(selectedDate);
+  const { registos: registosDia, isLoading: isLoadingDia } = useRegistosAutomoveis({
+    data_inicio: dailyDateStr,
+    data_fim: dailyDateStr,
+  });
+
+  // Weekly registos query
+  const weekEnd = new Date(selectedWeekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const { registos: registosSemana, isLoading: isLoadingSemana } = useRegistosAutomoveis({
+    data_inicio: formatDateISO(selectedWeekStart),
+    data_fim: formatDateISO(weekEnd),
+  });
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,11 +82,7 @@ export const RegistosAutomoveis: React.FC = () => {
   const [isSemanaOpen, setIsSemanaOpen] = useState(false);
   const [selectedSemana, setSelectedSemana] = useState<StandSemana | null>(null);
 
-  // Novo registo para semana
-  const [isNewSemanaOpen, setIsNewSemanaOpen] = useState(false);
-  const [newSemanaStand, setNewSemanaStand] = useState<number | null>(null);
-
-  // Filtrar registos
+  // Filtrar registos (all tab)
   const filteredRegistos = registos.filter((r: RegistoAutomovel) => {
     const searchN = normalizeString(searchTerm);
     const matchesSearch = !searchTerm ||
@@ -61,6 +96,29 @@ export const RegistosAutomoveis: React.FC = () => {
     const matchesPagamento = filterPagamento === 'todos' || r.estado_pagamento === filterPagamento;
     return matchesSearch && matchesTipo && matchesPagamento;
   });
+
+  // Group registos by stand
+  const groupByStand = (list: RegistoAutomovel[]) => {
+    const groups: Record<string, { standId: number | null; standName: string; registos: RegistoAutomovel[] }> = {};
+    const particulares: RegistoAutomovel[] = [];
+
+    for (const r of list) {
+      if (r.tipo === 'stand' && r.entidade) {
+        const key = `stand-${r.entidade.id}`;
+        if (!groups[key]) {
+          groups[key] = { standId: r.entidade.id, standName: r.entidade.nome, registos: [] };
+        }
+        groups[key].registos.push(r);
+      } else {
+        particulares.push(r);
+      }
+    }
+
+    return { standGroups: Object.values(groups), particulares };
+  };
+
+  const diaGrouped = useMemo(() => groupByStand(registosDia), [registosDia]);
+  const semanaGrouped = useMemo(() => groupByStand(registosSemana), [registosSemana]);
 
   const handleView = (r: RegistoAutomovel) => {
     setSelectedDetails(r);
@@ -83,18 +141,6 @@ export const RegistosAutomoveis: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const formatDate = (d?: string) => {
-    if (!d) return '-';
-    try { return new Date(d).toLocaleDateString('pt-PT'); } catch { return d; }
-  };
-
-  // Stats
-  const totalRegistos = registos.length;
-  const totalParticular = registos.filter((r: any) => r.tipo === 'particular').length;
-  const totalStand = registos.filter((r: any) => r.tipo === 'stand').length;
-  const totalPendente = registos.filter((r: any) => r.estado_pagamento === 'pendente').length;
-  const totalPago = registos.filter((r: any) => r.estado_pagamento === 'pago').length;
-
   const getEstadoClasses = (estado?: string) => {
     switch (estado) {
       case 'em_curso':
@@ -106,6 +152,214 @@ export const RegistosAutomoveis: React.FC = () => {
       default:
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
     }
+  };
+
+  // Stats
+  const totalRegistos = registos.length;
+  const totalParticular = registos.filter((r: any) => r.tipo === 'particular').length;
+  const totalStand = registos.filter((r: any) => r.tipo === 'stand').length;
+  const totalPendente = registos.filter((r: any) => r.estado_pagamento === 'pendente').length;
+  const totalPago = registos.filter((r: any) => r.estado_pagamento === 'pago').length;
+
+  // Navigation helpers
+  const navigateDay = (offset: number) => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + offset);
+    setSelectedDate(d);
+  };
+
+  const navigateWeek = (offset: number) => {
+    const d = new Date(selectedWeekStart);
+    d.setDate(d.getDate() + (offset * 7));
+    setSelectedWeekStart(d);
+  };
+
+  const isToday = formatDateISO(selectedDate) === formatDateISO(new Date());
+  const isThisWeek = formatDateISO(selectedWeekStart) === formatDateISO(getMonday(new Date()));
+
+  // Shared registo card renderer
+  const RegistoCard = ({ r }: { r: RegistoAutomovel }) => (
+    <Card
+      key={r.id}
+      className="hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => handleView(r)}
+    >
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center flex-wrap gap-1.5 mb-1">
+              <Car className="h-3.5 w-3.5 text-gray-400" />
+              <h3 className="font-semibold text-sm">
+                {r.matricula || 'Sem matrícula'}
+                {r.marca && ` - ${r.marca}`}
+              </h3>
+              <Badge variant="outline" className="text-xs">
+                {r.tipo === 'stand' ? 'Stand' : 'Particular'}
+              </Badge>
+              {r.tipo === 'stand' && r.entidade && (
+                <span className="text-xs font-medium text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
+                  {r.entidade.nome}
+                </span>
+              )}
+              <div onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={r.estado || 'pendente'}
+                  onValueChange={(val) => changeEstado.mutate({ id: r.id, estado: val })}
+                >
+                  <SelectTrigger className={`h-6 w-[120px] rounded-full border-2 text-xs font-medium ${getEstadoClasses(r.estado)}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="em_curso">Em Curso</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                    <SelectItem value="recusado">Recusado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Badge className={`text-xs ${r.estado_pagamento === 'pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                {r.estado_pagamento === 'pago' ? 'Pago' : 'Pendente'}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-0.5 text-xs text-gray-500">
+              {r.entidade ? (
+                <span>
+                  <strong>Entidade:</strong>{' '}
+                  <ClickableClientName clientId={r.entidade.id} clientName={r.entidade.nome} />
+                </span>
+              ) : r.tipo === 'stand' ? (
+                <span className="text-orange-500"><strong>Entidade:</strong> Não associada</span>
+              ) : null}
+              {r.sa_nome && <span><strong>Comprador:</strong> {r.sa_nome}</span>}
+              {r.sp_nome && <span><strong>Vendedor:</strong> {r.sp_nome}</span>}
+              {r.valor && <span><strong>Valor:</strong> {Number(r.valor).toFixed(2)} €</span>}
+              {r.numero_pedido && <span><strong>Pedido:</strong> {r.numero_pedido}</span>}
+              <span><strong>Criado:</strong> {formatDatePT(r.data_criacao)}</span>
+            </div>
+          </div>
+          <div className="flex space-x-1 ml-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleView(r)}>
+              <Eye className="h-3.5 w-3.5" />
+            </Button>
+            {canEdit("registos_automoveis") && (
+              <>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(r)}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                  onClick={() => handleDelete(r.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Grouped listing renderer
+  const GroupedListing = ({
+    standGroups,
+    particulares,
+    emptyMessage,
+    loading,
+  }: {
+    standGroups: { standId: number | null; standName: string; registos: RegistoAutomovel[] }[];
+    particulares: RegistoAutomovel[];
+    emptyMessage: string;
+    loading: boolean;
+  }) => {
+    if (loading) {
+      return <div className="text-center py-8 text-gray-500">A carregar...</div>;
+    }
+
+    const totalItems = standGroups.reduce((acc, g) => acc + g.registos.length, 0) + particulares.length;
+    const totalValor = [...standGroups.flatMap(g => g.registos), ...particulares]
+      .reduce((acc, r) => acc + (r.valor ? Number(r.valor) : 0), 0);
+
+    if (totalItems === 0) {
+      return <div className="text-center py-8 text-gray-500">{emptyMessage}</div>;
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs font-medium text-gray-600">Total</span>
+            <span className="text-lg font-bold">{totalItems}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs font-medium text-purple-600">Stands</span>
+            <span className="text-lg font-bold text-purple-600">{standGroups.length}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs font-medium text-blue-600">Particulares</span>
+            <span className="text-lg font-bold text-blue-600">{particulares.length}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
+            <span className="text-xs font-medium text-green-600">Valor Total</span>
+            <span className="text-lg font-bold text-green-600">{totalValor.toFixed(2)} €</span>
+          </div>
+        </div>
+
+        {/* Stand groups */}
+        {standGroups.map((group) => {
+          const groupTotal = group.registos.reduce((acc, r) => acc + (r.valor ? Number(r.valor) : 0), 0);
+          return (
+            <Card key={`stand-${group.standId}`}>
+              <CardHeader className="pb-2 pt-3 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Car className="h-4 w-4 text-purple-500" />
+                    {group.standName}
+                    <Badge variant="outline" className="text-xs">Stand</Badge>
+                  </CardTitle>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-500">{group.registos.length} registo(s)</span>
+                    <span className="font-semibold">{groupTotal.toFixed(2)} €</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="space-y-2">
+                  {group.registos.map((r) => (
+                    <RegistoCard key={r.id} r={r} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {/* Particulares */}
+        {particulares.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Car className="h-4 w-4 text-blue-500" />
+                  Particulares
+                </CardTitle>
+                <span className="text-sm text-gray-500">{particulares.length} registo(s)</span>
+              </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              <div className="space-y-2">
+                {particulares.map((r) => (
+                  <RegistoCard key={r.id} r={r} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -144,15 +398,23 @@ export const RegistosAutomoveis: React.FC = () => {
         <TabsList>
           <TabsTrigger value="registos">
             <Car className="h-4 w-4 mr-2" />
-            Registos ({totalRegistos})
+            Todos ({totalRegistos})
           </TabsTrigger>
-          <TabsTrigger value="semanas">
+          <TabsTrigger value="dia">
             <Calendar className="h-4 w-4 mr-2" />
+            Dia
+          </TabsTrigger>
+          <TabsTrigger value="semana">
+            <List className="h-4 w-4 mr-2" />
+            Semana
+          </TabsTrigger>
+          <TabsTrigger value="stand-semanas">
+            <Lock className="h-4 w-4 mr-2" />
             Stands - Semanas ({semanas.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* TAB REGISTOS */}
+        {/* TAB TODOS */}
         <TabsContent value="registos" className="space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -237,91 +499,83 @@ export const RegistosAutomoveis: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {filteredRegistos.map((r: RegistoAutomovel) => (
-                  <Card
-                    key={r.id}
-                    className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => handleView(r)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Car className="h-4 w-4 text-gray-400" />
-                            <h3 className="font-semibold">
-                              {r.matricula || 'Sem matrícula'}
-                              {r.marca && ` - ${r.marca}`}
-                            </h3>
-                            <Badge variant="outline" className="text-xs">
-                              {r.tipo === 'stand' ? 'Stand' : 'Particular'}
-                            </Badge>
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <Select
-                                value={r.estado || 'pendente'}
-                                onValueChange={(val) => changeEstado.mutate({ id: r.id, estado: val })}
-                              >
-                                <SelectTrigger className={`h-7 w-[130px] rounded-full border-2 text-xs font-medium ${getEstadoClasses(r.estado)}`}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pendente">Pendente</SelectItem>
-                                  <SelectItem value="em_curso">Em Curso</SelectItem>
-                                  <SelectItem value="concluido">Concluído</SelectItem>
-                                  <SelectItem value="recusado">Recusado</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <Badge className={r.estado_pagamento === 'pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                              {r.estado_pagamento === 'pago' ? 'Pago' : 'Pendente'}
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
-                            {r.entidade && (
-                              <span>
-                                <strong>Entidade:</strong>{' '}
-                                <ClickableClientName
-                                  clientId={r.entidade.id}
-                                  clientName={r.entidade.nome}
-                                />
-                              </span>
-                            )}
-                            {r.sa_nome && <span><strong>Comprador:</strong> {r.sa_nome}</span>}
-                            {r.sp_nome && <span><strong>Vendedor:</strong> {r.sp_nome}</span>}
-                            {r.valor && <span><strong>Valor:</strong> {Number(r.valor).toFixed(2)} €</span>}
-                            {r.numero_pedido && <span><strong>Pedido:</strong> {r.numero_pedido}</span>}
-                            <span><strong>Criado:</strong> {formatDate(r.data_criacao)}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-1 ml-4 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" onClick={() => handleView(r)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {canEdit("registos_automoveis") && (
-                            <>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(r)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(r.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <RegistoCard key={r.id} r={r} />
                 ))}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* TAB SEMANAS */}
-        <TabsContent value="semanas" className="space-y-4">
+        {/* TAB DIA */}
+        <TabsContent value="dia" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigateDay(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={formatDateISO(selectedDate)}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value + 'T12:00:00'))}
+                  className="h-9 w-[160px]"
+                />
+                {!isToday && (
+                  <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date())}>
+                    Hoje
+                  </Button>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigateDay(1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-700">
+              {selectedDate.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </h2>
+          </div>
+
+          <GroupedListing
+            standGroups={diaGrouped.standGroups}
+            particulares={diaGrouped.particulares}
+            emptyMessage="Nenhum registo automóvel para este dia."
+            loading={isLoadingDia}
+          />
+        </TabsContent>
+
+        {/* TAB SEMANA */}
+        <TabsContent value="semana" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigateWeek(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium px-2">
+                  {formatDatePT(formatDateISO(selectedWeekStart))} - {formatDatePT(formatDateISO(weekEnd))}
+                </span>
+                {!isThisWeek && (
+                  <Button variant="outline" size="sm" onClick={() => setSelectedWeekStart(getMonday(new Date()))}>
+                    Esta semana
+                  </Button>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigateWeek(1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <GroupedListing
+            standGroups={semanaGrouped.standGroups}
+            particulares={semanaGrouped.particulares}
+            emptyMessage="Nenhum registo automóvel para esta semana."
+            loading={isLoadingSemana}
+          />
+        </TabsContent>
+
+        {/* TAB STAND SEMANAS */}
+        <TabsContent value="stand-semanas" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Semanas de Stands</CardTitle>
@@ -350,7 +604,7 @@ export const RegistosAutomoveis: React.FC = () => {
                             <Calendar className="h-5 w-5 text-gray-400" />
                             <div>
                               <p className="font-semibold text-sm">
-                                {formatDate(s.semana_inicio)} - {formatDate(s.semana_fim)}
+                                {formatDatePT(s.semana_inicio)} - {formatDatePT(s.semana_fim)}
                               </p>
                               <p className="text-xs text-gray-500">
                                 {s.stand_entidade?.nome || `Stand ID ${s.stand_entidade_id}`}
