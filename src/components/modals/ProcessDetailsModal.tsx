@@ -37,6 +37,7 @@ import { ProcessFinanceiroTab } from '@/components/ProcessFinanceiroTab';
 import { ProcessCorreioTab } from '@/components/ProcessCorreioTab';
 import { AssistenteIA } from '@/components/AssistenteIA';
 import { ProcessChecklistTab } from '@/components/ProcessChecklistTab';
+import { ProcessWorkflowTab } from '@/components/process/ProcessWorkflowTab';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -73,14 +74,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     enabled: !!process?.funcionario_id,
   });
 
-  const { data: funcionariosList = [] } = useQuery({
-    queryKey: ['funcionarios-list'],
-    queryFn: async () => {
-      const response = await api.get('/funcionarios');
-      return response.data;
-    },
-    enabled: isOpen,
-  });
+  const { data: funcionariosList = [] } = useEmployeeList();
 
   const clienteNome = clienteData?.nome || clienteData?.nome_empresa || process?.cliente?.nome || (process ? `Cliente ID: ${process.cliente_id}` : '');
   const funcionarioNome = funcionarioData?.nome || process?.funcionario?.nome || (process?.funcionario_id ? `Funcionário ID: ${process.funcionario_id}` : 'N/A');
@@ -612,8 +606,9 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="general">Geral</TabsTrigger>
+              <TabsTrigger value="workflow">Workflow</TabsTrigger>
               <TabsTrigger value="tasks">Compromissos</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
               <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
@@ -752,6 +747,13 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Tipo de Processo</label>
                       <p className="text-sm">{process.tipo_processo.nome}</p>
+                    </div>
+                  )}
+
+                  {process.estado_workflow && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Estado Workflow</label>
+                      <Badge variant="outline" className="mt-1">{process.estado_workflow}</Badge>
                     </div>
                   )}
                 </div>
@@ -896,6 +898,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               <div className="border-t pt-4">
                 <ProcessChecklistTab processoId={process.id} />
               </div>
+            </TabsContent>
+
+            <TabsContent value="workflow" className="mt-6">
+              <ProcessWorkflowTab processoId={process.id} />
             </TabsContent>
 
             <TabsContent value="tasks" className="space-y-6 mt-6">

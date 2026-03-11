@@ -150,6 +150,7 @@ export const useClients = () => {
     },
     retry: 2,
     retryDelay: 1000,
+    staleTime: 2 * 60 * 1000, // 2 min — evita refetches constantes
   });
 
   // Garantir que clients é sempre um array (evita crash em .filter, .map, .find)
