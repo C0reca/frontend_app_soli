@@ -48,7 +48,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
         setIsSearching(true);
         debounceRef.current = setTimeout(async () => {
             try {
-                const res = await api.get('/clientes/search', { params: { q: search.trim(), limit: 20 } });
+                const res = await api.get('/clientes/search', { params: { q: search.trim(), limit: 50 } });
                 setServerResults(res.data || []);
             } catch {
                 setServerResults(null);
@@ -67,7 +67,6 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
         // Local filtering for <2 chars or when server hasn't responded yet
         const normSearch = normalizeString(search);
         const filtered = (clients ?? []).filter((client) => {
-            if (client.ativo === false) return false;
             if (!normSearch) return true;
             const nome = client?.nome || client?.nome_empresa || "";
             const nif = client?.tipo === 'coletivo'
@@ -81,7 +80,7 @@ export function ClientCombobox({ clients = [], value, onChange, isLoading, place
             const idA = typeof a.id === 'string' ? parseInt(a.id, 10) : Number(a.id);
             const idB = typeof b.id === 'string' ? parseInt(b.id, 10) : Number(b.id);
             return idB - idA;
-        }).slice(0, 50);
+        }).slice(0, 100);
     }, [clients, search, serverResults]);
 
     const selectedClient = clients.find((c) => String(c.id) === String(value));
