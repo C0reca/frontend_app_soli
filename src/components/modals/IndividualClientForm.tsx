@@ -108,13 +108,19 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
         description: "Os dados do Cartão de Cidadão foram carregados.",
       });
     } catch (err: any) {
-      const errMsg = err?.name === 'AbortError'
-        ? 'Tempo esgotado. Tem até 90 s para inserir a PIN da morada no diálogo. '
-        : (err?.message || 'Certifique-se que instalou o middleware Autenticação.gov e iniciou o leitor. ');
+      let errMsg: string;
+      if (err?.name === 'AbortError') {
+        errMsg = 'Tempo esgotado (90s). Insira o PIN da morada mais rapidamente e tente novamente.';
+      } else if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError') || err?.message?.includes('ERR_CONNECTION_REFUSED')) {
+        errMsg = 'O leitor de Cartão de Cidadão não está a correr. Verifique que: 1) O programa "CC Reader" está aberto; 2) O leitor de cartões está ligado ao computador; 3) O cartão está inserido no leitor.';
+      } else {
+        errMsg = err?.message || 'Erro desconhecido ao ler o cartão.';
+      }
       toast({
         title: "Erro ao ler Cartão de Cidadão",
-        description: errMsg + 'Pode tentar novamente clicando em Ler CC.',
-        variant: "destructive"
+        description: errMsg,
+        variant: "destructive",
+        duration: 10000,
       });
     } finally {
       if (timeoutId) clearTimeout(timeoutId);

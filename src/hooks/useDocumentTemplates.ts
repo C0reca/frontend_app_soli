@@ -174,8 +174,9 @@ export const useDocumentTemplates = () => {
       const detail = error?.response?.data?.detail;
       toast({
         title: 'Erro ao importar',
-        description: detail || 'Erro ao importar ficheiro. Formatos suportados: .docx, .doc, .pdf',
+        description: detail || 'Erro ao importar ficheiro. Se for um PDF, tente converter para .docx primeiro (ex: usando o Word ou ferramentas online).',
         variant: 'destructive',
+        duration: 10000,
       });
     },
   });
