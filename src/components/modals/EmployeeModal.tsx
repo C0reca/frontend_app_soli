@@ -161,7 +161,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Funcionário' : 'Novo Funcionário'}

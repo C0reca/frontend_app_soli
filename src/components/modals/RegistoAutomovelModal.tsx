@@ -1039,7 +1039,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Registo Automóvel' : 'Novo Registo Automóvel'}

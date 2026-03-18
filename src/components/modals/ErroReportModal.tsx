@@ -104,7 +104,7 @@ export const ErroReportModal: React.FC<ErroReportModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Reportar um Erro</DialogTitle>
         </DialogHeader>

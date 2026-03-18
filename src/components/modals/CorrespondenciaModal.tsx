@@ -67,7 +67,7 @@ export const CorrespondenciaModal: React.FC<CorrespondenciaModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>{correspondencia ? 'Editar Correspondência' : 'Nova Correspondência'}</DialogTitle>
         </DialogHeader>

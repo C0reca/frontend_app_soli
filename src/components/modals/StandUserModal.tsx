@@ -63,7 +63,7 @@ export const StandUserModal: React.FC<Props> = ({ open, onOpenChange, user }) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>{user ? 'Editar Utilizador Stand' : 'Novo Utilizador Stand'}</DialogTitle>
         </DialogHeader>

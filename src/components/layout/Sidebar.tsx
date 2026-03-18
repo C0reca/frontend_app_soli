@@ -35,6 +35,7 @@ import {
   TrendingUp,
   Inbox,
   MessageSquare,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -82,6 +83,7 @@ const navItems: NavItem[] = [
   { icon: AlertTriangle, label: 'Logs de Erros', path: '/error-logs', adminOnly: true },
   { icon: Settings, label: 'Definições', path: '/definicoes', managerOrAdmin: true },
   { icon: Shield, label: 'Administração', path: '/admin', adminOnly: true },
+  { icon: HelpCircle, label: 'Ajuda Rápida', path: '/ajuda' },
   { icon: Megaphone, label: 'Novidades', path: '/changelog' },
 ];
 

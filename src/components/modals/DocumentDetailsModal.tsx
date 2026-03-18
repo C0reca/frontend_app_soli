@@ -36,7 +36,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             {getFileIcon(document.extensao)}

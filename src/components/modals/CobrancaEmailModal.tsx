@@ -90,7 +90,7 @@ export const CobrancaEmailModal: React.FC<CobrancaEmailModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:min-w-[700px]">
+      <DialogContent className="sm:min-w-[850px]">
         <DialogHeader>
           <DialogTitle>Enviar Email de Cobrança</DialogTitle>
         </DialogHeader>

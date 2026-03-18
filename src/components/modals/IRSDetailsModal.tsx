@@ -687,7 +687,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
         link.download = `recibo_irs_${irs.id}.pdf`;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        link.remove();
         window.URL.revokeObjectURL(url);
       }
       
@@ -917,7 +917,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -1538,7 +1538,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
       {/* Modal de Edição de Incapacidade do Titular */}
       <Dialog open={isEditingIncapacidade} onOpenChange={setIsEditingIncapacidade}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Editar Incapacidade do Titular</DialogTitle>
           </DialogHeader>
@@ -1575,7 +1575,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
       {/* Modal de Edição de Password do Titular */}
       <Dialog open={isEditingPassword} onOpenChange={setIsEditingPassword}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Editar Password Finanças do Titular</DialogTitle>
           </DialogHeader>
@@ -1610,7 +1610,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
       {/* Modal de Edição de IBAN do Titular */}
       <Dialog open={isEditingIBAN} onOpenChange={setIsEditingIBAN}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Editar IBAN do Titular</DialogTitle>
           </DialogHeader>
@@ -1666,7 +1666,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
             setIsEditingMemberIncapacidade(null);
             setSelectedMember(null);
           }}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
                 <DialogTitle>Editar Incapacidade - {getTipoRelacaoLabel(selectedMember.tipoRelacao)}</DialogTitle>
               </DialogHeader>
@@ -1736,7 +1736,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
             setIsEditingMemberPassword(null);
             setSelectedMember(null);
           }}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
                 <DialogTitle>Editar Password Finanças - {getTipoRelacaoLabel(selectedMember.tipoRelacao)}</DialogTitle>
               </DialogHeader>
@@ -1783,7 +1783,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
       {/* Modal de Confirmação de Alteração de Estado de Pagamento */}
       <Dialog open={isConfirmEstadoModalOpen} onOpenChange={setIsConfirmEstadoModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
             <DialogTitle>
               {confirmStep === 1 ? 'Confirmar Alteração de Estado' : 'Confirmação Final'}
@@ -1814,7 +1814,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
       {/* Modal de Seleção de Estado de Pagamento */}
       <Dialog open={isEstadoSelectModalOpen} onOpenChange={setIsEstadoSelectModalOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Alterar Estado de Pagamento</DialogTitle>
             <DialogDescription>
@@ -1860,7 +1860,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
 
       {/* Modal de Alteração de Estado de Entrega */}
       <Dialog open={isEstadoEntregaModalOpen} onOpenChange={setIsEstadoEntregaModalOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Alterar Estado de Entrega</DialogTitle>
             <DialogDescription>

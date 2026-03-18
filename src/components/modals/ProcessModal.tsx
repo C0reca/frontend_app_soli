@@ -339,7 +339,30 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     }, [process, form, initialData]);
 
     useEffect(() => {
-        if (isOpen && !process) setStep(0);
+        if (isOpen && !process) {
+            setStep(0);
+            setSelectedClienteId(undefined);
+            setSelectedTipoProcessoId(null);
+            setCamposPersonalizados({});
+            setShowExtracao(false);
+            setShowManageTypes(false);
+            setNewTypeInput("");
+            setCreatedDossieId(null);
+            form.reset({
+                titulo: initialData?.titulo ?? "",
+                descricao: initialData?.descricao ?? "",
+                tipo: initialData?.tipo ?? "",
+                onde_estao: undefined,
+                cliente_id: initialData?.cliente_id ?? undefined,
+                dossie_id: (initialData as any)?.dossie_id ?? undefined,
+                funcionario_id: initialData?.funcionario_id ?? undefined,
+                titular_id: (initialData as any)?.titular_id ?? null,
+                tipo_processo_id: (initialData as any)?.tipo_processo_id ?? null,
+                parent_processo_id: (initialData as any)?.parent_processo_id ?? null,
+                estado: initialData?.estado ?? "pendente",
+                valor: (initialData as any)?.valor ?? null,
+            });
+        }
     }, [isOpen, process]);
 
     const onSubmit = async (data: ProcessFormData) => {
@@ -778,7 +801,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <div>

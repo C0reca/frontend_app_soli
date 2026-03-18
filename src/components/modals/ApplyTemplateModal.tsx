@@ -97,7 +97,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Aplicar Template</DialogTitle>
         </DialogHeader>

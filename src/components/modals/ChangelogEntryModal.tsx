@@ -97,7 +97,7 @@ export const ChangelogEntryModal: React.FC<ChangelogEntryModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? 'Editar Entrada' : 'Nova Entrada no Changelog'}

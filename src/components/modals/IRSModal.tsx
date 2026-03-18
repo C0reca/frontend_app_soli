@@ -316,7 +316,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
         link.download = `recibo_irs_${irsId}.pdf`;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        link.remove();
         window.URL.revokeObjectURL(url);
       }
       
@@ -887,7 +887,7 @@ export const IRSModal: React.FC<IRSModalProps> = ({ irs, clients, isOpen, onClos
       }}
     >
       <DialogContent 
-        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="max-w-5xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => {
           // Prevenir fechamento ao clicar fora durante navegação
           if (isSubmitting) {

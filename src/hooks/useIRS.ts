@@ -160,7 +160,7 @@ export const useIRS = (emAberto?: boolean) => {
       link.download = `recibo_irs_${id}.pdf`;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
       
       toast({

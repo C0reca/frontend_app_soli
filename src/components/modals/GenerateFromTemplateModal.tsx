@@ -68,7 +68,7 @@ export const GenerateFromTemplateModal: React.FC<GenerateFromTemplateModalProps>
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Gerar Documento a partir de Template</DialogTitle>
         </DialogHeader>

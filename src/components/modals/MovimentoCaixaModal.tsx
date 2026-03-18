@@ -182,7 +182,7 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[750px]">
         <DialogHeader>
           <DialogTitle>
             {mode === 'edit' ? 'Editar Movimento de Caixa' : 'Novo Movimento de Caixa'}

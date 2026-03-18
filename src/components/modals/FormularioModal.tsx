@@ -67,7 +67,7 @@ export const FormularioModal: React.FC<Props> = ({ open, onOpenChange, processoI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Novo Formulário Público</DialogTitle>
         </DialogHeader>

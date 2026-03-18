@@ -138,30 +138,20 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
     if (!process) return;
     setGerandoCapa(true);
     try {
-      if (capaTemplate) {
-        // Use template system
-        await generateDocument.mutateAsync({
-          templateId: capaTemplate.id,
-          processoId: process.id,
-          solicitadorId,
-        });
-      } else {
-        // Fallback: hardcoded PDF endpoint
-        const response = await api.get(`/processos/${process.id}/capa-pdf`, {
-          params: { solicitador_id: solicitadorId },
-          responseType: 'blob',
-        });
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `capa_processo_${process.id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        toast({ title: 'Capa gerada com sucesso' });
-      }
+      const response = await api.get(`/processos/${process.id}/capa-pdf`, {
+        params: { solicitador_id: solicitadorId },
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `capa_processo_${process.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast({ title: 'Capa gerada com sucesso' });
     } catch (err) {
       console.error('Erro ao gerar capa:', err);
       toast({ title: 'Erro ao gerar capa', description: 'Tente novamente.', variant: 'destructive' });
@@ -480,7 +470,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-h-[90vh] overflow-hidden [&>button]:hidden transition-all p-0 ${showIA ? 'max-w-[1400px]' : 'max-w-5xl'}`}>
+      <DialogContent className={`max-h-[90vh] overflow-hidden [&>button]:hidden transition-all p-0 ${showIA ? 'max-w-[1400px]' : 'max-w-6xl'}`}>
         <div className="flex h-full">
         <div className={`flex-1 min-w-0 p-6 flex flex-col overflow-hidden`}>
         <DialogHeader>

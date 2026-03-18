@@ -83,7 +83,7 @@ export const TalaoPreviewModal: React.FC<TalaoPreviewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Preview do Talão</DialogTitle>
         </DialogHeader>

@@ -77,7 +77,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, t
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>{template ? 'Editar Template' : 'Novo Template'}</DialogTitle>
           <DialogDescription>

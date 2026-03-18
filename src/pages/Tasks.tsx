@@ -45,6 +45,8 @@ export const Tasks: React.FC = () => {
     tipo: 'all',
     atrasadas: false,
     showConcluidas: false,
+    dataInicio: '',
+    dataFim: '',
   });
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -130,11 +132,31 @@ export const Tasks: React.FC = () => {
     const matchesTipo = filters.tipo === 'all' || 
       task.tipo === filters.tipo;
     
-    const matchesAtrasadas = !filters.atrasadas || 
+    const matchesAtrasadas = !filters.atrasadas ||
       isOverdue(task.data_fim, task.concluida);
-    
-    return matchesSearch && matchesStatus && matchesResponsavel && 
-           matchesPrioridade && matchesTipo && matchesAtrasadas;
+
+    let matchesDateRange = true;
+    if (filters.dataInicio || filters.dataFim) {
+      const taskDate = task.data_fim ? new Date(task.data_fim) : null;
+      if (!taskDate) {
+        matchesDateRange = false;
+      } else {
+        taskDate.setHours(0, 0, 0, 0);
+        if (filters.dataInicio) {
+          const start = new Date(filters.dataInicio);
+          start.setHours(0, 0, 0, 0);
+          if (taskDate < start) matchesDateRange = false;
+        }
+        if (filters.dataFim) {
+          const end = new Date(filters.dataFim);
+          end.setHours(23, 59, 59, 999);
+          if (taskDate > end) matchesDateRange = false;
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesResponsavel &&
+           matchesPrioridade && matchesTipo && matchesAtrasadas && matchesDateRange;
   };
 
   // First, filter main tasks (tasks without parent)
@@ -471,6 +493,8 @@ export const Tasks: React.FC = () => {
       tipo: 'all',
       atrasadas: false,
       showConcluidas: false,
+      dataInicio: '',
+      dataFim: '',
     });
   };
 
@@ -522,7 +546,7 @@ export const Tasks: React.FC = () => {
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
             <button
               type="button"
-              onClick={() => setFilters({ status: 'pendentes', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: false, showConcluidas: true })}
+              onClick={() => setFilters({ status: 'pendentes', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: false, showConcluidas: true, dataInicio: '', dataFim: '' })}
               className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
             >
               <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
@@ -533,7 +557,7 @@ export const Tasks: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setFilters({ status: 'all', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: true, showConcluidas: true })}
+              onClick={() => setFilters({ status: 'all', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: true, showConcluidas: true, dataInicio: '', dataFim: '' })}
               className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
             >
               <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
@@ -544,7 +568,7 @@ export const Tasks: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setFilters({ status: 'concluidas', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: false, showConcluidas: true })}
+              onClick={() => setFilters({ status: 'concluidas', responsavel: 'all', prioridade: 'all', tipo: 'all', atrasadas: false, showConcluidas: true, dataInicio: '', dataFim: '' })}
               className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow"
             >
               <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
@@ -571,19 +595,12 @@ export const Tasks: React.FC = () => {
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="searchInFullContent"
-                checked={searchInFullContent}
-                onCheckedChange={(checked) => setSearchInFullContent(!!checked)}
-              />
-              <label htmlFor="searchInFullContent" className="cursor-pointer">Pesquisar na descrição</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+          {/* Linha de filtros: dropdowns */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Estado</label>
               <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger className="w-[110px] h-8 text-xs">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -593,55 +610,94 @@ export const Tasks: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
-              <SelectTrigger className="w-[130px] h-8 text-xs">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {employees.map(emp => (
-                  <SelectItem key={emp.id} value={emp.id.toString()}>{emp.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
-              <SelectTrigger className="w-[95px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="baixa">Baixa</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
-              <SelectTrigger className="w-[110px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="reuniao">Reunião</SelectItem>
-                <SelectItem value="telefonema">Telefonema</SelectItem>
-                <SelectItem value="tarefa">Compromisso</SelectItem>
-                <SelectItem value="correspondencia_ctt">Correspondência CTT</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Responsável</label>
+              <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {employees.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id.toString()}>{emp.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Prioridade</label>
+              <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="media">Média</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Tipo</label>
+              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="reuniao">Reunião</SelectItem>
+                  <SelectItem value="telefonema">Telefonema</SelectItem>
+                  <SelectItem value="tarefa">Compromisso</SelectItem>
+                  <SelectItem value="correspondencia_ctt">Correspondência CTT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Linha de filtros: datas + checkboxes */}
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-2 mt-3 text-sm">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Prazo de</label>
+              <Input
+                type="date"
+                value={filters.dataInicio}
+                onChange={(e) => setFilters(prev => ({ ...prev, dataInicio: e.target.value }))}
+                className="w-[140px] h-8 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Prazo até</label>
+              <Input
+                type="date"
+                value={filters.dataFim}
+                onChange={(e) => setFilters(prev => ({ ...prev, dataFim: e.target.value }))}
+                className="w-[140px] h-8 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-2 h-8">
+              <Checkbox
+                id="searchInFullContent"
+                checked={searchInFullContent}
+                onCheckedChange={(checked) => setSearchInFullContent(!!checked)}
+              />
+              <label htmlFor="searchInFullContent" className="cursor-pointer whitespace-nowrap text-xs">Pesquisar na descrição</label>
+            </div>
+            <div className="flex items-center gap-2 h-8">
               <Checkbox
                 id="atrasadas"
                 checked={filters.atrasadas}
                 onCheckedChange={(checked) => setFilters(prev => ({ ...prev, atrasadas: !!checked }))}
               />
-              <label htmlFor="atrasadas" className="cursor-pointer whitespace-nowrap">Atrasadas</label>
+              <label htmlFor="atrasadas" className="cursor-pointer whitespace-nowrap text-xs">Só atrasadas</label>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 h-8">
               <Checkbox
                 id="showConcluidas"
                 checked={filters.showConcluidas}
                 onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidas: !!checked }))}
               />
-              <label htmlFor="showConcluidas" className="cursor-pointer whitespace-nowrap">Mostrar concluídos</label>
+              <label htmlFor="showConcluidas" className="cursor-pointer whitespace-nowrap text-xs">Mostrar concluídos</label>
             </div>
           </div>
         </CardContent>

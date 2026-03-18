@@ -246,7 +246,7 @@ export const ServicosExternos: React.FC = () => {
           setTimeout(() => {
             iframe.contentWindow?.focus();
             iframe.contentWindow?.print();
-            document.body.removeChild(iframe);
+            iframe.remove();
           }, 150);
         };
       }

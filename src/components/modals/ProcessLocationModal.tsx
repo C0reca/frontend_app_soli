@@ -54,7 +54,7 @@ export const ProcessLocationModal: React.FC<ProcessLocationModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[680px]">
         <DialogHeader>
           <DialogTitle>Alterar Localização do Processo</DialogTitle>
           <DialogDescription>

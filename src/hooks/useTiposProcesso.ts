@@ -57,12 +57,40 @@ export interface WizardConfig {
   custom_fields?: CustomFieldDef[];
 }
 
+export interface RegraValidacao {
+  id: string;
+  nome: string;
+  descricao?: string;
+  categoria?: string; // identidade, fiscal, registral, poderes, compliance, geral
+  campo_condicao?: string; // campo que ativa a regra
+  valor_condicao?: string | string[]; // valor(es) que ativam a regra
+}
+
+export interface DocObrigatorio {
+  id: string;
+  nome: string;
+  descricao?: string;
+  keyword?: string; // keyword para verificar no nome do documento
+  obrigatorio_para_estado?: string; // estado workflow que exige este doc
+}
+
+export interface BloqueioConfig {
+  id: string;
+  tipo: 'checklist_completa' | 'validacoes_completas' | 'docs_obrigatorios';
+  bloqueia_estado: string; // estado que fica bloqueado
+  mensagem: string;
+}
+
 export interface TipoProcesso {
   id: number;
   nome: string;
   descricao?: string;
   ativo: boolean;
   wizard_config?: WizardConfig | null;
+  estados_workflow?: string[] | null;
+  regras_validacao?: RegraValidacao[] | null;
+  docs_obrigatorios?: DocObrigatorio[] | null;
+  bloqueios?: BloqueioConfig[] | null;
   checklist_items: ChecklistItem[];
   orcamento_items: OrcamentoItem[];
   documento_templates: DocTemplateItem[];
@@ -75,6 +103,7 @@ export interface TipoProcessoSimple {
   descricao?: string;
   ativo: boolean;
   wizard_config?: WizardConfig | null;
+  estados_workflow?: string[] | null;
 }
 
 export const useTiposProcesso = (ativo?: boolean) => {

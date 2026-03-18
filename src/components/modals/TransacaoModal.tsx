@@ -146,7 +146,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[600px] overflow-x-hidden">
+      <DialogContent className="sm:max-w-[750px] overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Editar Transacao' : 'Nova Transacao Financeira'}</DialogTitle>
         </DialogHeader>

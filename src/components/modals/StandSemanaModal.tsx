@@ -39,7 +39,7 @@ export const StandSemanaModal: React.FC<Props> = ({ isOpen, onClose, semana, onF
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Calendar className="h-5 w-5" />

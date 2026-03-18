@@ -107,7 +107,7 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Detalhes da Transacao</DialogTitle>
         </DialogHeader>

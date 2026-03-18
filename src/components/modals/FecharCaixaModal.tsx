@@ -60,7 +60,7 @@ export const FecharCaixaModal: React.FC<FecharCaixaModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[680px]">
         <DialogHeader>
           <DialogTitle>Fechar Caixa</DialogTitle>
           <DialogDescription>

@@ -37,6 +37,7 @@ import { Changelog } from "@/pages/Changelog";
 import { Settings } from "@/pages/Settings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import BaseConhecimento from "@/pages/BaseConhecimento";
+import { AjudaRapida } from "@/pages/AjudaRapida";
 import { DocumentExtraction } from "@/pages/DocumentExtraction";
 import { TemplatesLixeira } from "@/pages/TemplatesLixeira";
 import { CorrespondenciaPage } from "@/pages/Correspondencia";
@@ -132,6 +133,7 @@ const AppRoutes = () => {
         <Route path="definicoes" element={<ManagerRoute><Settings /></ManagerRoute>} />
         <Route path="assistente-documentos" element={<DocumentExtraction />} />
         <Route path="base-conhecimento" element={<BaseConhecimento />} />
+        <Route path="ajuda" element={<AjudaRapida />} />
         <Route path="correspondencia" element={<CorrespondenciaPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="modo-trabalho" element={<WorkModePage />} />

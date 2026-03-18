@@ -297,7 +297,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
     // Preserve hook order by placing conditional return after hooks
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[750px]">
           <DialogHeader>
             <DialogTitle>Detalhes do Compromisso</DialogTitle>
             <DialogDescription className="sr-only">Nenhum compromisso selecionado.</DialogDescription>
@@ -311,7 +311,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <DialogDescription className="sr-only">Detalhes do compromisso: {displayTask.titulo}</DialogDescription>
           <div className="flex items-center justify-between">

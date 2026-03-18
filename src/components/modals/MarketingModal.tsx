@@ -51,7 +51,7 @@ export const MarketingModal: React.FC<MarketingModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent className="sm:max-w-[580px]">
         <DialogHeader>
           <DialogTitle>{interacao ? 'Editar Interação' : 'Nova Interação de Marketing'}</DialogTitle>
         </DialogHeader>

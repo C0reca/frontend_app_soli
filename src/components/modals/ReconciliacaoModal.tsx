@@ -45,7 +45,7 @@ export const ReconciliacaoModal: React.FC<ReconciliacaoModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { setSelectedId(null); onClose(); } }}>
-      <DialogContent className="sm:max-w-[650px]">
+      <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Reconciliar Movimento Bancario</DialogTitle>
         </DialogHeader>

@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, GripVertical, CheckSquare, DollarSign, FileText, ListTodo, Layers } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, CheckSquare, DollarSign, FileText, ListTodo, Layers, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useTiposProcesso,
   useTipoProcesso,
@@ -18,7 +19,11 @@ import {
   DocTemplateItem,
   TarefaItem,
   WizardConfig,
+  RegraValidacao,
+  DocObrigatorio,
+  BloqueioConfig,
 } from '@/hooks/useTiposProcesso';
+import { WorkflowRulesEditor } from './WorkflowRulesEditor';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import { WizardBlockEditor } from './WizardBlockEditor';
@@ -109,6 +114,13 @@ export const TiposProcessoManager: React.FC = () => {
 
 // ── Form Modal ──────────────────────────────────────────────────────────
 
+const HelpTip: React.FC<{ text: string }> = ({ text }) => (
+  <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3 text-xs text-blue-800">
+    <HelpCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+    <span>{text}</span>
+  </div>
+);
+
 interface TipoProcessoFormModalProps {
   tipoId: number | null;
   onClose: () => void;
@@ -135,6 +147,10 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
   const [docTemplateItems, setDocTemplateItems] = useState<DocTemplateItem[]>([]);
   const [tarefas, setTarefas] = useState<TarefaItem[]>([]);
   const [wizardConfig, setWizardConfig] = useState<WizardConfig | null>(null);
+  const [estadosWorkflow, setEstadosWorkflow] = useState<string[]>([]);
+  const [regrasValidacao, setRegrasValidacao] = useState<RegraValidacao[]>([]);
+  const [docsObrigatorios, setDocsObrigatorios] = useState<DocObrigatorio[]>([]);
+  const [bloqueios, setBloqueios] = useState<BloqueioConfig[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Populate when editing
@@ -148,6 +164,10 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
       setDocTemplateItems(existing.documento_templates || []);
       setTarefas(existing.tarefas || []);
       setWizardConfig(existing.wizard_config || null);
+      setEstadosWorkflow(existing.estados_workflow || []);
+      setRegrasValidacao(existing.regras_validacao || []);
+      setDocsObrigatorios(existing.docs_obrigatorios || []);
+      setBloqueios(existing.bloqueios || []);
     }
   }, [existing, tipoId]);
 
@@ -160,6 +180,10 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
         descricao: descricao.trim() || undefined,
         ativo,
         wizard_config: wizardConfig,
+        estados_workflow: estadosWorkflow.length > 0 ? estadosWorkflow : null,
+        regras_validacao: regrasValidacao.length > 0 ? regrasValidacao : null,
+        docs_obrigatorios: docsObrigatorios.length > 0 ? docsObrigatorios : null,
+        bloqueios: bloqueios.length > 0 ? bloqueios : null,
         checklist_items: checklist.map((c, i) => ({ titulo: c.titulo, descricao: c.descricao, ordem: i })),
         orcamento_items: orcamento.map((o, i) => ({ descricao: o.descricao, valor: o.valor, ordem: i })),
         documento_templates: docTemplateItems.map((d, i) => ({ documento_template_id: d.documento_template_id, ordem: i })),
@@ -195,10 +219,14 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
         </div>
 
         <Tabs defaultValue="wizard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="wizard" className="text-xs gap-1">
               <Layers className="h-3.5 w-3.5" />
               Wizard
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="text-xs gap-1">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Workflow
             </TabsTrigger>
             <TabsTrigger value="checklist-tarefas" className="text-xs gap-1">
               <CheckSquare className="h-3.5 w-3.5" />
@@ -216,11 +244,29 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
 
           {/* ── Tab: Wizard ─────────────────────────────────────────── */}
           <TabsContent value="wizard" className="mt-4">
+            <HelpTip text="Arraste blocos da paleta para os passos do formulário. Cada passo aparece como um ecrã no wizard de criação. Pode criar campos personalizados (texto, número, data, lista) para recolher informação específica deste tipo de processo." />
             <WizardBlockEditor value={wizardConfig} onChange={setWizardConfig} />
+          </TabsContent>
+
+          {/* ── Tab: Workflow & Regras ─────────────────────────────── */}
+          <TabsContent value="workflow" className="mt-4">
+            <HelpTip text="Configure os estados pelos quais o processo passa (ex: Rascunho → Validado → Autenticado → Registado), regras de validação com semáforo (identidade, fiscal, poderes...), documentos obrigatórios por estado, e bloqueios que impedem avançar sem cumprir condições." />
+            <WorkflowRulesEditor
+              estadosWorkflow={estadosWorkflow}
+              onEstadosChange={setEstadosWorkflow}
+              regrasValidacao={regrasValidacao}
+              onRegrasChange={setRegrasValidacao}
+              docsObrigatorios={docsObrigatorios}
+              onDocsChange={setDocsObrigatorios}
+              bloqueios={bloqueios}
+              onBloqueiosChange={setBloqueios}
+              customFields={wizardConfig?.custom_fields?.map(f => ({ key: f.key, label: f.label })) || []}
+            />
           </TabsContent>
 
           {/* ── Tab: Checklist & Tarefas ────────────────────────────── */}
           <TabsContent value="checklist-tarefas" className="mt-4 space-y-6">
+            <HelpTip text="A Checklist define itens de verificação criados automaticamente em cada processo deste tipo. As Tarefas são compromissos criados automaticamente (com prazo opcional em dias após abertura do processo)." />
             {/* Checklist */}
             <CollectionEditor
               title="Checklist"
@@ -317,6 +363,7 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
 
           {/* ── Tab: Orcamento ──────────────────────────────────────── */}
           <TabsContent value="orcamento" className="mt-4">
+            <HelpTip text="Valores financeiros previstos para este tipo de processo. São criados automaticamente como transações financeiras (estado 'previsto') quando o processo é aberto." />
             <CollectionEditor
               title="Orcamento Base"
               icon={<DollarSign className="h-4 w-4" />}
@@ -337,6 +384,7 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
 
           {/* ── Tab: Documentos ─────────────────────────────────────── */}
           <TabsContent value="documentos" className="mt-4">
+            <HelpTip text="Templates de documento que são gerados automaticamente quando o processo é criado. As variáveis (ex: {{entidade.nome}}) são substituídas pelos dados reais. Crie os templates em 'Templates Docs' primeiro." />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium">
