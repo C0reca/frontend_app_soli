@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1006,7 +1006,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <ResizableDialogContent storageKey="client-details" defaultWidth={1024} defaultHeight={Math.round(window.innerHeight * 0.85)} minWidth={500} minHeight={400} className="max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogDescription className="sr-only">
             Detalhes do cliente {getEffectiveTipo(client) === 'singular' ? (client as any).nome : (client as any).nome_empresa}
@@ -1087,7 +1087,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </Card>
           )}
         </div>
-      </DialogContent>
+      </ResizableDialogContent>
 
       {client && (
         <DossieModal

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -99,7 +99,7 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <ResizableDialogContent storageKey="log-details" defaultWidth={768} defaultHeight={Math.round(window.innerHeight * 0.8)} minWidth={400} minHeight={300} className="max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Detalhes do Registo</span>
@@ -292,7 +292,7 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
               Fechar
             </Button>
           </div>
-        </DialogContent>
+        </ResizableDialogContent>
       </Dialog>
 
       <LogProcessoModal

@@ -3,6 +3,7 @@ import React from 'react';
 import {
   Dialog,
   DialogContent,
+  ResizableDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -71,7 +72,7 @@ export const RegistoAutomovelDetailsModal: React.FC<Props> = ({ isOpen, onClose,
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <ResizableDialogContent storageKey="registo-automovel-details" defaultWidth={768} defaultHeight={Math.round(window.innerHeight * 0.8)} minWidth={400} minHeight={300} className="max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Car className="h-5 w-5" />
@@ -326,7 +327,7 @@ export const RegistoAutomovelDetailsModal: React.FC<Props> = ({ isOpen, onClose,
             <Button variant="outline" onClick={onClose}>Fechar</Button>
           </div>
         </div>
-      </DialogContent>
+      </ResizableDialogContent>
     </Dialog>
   );
 };

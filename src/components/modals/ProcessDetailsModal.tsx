@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -470,10 +470,10 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-h-[90vh] overflow-hidden [&>button]:hidden transition-all p-0 ${showIA ? 'max-w-[1400px]' : 'max-w-6xl'}`}>
-        <div className="flex h-full">
-        <div className={`flex-1 min-w-0 p-6 flex flex-col overflow-hidden`}>
-        <DialogHeader>
+      <ResizableDialogContent storageKey="process-details" defaultWidth={1152} defaultHeight={Math.round(window.innerHeight * 0.9)} minWidth={600} minHeight={400} className={`max-h-[95vh] !grid-rows-[1fr] overflow-hidden [&>button]:hidden transition-all p-0`}>
+        <div className="flex h-full min-h-0 overflow-hidden">
+        <div className={`flex-1 min-w-0 p-6 flex flex-col min-h-0 overflow-hidden`}>
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="flex items-center space-x-2">
@@ -555,7 +555,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="flex gap-4 overflow-hidden" style={{ height: 'calc(90vh - 120px)' }}>
+        <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
         <div className="w-full overflow-y-auto space-y-6">
           <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -1637,7 +1637,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
         )}
         </div>{/* end flex container */}
-      </DialogContent>
+      </ResizableDialogContent>
 
       <TaskDetailsModal isOpen={isTaskDetailsOpen} onClose={() => setIsTaskDetailsOpen(false)} task={selectedTask} />
       <TaskModal

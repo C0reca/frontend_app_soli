@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Dialog,
   DialogContent,
+  ResizableDialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -72,7 +73,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+      <ResizableDialogContent storageKey="document-preview" defaultWidth={1024} defaultHeight={Math.round(window.innerHeight * 0.85)} minWidth={500} minHeight={400} className="max-h-[95vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {getFileIcon(document.extensao)}
@@ -189,7 +190,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             </Button>
           </div>
         </div>
-      </DialogContent>
+      </ResizableDialogContent>
     </Dialog>
   );
 };

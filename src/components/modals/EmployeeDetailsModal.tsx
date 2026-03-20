@@ -1,6 +1,6 @@
 import React from 'react';
 import { Employee } from '@/hooks/useEmployees';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Mail, Phone, Briefcase, Building, Calendar, Shield, Power } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -19,7 +19,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[650px]">
+      <ResizableDialogContent storageKey="employee-details" defaultWidth={650} defaultHeight={Math.round(window.innerHeight * 0.7)} minWidth={400} minHeight={300} className="max-h-[95vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Detalhes do Funcionário
@@ -98,7 +98,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
             </div>
           </div>
         </div>
-      </DialogContent>
+      </ResizableDialogContent>
     </Dialog>
   );
 };

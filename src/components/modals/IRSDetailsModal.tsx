@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -917,7 +917,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <ResizableDialogContent storageKey="irs-details" defaultWidth={1024} defaultHeight={Math.round(window.innerHeight * 0.85)} minWidth={600} minHeight={400} className="max-h-[95vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -1534,7 +1534,7 @@ export const IRSDetailsModal: React.FC<IRSDetailsModalProps> = ({
             </Card>
           </TabsContent>
         </Tabs>
-      </DialogContent>
+      </ResizableDialogContent>
 
       {/* Modal de Edição de Incapacidade do Titular */}
       <Dialog open={isEditingIncapacidade} onOpenChange={setIsEditingIncapacidade}>

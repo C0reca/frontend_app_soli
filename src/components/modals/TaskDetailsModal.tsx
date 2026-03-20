@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { CheckSquare, Clock, AlertCircle, Calendar, User, Building, Download, Edit, X, MapPin, CalendarClock, Folder, UserPlus, DollarSign, Repeat, Bell } from 'lucide-react';
 import { Task, useTasks } from '@/hooks/useTasks';
@@ -311,7 +311,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <ResizableDialogContent storageKey="task-details" defaultWidth={950} defaultHeight={Math.round(window.innerHeight * 0.85)} minWidth={500} minHeight={400} className="max-h-[95vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
           <DialogDescription className="sr-only">Detalhes do compromisso: {displayTask.titulo}</DialogDescription>
           <div className="flex items-center justify-between">
@@ -753,9 +753,9 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             </div>
           </div>
         </div>
-      </DialogContent>
-      <TaskModal 
-        isOpen={isSubtaskModalOpen} 
+      </ResizableDialogContent>
+      <TaskModal
+        isOpen={isSubtaskModalOpen}
         onClose={() => setIsSubtaskModalOpen(false)} 
         parentId={Number(currentTask.id)}
         initialData={{

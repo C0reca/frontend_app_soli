@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Trash2, Upload } from 'lucide-react';
@@ -107,7 +107,7 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[700px]">
+      <ResizableDialogContent storageKey="transacao-details" defaultWidth={700} defaultHeight={Math.round(window.innerHeight * 0.7)} minWidth={400} minHeight={300} className="max-h-[95vh]">
         <DialogHeader>
           <DialogTitle>Detalhes da Transacao</DialogTitle>
         </DialogHeader>
@@ -194,7 +194,7 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
         ) : (
           <div className="py-8 text-center text-muted-foreground">Transacao nao encontrada.</div>
         )}
-      </DialogContent>
+      </ResizableDialogContent>
     </Dialog>
   );
 };

@@ -4,6 +4,7 @@ import api from '@/services/api';
 import {
   Dialog,
   DialogContent,
+  ResizableDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -84,7 +85,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <ResizableDialogContent storageKey="registo-predial-details" defaultWidth={768} defaultHeight={Math.round(window.innerHeight * 0.8)} minWidth={400} minHeight={300} className="max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Building className="h-5 w-5" />
@@ -242,7 +243,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
             </Button>
           </div>
         </div>
-      </DialogContent>
+      </ResizableDialogContent>
     </Dialog>
   );
 };
