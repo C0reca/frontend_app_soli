@@ -58,6 +58,7 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [createdTaskIds, setCreatedTaskIds] = useState<Set<string>>(new Set());
+  const [loadFromDb, setLoadFromDb] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -72,10 +73,11 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
   const criarTarefasMutation = useCriarTarefasIA();
 
   useEffect(() => {
-    if (conversaDetail?.mensagens) {
+    if (loadFromDb && conversaDetail?.mensagens) {
       setLocalMessages(conversaDetail.mensagens);
+      setLoadFromDb(false);
     }
-  }, [conversaDetail]);
+  }, [conversaDetail, loadFromDb]);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -137,6 +139,8 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
         conversa_id: activeId,
       });
       setLocalMessages(prev => [...prev, { role: 'assistant', content: result.resposta }]);
+      // Após guardar com sucesso, sincronizar com a BD na próxima invalidação
+      setLoadFromDb(true);
     } catch (err: any) {
       setLocalMessages(prev => [
         ...prev,
@@ -346,7 +350,7 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
             {conversas.map(c => (
               <div
                 key={c.id}
-                onClick={() => { setConversaAtiva(c.id); setShowSidebar(false); }}
+                onClick={() => { setConversaAtiva(c.id); setLoadFromDb(true); setShowSidebar(false); }}
                 className={`group flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent transition-colors text-sm ${
                   conversaAtiva === c.id ? 'bg-accent' : ''
                 }`}
