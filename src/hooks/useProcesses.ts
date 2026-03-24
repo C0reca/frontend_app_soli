@@ -46,6 +46,13 @@ export interface Process {
   autorizados?: { id: number; nome: string }[];
   valor?: number | null;
   estado_workflow?: string | null;
+  entidades_secundarias?: {
+    id: number;
+    cliente_id?: number;
+    entidade_externa_id?: number;
+    tipo_participacao?: string;
+    nome?: string;
+  }[];
 }
 
 export const useProcesses = () => {

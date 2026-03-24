@@ -401,9 +401,25 @@ export const Processes: React.FC = () => {
                         <div>
                           <span className="font-medium">Titular:</span> {process.titular?.nome || 'Não atribuído'}
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <span className="font-medium">Localização:</span> {(process as any).onde_estao === 'Tarefas' ? 'Pendentes' : ((process as any).onde_estao || '-')}
                         </div>
+                        {process.entidades_secundarias && process.entidades_secundarias.length > 0 ? (
+                          <div>
+                              <span className="font-medium">Entidades Sec.:</span>{' '}
+                              {process.entidades_secundarias.map((ent, idx) => (
+                                <span key={ent.id}>
+                                  {ent.nome || `ID ${ent.cliente_id || ent.entidade_externa_id}`}
+                                  {ent.tipo_participacao && (
+                                    <span className="text-xs text-gray-400 ml-0.5">({ent.tipo_participacao})</span>
+                                  )}
+                                  {idx < (process.entidades_secundarias?.length ?? 0) - 1 && ', '}
+                                </span>
+                              ))}
+                          </div>
+                        ) : (
+                          <div />
+                        )}
                         <div>
                           <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
                         </div>
