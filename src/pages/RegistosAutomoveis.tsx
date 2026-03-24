@@ -14,8 +14,12 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Search, Car, Eye, Edit, Trash2, X, Calendar, Lock, CheckCircle, Clock,
-  ChevronLeft, ChevronRight, List,
+  ChevronLeft, ChevronRight, List, FileDown, CalendarDays,
 } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useRegistosAutomoveis, RegistoAutomovel } from '@/hooks/useRegistosAutomoveis';
 import { useStandSemanas, StandSemana } from '@/hooks/useStandSemanas';
 import { useClients } from '@/hooks/useClients';
@@ -25,6 +29,7 @@ import { StandSemanaModal } from '@/components/modals/StandSemanaModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
+import api from '@/services/api';
 
 // Helper: get Monday of a given date's week
 function getMonday(d: Date): Date {
@@ -139,6 +144,29 @@ export const RegistosAutomoveis: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedRegisto(null);
     setIsModalOpen(false);
+  };
+
+  const handleExport = async (periodo: 'dia' | 'semana', formato: 'pdf' | 'csv', dataRef?: Date) => {
+    try {
+      const refDate = dataRef || new Date();
+      const refStr = formatDateISO(refDate);
+      const endpoint = formato === 'pdf' ? '/registos-automoveis/exportar-pdf' : '/registos-automoveis/exportar-csv';
+      const response = await api.get(endpoint, {
+        params: { periodo, data_ref: refStr },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      const ext = formato === 'pdf' ? 'pdf' : 'csv';
+      link.setAttribute('download', `registos_automoveis_${periodo}_${refStr}.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      console.error('Erro ao exportar relatório');
+    }
   };
 
   const getEstadoClasses = (estado?: string) => {
@@ -386,12 +414,43 @@ export const RegistosAutomoveis: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Registos Automóveis</h1>
           <p className="text-gray-600">Gestão de transferências de propriedade de veículos</p>
         </div>
-        {canCreate("registos_automoveis") && (
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Registo
-          </Button>
-        )}
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Relatório do Dia</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleExport('dia', 'pdf')}>
+                <Calendar className="mr-2 h-4 w-4" />
+                PDF do Dia
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('dia', 'csv')}>
+                <Calendar className="mr-2 h-4 w-4" />
+                CSV do Dia
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Relatório da Semana</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleExport('semana', 'pdf')}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                PDF da Semana
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('semana', 'csv')}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                CSV da Semana
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {canCreate("registos_automoveis") && (
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Registo
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="registos">
@@ -530,9 +589,27 @@ export const RegistosAutomoveis: React.FC = () => {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <h2 className="text-lg font-semibold text-gray-700">
-              {selectedDate.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-700">
+                {selectedDate.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </h2>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FileDown className="mr-1.5 h-3.5 w-3.5" />
+                    Exportar Dia
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExport('dia', 'pdf', selectedDate)}>
+                    PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('dia', 'csv', selectedDate)}>
+                    CSV
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           <GroupedListing
@@ -564,6 +641,22 @@ export const RegistosAutomoveis: React.FC = () => {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <FileDown className="mr-1.5 h-3.5 w-3.5" />
+                  Exportar Semana
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('semana', 'pdf', selectedWeekStart)}>
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('semana', 'csv', selectedWeekStart)}>
+                  CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <GroupedListing

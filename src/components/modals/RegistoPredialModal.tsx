@@ -219,14 +219,14 @@ export const RegistoPredialModal: React.FC<RegistoPredialModalProps> = ({
           freguesia: p.freguesia || undefined,
           codigo_certidao_permanente: p.codigo_certidao_permanente || undefined,
         })),
-        registo: data.registo,
-        conservatoria: data.conservatoria,
-        requisicao: data.requisicao,
-        apresentacao: data.apresentacao,
-        data: data.data,
-        apresentacao_complementar: data.apresentacao_complementar,
-        outras_observacoes: data.outras_observacoes,
-        estado: data.estado,
+        registo: data.registo || undefined,
+        conservatoria: data.conservatoria || undefined,
+        requisicao: data.requisicao || undefined,
+        apresentacao: data.apresentacao || undefined,
+        data: data.data || undefined,
+        apresentacao_complementar: data.apresentacao_complementar || undefined,
+        outras_observacoes: data.outras_observacoes || undefined,
+        estado: data.estado || undefined,
       };
 
       if (isEditing && registo) {

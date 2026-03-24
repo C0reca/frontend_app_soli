@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye, Archive, X } from 'lucide-react';
+import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye, Archive, X, FileDown, Calendar, CalendarDays } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
 import { useClients } from '@/hooks/useClients';
 import { RegistoPredialModal } from '@/components/modals/RegistoPredialModal';
@@ -12,6 +13,7 @@ import { RegistoPredialDetailsModal } from '@/components/modals/RegistoPredialDe
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
+import api from '@/services/api';
 
 export const RegistosPrediais: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
@@ -66,8 +68,6 @@ export const RegistosPrediais: React.FC = () => {
       case 'recusado':
         return 'bg-red-100 text-red-800';
       case 'em_registo':
-        return 'bg-orange-100 text-orange-800';
-      case 'em_curso':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -83,8 +83,6 @@ export const RegistosPrediais: React.FC = () => {
       case 'recusado':
         return 'border-red-200 bg-red-50';
       case 'em_registo':
-        return 'border-orange-200 bg-orange-50';
-      case 'em_curso':
         return 'border-blue-200 bg-blue-50';
       default:
         return '';
@@ -101,8 +99,6 @@ export const RegistosPrediais: React.FC = () => {
         return 'Recusado';
       case 'em_registo':
         return 'Em Registo';
-      case 'em_curso':
-        return 'Em Curso';
       default:
         return 'Desconhecido';
     }
@@ -117,9 +113,7 @@ export const RegistosPrediais: React.FC = () => {
       case 'recusado':
         return <XCircle className="h-4 w-4 text-red-600" />;
       case 'em_registo':
-        return <Clock className="h-4 w-4 text-orange-600" />;
-      case 'em_curso':
-        return <Building className="h-4 w-4 text-blue-600" />;
+        return <Clock className="h-4 w-4 text-blue-600" />;
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-600" />;
     }
@@ -160,6 +154,28 @@ export const RegistosPrediais: React.FC = () => {
     setIsDetailsModalOpen(false);
   };
 
+  const handleExport = async (periodo: 'dia' | 'semana', formato: 'pdf' | 'csv') => {
+    try {
+      const hoje = new Date().toISOString().split('T')[0];
+      const endpoint = formato === 'pdf' ? '/registos/exportar-pdf' : '/registos/exportar-csv';
+      const response = await api.get(endpoint, {
+        params: { periodo, data_ref: hoje },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      const ext = formato === 'pdf' ? 'pdf' : 'csv';
+      link.setAttribute('download', `registos_prediais_${periodo}_${hoje}.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      console.error('Erro ao exportar relatório');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -184,18 +200,49 @@ export const RegistosPrediais: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Registos Prediais</h1>
           <p className="text-gray-600">Gerencie os registos prediais</p>
         </div>
-        {canCreate("registos_prediais") && (
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Registo
-          </Button>
-        )}
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Relatório do Dia</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleExport('dia', 'pdf')}>
+                <Calendar className="mr-2 h-4 w-4" />
+                PDF do Dia
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('dia', 'csv')}>
+                <Calendar className="mr-2 h-4 w-4" />
+                CSV do Dia
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Relatório da Semana</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleExport('semana', 'pdf')}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                PDF da Semana
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('semana', 'csv')}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                CSV da Semana
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {canCreate("registos_prediais") && (
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Registo
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Estatísticas + Filtros e Pesquisa (zona comprimida) */}
       <Card className="overflow-hidden">
         <CardContent className="p-3 sm:p-4">
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
             <button
               type="button"
               onClick={() => {
@@ -220,27 +267,14 @@ export const RegistosPrediais: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilterEstado(filterEstado === 'em_registo' ? null : 'em_registo')}
-              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'em_registo' ? 'ring-2 ring-orange-500' : ''}`}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'em_registo' ? 'ring-2 ring-blue-500' : ''}`}
             >
-              <span className="text-xs sm:text-sm font-medium text-orange-600 flex items-center gap-1">
+              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
                 <Clock className="h-4 w-4 shrink-0" />
                 Em Registo
               </span>
-              <span className="text-lg font-bold text-orange-600">
-                {registos.filter((r: any) => r.estado_key === 'em_registo').length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterEstado(filterEstado === 'em_curso' ? null : 'em_curso')}
-              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'em_curso' ? 'ring-2 ring-blue-500' : ''}`}
-            >
-              <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
-                <Building className="h-4 w-4 shrink-0" />
-                Em Curso
-              </span>
               <span className="text-lg font-bold text-blue-600">
-                {registos.filter((r: any) => r.estado_key === 'em_curso').length}
+                {registos.filter((r: any) => r.estado_key === 'em_registo').length}
               </span>
             </button>
             <button
@@ -259,7 +293,7 @@ export const RegistosPrediais: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilterEstado(filterEstado === 'desistencia' ? null : 'desistencia')}
-              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow col-span-3 sm:col-span-1 ${filterEstado === 'desistencia' ? 'ring-2 ring-yellow-500' : ''}`}
+              className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'desistencia' ? 'ring-2 ring-yellow-500' : ''}`}
             >
               <span className="text-xs sm:text-sm font-medium text-yellow-600 flex items-center gap-1">
                 <XCircle className="h-4 w-4 shrink-0" />

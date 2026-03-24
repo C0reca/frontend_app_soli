@@ -45,7 +45,6 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
     if (e.includes('concluido')) return 'concluido';
     if (e.includes('desistencia')) return 'desistencia';
     if (e.includes('recusado')) return 'recusado';
-    if (e.includes('em_curso') || e.includes('em curso')) return 'em_curso';
     return 'em_registo';
   };
 
@@ -58,8 +57,6 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
       case 'recusado':
         return 'bg-red-100 text-red-800';
       case 'em_registo':
-        return 'bg-orange-100 text-orange-800';
-      case 'em_curso':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -76,8 +73,6 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
         return 'Recusado';
       case 'em_registo':
         return 'Em Registo';
-      case 'em_curso':
-        return 'Em Curso';
       default:
         return estado || 'Desconhecido';
     }

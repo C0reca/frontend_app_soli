@@ -58,7 +58,8 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [createdTaskIds, setCreatedTaskIds] = useState<Set<string>>(new Set());
-  const [loadFromDb, setLoadFromDb] = useState(false);
+  // Flag: true quando o user seleciona uma conversa da sidebar (deve carregar msgs da BD)
+  const pendingLoadRef = useRef(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -72,12 +73,13 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
   const sugestoesMutation = useIASugestoes();
   const criarTarefasMutation = useCriarTarefasIA();
 
+  // Só carrega mensagens da BD quando o user clica numa conversa na sidebar
   useEffect(() => {
-    if (loadFromDb && conversaDetail?.mensagens) {
+    if (pendingLoadRef.current && conversaDetail?.mensagens) {
       setLocalMessages(conversaDetail.mensagens);
-      setLoadFromDb(false);
+      pendingLoadRef.current = false;
     }
-  }, [conversaDetail, loadFromDb]);
+  }, [conversaDetail]);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -139,8 +141,6 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
         conversa_id: activeId,
       });
       setLocalMessages(prev => [...prev, { role: 'assistant', content: result.resposta }]);
-      // Após guardar com sucesso, sincronizar com a BD na próxima invalidação
-      setLoadFromDb(true);
     } catch (err: any) {
       setLocalMessages(prev => [
         ...prev,
@@ -350,7 +350,7 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
             {conversas.map(c => (
               <div
                 key={c.id}
-                onClick={() => { setConversaAtiva(c.id); setLoadFromDb(true); setShowSidebar(false); }}
+                onClick={() => { pendingLoadRef.current = true; setConversaAtiva(c.id); setShowSidebar(false); }}
                 className={`group flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent transition-colors text-sm ${
                   conversaAtiva === c.id ? 'bg-accent' : ''
                 }`}
