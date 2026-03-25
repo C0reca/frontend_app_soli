@@ -19,7 +19,11 @@ interface SearchResults {
 
 const DEBOUNCE_MS = 300;
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenSearch?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -84,11 +88,20 @@ export const Header: React.FC = () => {
           <Input
             type="text"
             placeholder="Pesquisar em processos, compromissos, entidades, arquivos..."
-            className="pl-10 w-full"
+            className="pl-10 pr-20 w-full"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setOpen(true)}
           />
+          <button
+            type="button"
+            onClick={() => onOpenSearch?.()}
+            className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-100 transition-colors"
+            title="Pesquisa global (Ctrl+K)"
+          >
+            <kbd className="font-sans">⌘</kbd>
+            <kbd className="font-sans">K</kbd>
+          </button>
           {showDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[70vh] overflow-y-auto">
               {loading ? (
@@ -128,7 +141,7 @@ export const Header: React.FC = () => {
                     <div className="px-3 py-1.5 border-t border-gray-100">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
                         <CheckSquare className="h-3.5 w-3.5" />
-                        Compromissos
+                        Tarefas
                       </p>
                       <ul className="mt-1 space-y-0.5">
                         {results!.tarefas.map((t) => (

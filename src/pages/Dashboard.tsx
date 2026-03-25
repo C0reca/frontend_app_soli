@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDashboard } from '@/hooks/useDashboard';
-import { FolderOpen, CheckSquare, Clock, TrendingUp, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FolderOpen, CheckSquare, Clock, TrendingUp, Users, CheckCircle } from 'lucide-react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
 
@@ -82,18 +83,18 @@ export const Dashboard: React.FC = () => {
       path: '/processos'
     },
     {
-      title: 'Compromissos Concluídos',
+      title: 'Tarefas Concluídas',
       value: kpis?.tarefas_concluidas ?? 0,
       icon: CheckSquare,
-      description: 'Compromissos finalizados',
+      description: 'Tarefas finalizadas',
       trend: '',
       path: '/tarefas'
     },
     {
-      title: 'Compromissos Pendentes',
+      title: 'Tarefas Pendentes',
       value: kpis?.tarefas_pendentes ?? 0,
       icon: Clock,
-      description: 'Compromissos aguardando execução',
+      description: 'Tarefas por completar',
       trend: '',
       path: '/tarefas'
     },
@@ -171,11 +172,16 @@ export const Dashboard: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Compromissos Urgentes</CardTitle>
-            <CardDescription>A vencer hoje ou em atraso</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Tarefas Urgentes</CardTitle>
+                <CardDescription>A vencer hoje ou em atraso</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/tarefas')}>Ver todas</Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {(() => {
                 const today = new Date();
                 today.setHours(0,0,0,0);
@@ -183,20 +189,25 @@ export const Dashboard: React.FC = () => {
                   if (!t?.data_fim || t?.concluida) return false;
                   const due = new Date(t.data_fim);
                   due.setHours(0,0,0,0);
-                  return due <= today; // hoje ou passado
+                  return due <= today;
                 }).sort((a: any, b: any) => new Date(a.data_fim).getTime() - new Date(b.data_fim).getTime()).slice(0, 8);
                 if (urgent.length === 0) {
-                  return <div className="text-sm text-muted-foreground">Sem compromissos urgentes.</div>;
+                  return (
+                    <div className="text-center py-6">
+                      <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Tudo em dia! Sem tarefas urgentes.</p>
+                    </div>
+                  );
                 }
                 return urgent.map((t: any) => (
-                  <div 
-                    key={t.id} 
-                    className="flex items-center justify-between py-1 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors rounded px-2 -mx-2"
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors rounded px-2 -mx-2"
                     onClick={() => handleViewTask(t)}
                   >
                     <div className="flex-1">
                       <p className="font-medium text-sm">{t.titulo}</p>
-                      <p className="text-xs text-gray-500">Prazo: {new Date(t.data_fim).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-gray-500">Prazo: {new Date(t.data_fim).toLocaleDateString('pt-PT')}</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${new Date(t.data_fim) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       {new Date(t.data_fim) < new Date() ? 'Atrasada' : 'Hoje'}
@@ -207,15 +218,40 @@ export const Dashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Ações rápidas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Ações Rápidas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/processos')}>
+                <FolderOpen className="h-5 w-5" />
+                <span className="text-xs">Processos</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/tarefas')}>
+                <CheckSquare className="h-5 w-5" />
+                <span className="text-xs">Tarefas</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/clientes')}>
+                <Users className="h-5 w-5" />
+                <span className="text-xs">Entidades</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/calendario')}>
+                <Clock className="h-5 w-5" />
+                <span className="text-xs">Calendário</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {isTaskModalOpen && selectedTask && (
-        <TaskDetailsModal
-          task={selectedTask}
-          isOpen={isTaskModalOpen}
-          onClose={handleCloseTaskModal}
-        />
-      )}
+      <TaskDetailsModal
+        task={selectedTask}
+        isOpen={isTaskModalOpen && !!selectedTask}
+        onClose={handleCloseTaskModal}
+      />
     </div>
   );
 };

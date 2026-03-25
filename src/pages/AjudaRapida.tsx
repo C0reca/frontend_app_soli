@@ -339,7 +339,7 @@ export const AjudaRapida: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Ajuda Rápida</h1>
+        <h1 className="text-3xl font-bold">Ajuda Rápida</h1>
         <p className="text-muted-foreground mt-1">Como usar o sistema de gestão de processos e workflow</p>
       </div>
 

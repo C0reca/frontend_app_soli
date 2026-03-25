@@ -30,7 +30,7 @@ export const AutoFinanceiro: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
           <TrendingUp className="h-6 w-6" />
           Financeiro Automóvel
         </h1>

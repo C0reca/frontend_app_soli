@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 import { EntidadesExternasTab } from '@/pages/EntidadesExternas';
+import { TableSkeleton } from '@/components/ui/card-skeleton';
 
 export const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export const Clients: React.FC = () => {
   const { duplicates, isLoading: isDuplicatesLoading } = useDuplicateClients();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'manager';
   const { canCreate, canEdit } = usePermissions();
   const [activeTab, setActiveTab] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
@@ -193,7 +195,7 @@ export const Clients: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (isAdmin && confirm('Tem certeza que deseja excluir este cliente?')) {
+    if (isManagerOrAdmin && confirm('Tem a certeza que pretende eliminar esta entidade?')) {
       await deleteClient.mutateAsync(id);
     }
   };
@@ -217,16 +219,7 @@ export const Clients: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-        <Card className="animate-pulse">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={8} cols={6} />
       </div>
     );
   }
@@ -248,7 +241,7 @@ export const Clients: React.FC = () => {
               </Button>
             )}
             {canCreate("clientes") && (
-              <Button onClick={() => setIsModalOpen(true)}>
+              <Button onClick={() => { setSelectedClient(null); setIsModalOpen(true); }}>
                 <Plus className="mr-2 h-4 w-4" />
                 Novo Cliente
               </Button>
@@ -380,8 +373,8 @@ export const Clients: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="asc">Asc</SelectItem>
-                    <SelectItem value="desc">Desc</SelectItem>
+                    <SelectItem value="asc">A → Z</SelectItem>
+                    <SelectItem value="desc">Z → A</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -416,7 +409,11 @@ export const Clients: React.FC = () => {
                   {paginatedClients.map((client: Client) => (
                     <TableRow
                       key={client.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      className={`cursor-pointer transition-colors ${
+                        (client.status || 'active') === 'active'
+                          ? 'hover:bg-muted/50'
+                          : 'bg-red-50/50 hover:bg-red-100/50'
+                      }`}
                       onClick={() => handleView(client)}
                     >
                       <TableCell className="font-mono text-sm">{client.id}</TableCell>
@@ -434,29 +431,16 @@ export const Clients: React.FC = () => {
                         </span>
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleView(client); }}
-                          >
-                            <Eye className="h-4 w-4" />
+                        <div className="flex justify-end gap-0.5">
+                          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={(e) => { e.stopPropagation(); handleView(client); }} title="Ver detalhes">
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleEdit(client); }}
-                          >
-                            <Edit className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={(e) => { e.stopPropagation(); handleEdit(client); }} title="Editar">
+                            <Edit className="h-3.5 w-3.5" />
                           </Button>
-                          {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => { e.stopPropagation(); handleDelete(String(client.id)); }}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
+                          {isManagerOrAdmin && (
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500" onClick={(e) => { e.stopPropagation(); handleDelete(String(client.id)); }} title="Eliminar">
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           )}
                         </div>

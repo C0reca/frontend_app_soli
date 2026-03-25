@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Eye, Trash2, Pencil, Undo2, Banknote } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
+import { formatCurrency } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Eye, Trash2, Pencil, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTransacoes } from '@/hooks/useFinanceiro';
 import { useResumoFinanceiroProcesso } from '@/hooks/useContaCorrente';
 import { TransacaoModal } from '@/components/modals/TransacaoModal';
@@ -15,10 +18,6 @@ interface ProcessFinanceiroTabProps {
   clienteId: number;
 }
 
-const formatCurrency = (value: any) => {
-  const n = typeof value === 'number' ? value : Number(value) || 0;
-  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-};
 
 const formatDate = (value?: string) => {
   if (!value) return '-';
@@ -47,9 +46,10 @@ const getTipoBadge = (tipo: string) => {
 const getMetodoLabel = (metodo?: string) => {
   switch (metodo) {
     case 'dinheiro': return 'Dinheiro';
-    case 'mb': return 'MB';
-    case 'transferencia': return 'Transferencia';
+    case 'mb': return 'Multibanco';
+    case 'transferencia': return 'Transferência';
     case 'cheque': return 'Cheque';
+    case 'outro': return 'Outro';
     default: return metodo || '-';
   }
 };
@@ -60,13 +60,20 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
   const [viewTransacaoId, setViewTransacaoId] = useState<number | null>(null);
   const [reembolsoDe, setReembolsoDe] = useState<TransacaoFinanceira | null>(null);
 
-  const { transacoes, isLoading, deleteTransacao, enviarParaCaixa } = useTransacoes({ processo_id: processoId });
+  const { transacoes, isLoading, deleteTransacao } = useTransacoes({ processo_id: processoId });
   const { data: resumo } = useResumoFinanceiroProcesso(processoId);
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Tem a certeza que pretende eliminar esta transacao?')) {
-      deleteTransacao.mutate(id);
-    }
+  const totalValor = useMemo(() => transacoes.reduce((s, t) => s + Number(t.valor), 0), [transacoes]);
+
+  const handleDelete = async (id: number) => {
+    const ok = await confirm({
+      title: 'Eliminar transação?',
+      description: 'Esta ação não pode ser revertida. A transação será permanentemente eliminada.',
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteTransacao.mutate(id);
   };
 
   return (
@@ -122,21 +129,20 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
               <TableHead className="text-sm">Tipo</TableHead>
               <TableHead className="text-sm">Valor</TableHead>
               <TableHead className="text-sm">Descrição</TableHead>
-              <TableHead className="text-sm">Caixa</TableHead>
               <TableHead className="text-sm text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                   A carregar...
                 </TableCell>
               </TableRow>
             ) : transacoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  Nenhuma transação registada
+                <TableCell colSpan={5}>
+                  <EmptyState title="Nenhuma transação registada" description="Clique em 'Nova Transação' para adicionar." className="py-6" />
                 </TableCell>
               </TableRow>
             ) : (
@@ -148,23 +154,6 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
                   <TableCell className="text-sm max-w-[200px] truncate">
                     {t.tarefa_id && <Badge variant="outline" className="text-xs mr-1">Tarefa</Badge>}
                     {t.descricao || '-'}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {t.caixa_movimento_id ? (
-                      <Badge className="bg-green-100 text-green-800 text-xs">Enviado</Badge>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-xs gap-1"
-                        onClick={() => enviarParaCaixa.mutate(t.id)}
-                        disabled={enviarParaCaixa.isPending}
-                        title="Enviar para Caixa"
-                      >
-                        <Banknote className="h-3 w-3" />
-                        Enviar
-                      </Button>
-                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-0.5">
@@ -188,6 +177,15 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
               ))
             )}
           </TableBody>
+          {transacoes.length > 0 && (
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={2} className="text-sm font-medium">Total ({transacoes.length})</TableCell>
+                <TableCell className="text-sm font-bold whitespace-nowrap">{formatCurrency(totalValor)}</TableCell>
+                <TableCell colSpan={2} />
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
       </div>
 
@@ -205,6 +203,7 @@ export const ProcessFinanceiroTab: React.FC<ProcessFinanceiroTabProps> = ({ proc
         onClose={() => setViewTransacaoId(null)}
         transacaoId={viewTransacaoId}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 };

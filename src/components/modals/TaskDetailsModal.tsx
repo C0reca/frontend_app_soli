@@ -579,7 +579,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <Calendar className="h-4 w-4 text-gray-400" />
                 <div>
                   <label className="text-sm font-medium text-gray-500">Criado em</label>
-                  <p className="text-sm text-gray-900">{displayTask.criado_em ? new Date(displayTask.criado_em).toLocaleDateString('pt-BR') : '-'}</p>
+                  <p className="text-sm text-gray-900">{displayTask.criado_em ? new Date(displayTask.criado_em).toLocaleDateString('pt-PT') : '-'}</p>
                 </div>
               </div>
 
@@ -589,7 +589,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   <div>
                     <label className="text-sm font-medium text-gray-500">Prazo</label>
                     <p className={`text-sm ${isOverdue(displayTask.data_fim) ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
-                      {displayTask.data_fim ? new Date(displayTask.data_fim).toLocaleDateString('pt-BR') : '-'}
+                      {displayTask.data_fim ? new Date(displayTask.data_fim).toLocaleDateString('pt-PT') : '-'}
                     </p>
                   </div>
                 </div>

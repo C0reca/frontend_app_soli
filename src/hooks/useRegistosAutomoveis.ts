@@ -151,10 +151,10 @@ export const useRegistosAutomoveis = (params?: {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
       queryClient.invalidateQueries({ queryKey: ['stand-semanas'] });
-      toast({ title: "Sucesso", description: "Registo automóvel criado com sucesso." });
+      toast({ title: "Registo criado", description: "O registo automóvel foi criado com sucesso." });
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao criar registo automóvel.", variant: "destructive" });
+      toast({ title: "Erro ao criar registo", description: "Não foi possível criar o registo automóvel.", variant: "destructive" });
     },
   });
 
@@ -165,10 +165,10 @@ export const useRegistosAutomoveis = (params?: {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
-      toast({ title: "Sucesso", description: "Registo automóvel atualizado com sucesso." });
+      toast({ title: "Registo atualizado", description: "As alterações ao registo foram guardadas." });
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao atualizar registo automóvel.", variant: "destructive" });
+      toast({ title: "Erro ao atualizar registo", description: "Não foi possível guardar as alterações.", variant: "destructive" });
     },
   });
 
@@ -179,10 +179,10 @@ export const useRegistosAutomoveis = (params?: {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
       queryClient.invalidateQueries({ queryKey: ['stand-semanas'] });
-      toast({ title: "Sucesso", description: "Registo automóvel eliminado com sucesso." });
+      toast({ title: "Registo eliminado", description: "O registo automóvel foi removido." });
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao eliminar registo automóvel.", variant: "destructive" });
+      toast({ title: "Erro ao eliminar registo", description: "Não foi possível remover o registo.", variant: "destructive" });
     },
   });
 
@@ -196,7 +196,7 @@ export const useRegistosAutomoveis = (params?: {
       return response.data;
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao processar PDF.", variant: "destructive" });
+      toast({ title: "Erro ao importar PDF", description: "Não foi possível extrair os dados do PDF.", variant: "destructive" });
     },
   });
 
@@ -214,7 +214,7 @@ export const useRegistosAutomoveis = (params?: {
       queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao carregar anexo.", variant: "destructive" });
+      toast({ title: "Erro ao carregar anexo", description: "Não foi possível enviar o ficheiro.", variant: "destructive" });
     },
   });
 
@@ -227,7 +227,7 @@ export const useRegistosAutomoveis = (params?: {
       queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao alterar estado.", variant: "destructive" });
+      toast({ title: "Erro ao alterar estado", description: "Não foi possível alterar o estado do registo.", variant: "destructive" });
     },
   });
 
@@ -237,10 +237,34 @@ export const useRegistosAutomoveis = (params?: {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
-      toast({ title: "Sucesso", description: "Anexo eliminado." });
+      toast({ title: "Anexo eliminado", description: "O ficheiro foi removido do registo." });
     },
     onError: () => {
-      toast({ title: "Erro", description: "Erro ao eliminar anexo.", variant: "destructive" });
+      toast({ title: "Erro ao eliminar anexo", description: "Não foi possível remover o ficheiro.", variant: "destructive" });
+    },
+  });
+
+  const togglePagamento = useMutation({
+    mutationFn: async ({ id, pago }: { id: number; pago: boolean }) => {
+      const endpoint = pago
+        ? `/registos-automoveis/${id}/marcar-pago`
+        : `/registos-automoveis/${id}/marcar-pendente`;
+      const response = await api.patch(endpoint);
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['registos-automoveis'] });
+      queryClient.invalidateQueries({ queryKey: ['financeiro-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['caixa'] });
+      queryClient.invalidateQueries({ queryKey: ['auto-financeiro-dashboard'] });
+      toast({
+        title: variables.pago ? "Pagamento confirmado" : "Pagamento revertido",
+        description: variables.pago ? "O registo foi marcado como pago." : "O registo foi marcado como pendente.",
+      });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || "Erro ao alterar estado de pagamento.";
+      toast({ title: "Erro ao alterar pagamento", description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: "destructive" });
     },
   });
 
@@ -255,5 +279,6 @@ export const useRegistosAutomoveis = (params?: {
     uploadAnexo,
     deleteAnexo,
     changeEstado,
+    togglePagamento,
   };
 };

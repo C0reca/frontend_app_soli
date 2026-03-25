@@ -127,7 +127,7 @@ export const DocumentExtraction: React.FC = () => {
             <ScanSearch className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Assistente de Documentos</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Assistente de Documentos</h1>
             <p className="text-sm text-gray-500">
               Carregue um documento e extraia automaticamente entidades, processos e tarefas
             </p>

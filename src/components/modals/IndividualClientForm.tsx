@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 import { CreditCard, Scan } from 'lucide-react';
 import { IndividualClient } from '@/hooks/useClients';
 import { useToast } from '@/hooks/use-toast';
@@ -140,6 +142,8 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
         ))}
       </TabsList>
 
+      <p className="text-xs text-muted-foreground mt-2">Campos com <span className="text-red-500">*</span> são obrigatórios. Os restantes pode preencher mais tarde.</p>
+
       <TabsContent value="identification" className="space-y-4">
         <Card>
           <CardHeader>
@@ -161,7 +165,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome completo *</Label>
+                <Label htmlFor="nome">Nome completo <span className="text-red-500">*</span></Label>
                 <Input
                   id="nome"
                   {...register('nome')}
@@ -175,7 +179,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nif">NIF *</Label>
+                <Label htmlFor="nif">NIF <span className="text-red-500">*</span></Label>
                 <Input
                   id="nif"
                   {...register('nif')}
@@ -186,6 +190,15 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 )}
               </div>
             </div>
+
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="ghost" className="w-full flex items-center justify-between text-sm text-muted-foreground hover:text-foreground p-2 -mx-2">
+                  <span>Campos adicionais (opcionais)</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4">
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -351,6 +364,9 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 />
               </div>
             </div>
+
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </Card>
       </TabsContent>

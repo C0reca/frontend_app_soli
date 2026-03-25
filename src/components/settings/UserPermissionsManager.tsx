@@ -17,7 +17,7 @@ const MODULOS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'clientes', label: 'Entidades' },
   { id: 'processos', label: 'Processos' },
-  { id: 'tarefas', label: 'Compromissos' },
+  { id: 'tarefas', label: 'Tarefas' },
   { id: 'irs', label: 'IRS' },
   { id: 'documentos', label: 'Documentos' },
   { id: 'financeiro', label: 'Financeiro' },

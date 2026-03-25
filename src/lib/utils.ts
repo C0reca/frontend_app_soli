@@ -19,3 +19,24 @@ export function normalizeString(str: string): string {
     .toLowerCase()
     .replace(/\s+/g, '');
 }
+
+/**
+ * Formata um valor monetário em EUR (pt-PT).
+ */
+export function formatCurrency(value: any): string {
+  const n = typeof value === 'number' ? value : Number(value) || 0;
+  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
+}
+
+/**
+ * Formata uma data em formato português (dd/mm/aaaa).
+ */
+export function formatDate(value?: string | Date | null, opts?: { time?: boolean }): string {
+  if (!value) return '-';
+  const d = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return '-';
+  if (opts?.time) {
+    return d.toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}

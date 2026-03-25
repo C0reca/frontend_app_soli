@@ -13,6 +13,7 @@ import { useContaCorrenteCliente } from '@/hooks/useContaCorrente';
 import { DossieModal } from './DossieModal';
 import { ClientModal } from './ClientModal';
 import { TransacaoModal } from './TransacaoModal';
+import { formatCurrency } from '@/lib/utils';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { ClienteContactosTab } from '@/components/ClienteContactosTab';
 import { FiliacaoSection } from '@/components/FiliacaoSection';
@@ -62,10 +63,7 @@ const getTipoBadgeMovimentos = (tipo: string) => {
   }
 };
 
-const formatCurrencyStatic = (value: any) => {
-  const n = typeof value === 'number' ? value : Number(value) || 0;
-  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-};
+const formatCurrencyStatic = formatCurrency;
 
 interface MovimentosModalProps {
   isOpen: boolean;
@@ -496,11 +494,6 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 
   // Usar dados completos (com representantes) quando disponíveis
   const effectiveClient = clienteCompleto ? { ...client, ...clienteCompleto } as Client : client;
-
-  const formatCurrency = (value: any) => {
-    const n = typeof value === 'number' ? value : Number(value) || 0;
-    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-  };
 
   const renderContaCorrenteTab = () => (
     <TabsContent value="conta-corrente" className="mt-6">

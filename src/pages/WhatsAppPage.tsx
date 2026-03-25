@@ -134,7 +134,7 @@ export const WhatsAppPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <MessageSquare className="h-6 w-6 text-green-600" />
-          <h1 className="text-2xl font-bold">WhatsApp</h1>
+          <h1 className="text-3xl font-bold">WhatsApp</h1>
           {naoLidas && naoLidas.nao_lidas > 0 && (
             <Badge variant="destructive">{naoLidas.nao_lidas} recebidas</Badge>
           )}

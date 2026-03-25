@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckSquare, Clock, AlertCircle, Search, Filter, X, Eye } from 'lucide-react';
+import { CheckSquare, Clock, AlertCircle, Search, Filter, X, Eye, MoreHorizontal, Edit, Trash2, Share2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import api from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useEmployeeList } from '@/hooks/useEmployees';
@@ -323,19 +324,12 @@ export const ServicosExternos: React.FC = () => {
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="searchInFullContentExt"
-                checked={searchInFullContent}
-                onCheckedChange={(checked) => setSearchInFullContent(!!checked)}
-              />
-              <label htmlFor="searchInFullContentExt" className="cursor-pointer">Pesquisar na descrição</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+          {/* Filtros simplificados — mesmo padrão das Tarefas */}
+          <div className="flex flex-wrap gap-2 mt-3 items-end">
+            <div className="w-[130px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Estado</label>
               <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger className="w-[110px] h-8 text-xs">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -345,55 +339,41 @@ export const ServicosExternos: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
-              <SelectTrigger className="w-[130px] h-8 text-xs">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {employees.map(emp => (
-                  <SelectItem key={emp.id} value={emp.id.toString()}>{emp.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
-              <SelectTrigger className="w-[95px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="baixa">Baixa</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
-              <SelectTrigger className="w-[110px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="reuniao">Reunião</SelectItem>
-                <SelectItem value="telefonema">Telefonema</SelectItem>
-                <SelectItem value="tarefa">Compromisso</SelectItem>
-                <SelectItem value="correspondencia_ctt">Correspondência CTT</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="atrasadasExt"
-                checked={filters.atrasadas}
-                onCheckedChange={(checked) => setFilters(prev => ({ ...prev, atrasadas: !!checked }))}
-              />
-              <label htmlFor="atrasadasExt" className="cursor-pointer whitespace-nowrap">Atrasadas</label>
+            <div className="w-[150px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável</label>
+              <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {employees.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id.toString()}>{emp.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="w-[130px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Prioridade</label>
+              <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="media">Média</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 h-8">
               <Checkbox
                 id="showConcluidasExt"
                 checked={filters.showConcluidas}
                 onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidas: !!checked }))}
               />
-              <label htmlFor="showConcluidasExt" className="cursor-pointer whitespace-nowrap">Mostrar concluídos</label>
+              <label htmlFor="showConcluidasExt" className="cursor-pointer whitespace-nowrap text-xs">Incluir concluídas</label>
             </div>
           </div>
         </CardContent>
@@ -421,111 +401,79 @@ export const ServicosExternos: React.FC = () => {
                   className={`hover:shadow-md transition-shadow cursor-pointer ${getBackgroundColor(task)}`}
                   onClick={() => handleView(task)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                      {/* Conteúdo */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-1.5">
                           {task.concluida
-                            ? <CheckSquare className="h-4 w-4 text-green-600" />
-                            : <AlertCircle className="h-4 w-4 text-yellow-600" />
+                            ? <CheckSquare className="h-4 w-4 text-green-600 shrink-0" />
+                            : <AlertCircle className="h-4 w-4 text-yellow-600 shrink-0" />
                           }
-                          <h3 className="font-semibold">{task.titulo}</h3>
-                          {processo?.referencia && (
-                            <Badge variant="secondary" className="font-mono text-xs">
-                              {processo.referencia}
-                            </Badge>
-                          )}
+                          <h3 className="font-semibold text-sm">{task.titulo}</h3>
                           {clienteNome && (
                             <span className="text-sm text-muted-foreground font-normal">- {clienteNome}</span>
                           )}
-                          {isOverdue(task.data_fim, task.concluida) && (
-                            <Badge variant="destructive">Atrasada</Badge>
-                          )}
-                          {isLastDay(task.data_fim, task.concluida) && (
-                            <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
-                              Último dia
-                            </Badge>
-                          )}
                         </div>
                         {task.descricao && (
-                          <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{task.descricao}</p>
+                          <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{task.descricao}</p>
                         )}
-                        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                          <span>
-                            <strong>Processo:</strong>{' '}
-                            {processo
-                              ? (processo.referencia ? `${processo.referencia} - ${processo.titulo}` : processo.titulo)
-                              : (task.processo_id ? `ID ${task.processo_id}` : 'N/A')}
-                          </span>
-                          <span>
-                            <strong>Responsável:</strong>{' '}
-                            {task.responsavel_id
-                              ? (employeeNameById.get(task.responsavel_id) || `ID: ${task.responsavel_id}`)
-                              : 'Não atribuído'}
-                          </span>
-                          {task.onde_estao && (
-                            <span><strong>Localização:</strong> {task.onde_estao === 'Tarefas' ? 'Pendentes' : task.onde_estao}</span>
-                          )}
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-1">
+                          <span><strong>Processo:</strong> {processo ? (processo.referencia ? `${processo.referencia} - ${processo.titulo}` : processo.titulo) : 'N/A'}</span>
+                          <span><strong>Responsável:</strong> {task.responsavel_id ? (employeeNameById.get(task.responsavel_id) || `ID: ${task.responsavel_id}`) : 'Não atribuído'}</span>
                           {task.data_fim && (
                             <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-PT')}</span>
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-col space-y-2 ml-4">
-                        <Badge className={task.concluida ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                          {task.concluida ? 'Concluída' : 'Pendente'}
-                        </Badge>
-                        <Badge className={getPriorityColor(task.prioridade)}>
-                          {getPriorityLabel(task.prioridade)}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-col space-y-1 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleView(task); }}
-                          title="Ver detalhes"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {!task.concluida && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                await api.patch(`/tarefas/status/${task.id}`, { concluida: true });
-                                toast({ title: 'Concluída', description: 'Tarefa concluída.' });
-                                load();
-                              } catch {
-                                toast({ title: 'Erro', description: 'Não foi possível concluir.', variant: 'destructive' });
-                              }
-                            }}
-                            className="text-green-600 hover:text-green-700"
-                            title="Concluir"
-                          >
-                            <CheckSquare className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={async (e) => {
-                            e.stopPropagation();
+
+                      {/* Estado + Ações (alinhados à direita) */}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={task.concluida ? 'concluida' : 'pendente'}
+                          onValueChange={async (val) => {
                             try {
-                              await api.patch(`/tarefas/externo/${task.id}`, { servico_externo: false });
-                              toast({ title: 'Removido', description: 'Removido de Diligência Externa.' });
+                              await api.patch(`/tarefas/status/${task.id}`, { concluida: val === 'concluida' });
+                              toast({ title: val === 'concluida' ? 'Tarefa concluída' : 'Tarefa reaberta' });
                               load();
                             } catch {
-                              toast({ title: 'Erro', description: 'Não foi possível remover.', variant: 'destructive' });
+                              toast({ title: 'Erro', description: 'Não foi possível alterar o estado.', variant: 'destructive' });
                             }
                           }}
-                          className="text-red-600 hover:text-red-700 text-xs"
-                          title="Remover de diligências externas"
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
+                          <SelectTrigger className={`h-6 w-[110px] rounded-full border-2 text-xs font-medium ${task.concluida ? 'bg-green-100 text-green-800 border-green-300' : isOverdue(task.data_fim, task.concluida) ? 'bg-red-100 text-red-800 border-red-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendente">Pendente</SelectItem>
+                            <SelectItem value="concluida">Concluída</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-0.5">
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs h-7" onClick={() => handleView(task)}>
+                            <Eye className="h-3.5 w-3.5" />Ver
+                          </Button>
+                          <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="text-red-600" onClick={async () => {
+                                try {
+                                  await api.patch(`/tarefas/externo/${task.id}`, { servico_externo: false });
+                                  toast({ title: 'Removida', description: 'Removida das diligências externas.' });
+                                  load();
+                                } catch {
+                                  toast({ title: 'Erro', description: 'Não foi possível remover.', variant: 'destructive' });
+                                }
+                              }}>
+                                <X className="h-3.5 w-3.5 mr-2" />Remover de diligências
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

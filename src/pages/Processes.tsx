@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Lock, Copy } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, ArchiveRestore, MapPin, Filter, X, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Lock, Copy, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useProcesses, Process } from '@/hooks/useProcesses';
 import { getDossieDisplayLabel, Dossie } from '@/hooks/useDossies';
 import { ProcessModal } from '@/components/modals/ProcessModal';
@@ -23,6 +25,7 @@ import { normalizeString } from '@/lib/utils';
 
 export const Processes: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
+  const { user } = useAuth();
   const { processes, isLoading, deleteProcess, getArchived, unarchiveProcess, updateProcess, duplicateProcess } = useProcesses();
   const { clients } = useClients();
   const { data: employees = [] } = useEmployeeList();
@@ -290,6 +293,16 @@ export const Processes: React.FC = () => {
                 className="pl-8 h-9 text-sm"
               />
             </div>
+            {user?.id && (
+              <Button
+                variant={filters.responsavel === String(user.id) ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilters(prev => ({ ...prev, responsavel: prev.responsavel === String(user.id) ? 'all' : String(user.id) }))}
+                className="shrink-0 h-9"
+              >
+                Meus Processos
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 h-9">
               <X className="mr-1.5 h-3.5 w-3.5" />
               Limpar
@@ -421,7 +434,7 @@ export const Processes: React.FC = () => {
                           <div />
                         )}
                         <div>
-                          <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-BR')}
+                          <span className="font-medium">Criado em:</span> {new Date(process.criado_em).toLocaleDateString('pt-PT')}
                         </div>
                         {process.descricao && (
                           <div className="col-span-2">
@@ -434,30 +447,45 @@ export const Processes: React.FC = () => {
                       <Badge className={getStatusColor(process.estado)}>
                         {getStatusLabel(process.estado)}
                       </Badge>
-                       <div className="flex space-x-1">
-                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleView(process); }}>
-                           <Eye className="h-4 w-4" />
+                       <div className="flex items-center space-x-1">
+                         <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={(e) => { e.stopPropagation(); handleView(process); }}>
+                           <Eye className="h-3.5 w-3.5" />
+                           Ver
                          </Button>
-                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(process); }}>
-                           <Edit className="h-4 w-4" />
+                         <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={(e) => { e.stopPropagation(); handleEdit(process); }}>
+                           <Edit className="h-3.5 w-3.5" />
+                           Editar
                          </Button>
-                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditLocation(process); }} title="Alterar localização">
-                           <MapPin className="h-4 w-4" />
-                         </Button>
-                         {canCreate('processos') && (
-                           <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); duplicateProcess.mutate(process.id); }} title="Duplicar processo">
-                             <Copy className="h-4 w-4" />
-                           </Button>
-                         )}
-                      {showArchived ? (
-                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); unarchiveProcess.mutate(process.id); }}>
-                          <ArchiveRestore className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); handleDelete(process); }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                         <DropdownMenu modal={false}>
+                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditLocation(process); }}>
+                               <MapPin className="h-3.5 w-3.5 mr-2" />
+                               Alterar localização
+                             </DropdownMenuItem>
+                             {canCreate('processos') && (
+                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateProcess.mutate(process.id); }}>
+                                 <Copy className="h-3.5 w-3.5 mr-2" />
+                                 Duplicar processo
+                               </DropdownMenuItem>
+                             )}
+                             {showArchived ? (
+                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); unarchiveProcess.mutate(process.id); }}>
+                                 <ArchiveRestore className="h-3.5 w-3.5 mr-2" />
+                                 Restaurar
+                               </DropdownMenuItem>
+                             ) : (
+                               <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); handleDelete(process); }}>
+                                 <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                 Arquivar
+                               </DropdownMenuItem>
+                             )}
+                           </DropdownMenuContent>
+                         </DropdownMenu>
                        </div>
                     </div>
                   </div>

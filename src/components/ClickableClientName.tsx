@@ -25,13 +25,11 @@ export const ClickableClientName: React.FC<ClickableClientNameProps> = ({
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (clientProp) {
-      // Se já temos o cliente completo, usar diretamente
       setSelectedClient(clientProp);
       setIsClientDetailsOpen(true);
     } else if (clientId) {
-      // Se só temos o ID, buscar o cliente
       setIsLoading(true);
       try {
         const response = await api.get(`/clientes/${clientId}`);
@@ -61,13 +59,11 @@ export const ClickableClientName: React.FC<ClickableClientNameProps> = ({
       >
         {isLoading ? 'A carregar...' : displayName}
       </button>
-      {selectedClient && (
-        <ClientDetailsModal
-          isOpen={isClientDetailsOpen}
-          onClose={() => setIsClientDetailsOpen(false)}
-          client={selectedClient}
-        />
-      )}
+      <ClientDetailsModal
+        isOpen={isClientDetailsOpen}
+        onClose={() => setIsClientDetailsOpen(false)}
+        client={selectedClient}
+      />
     </>
   );
 };

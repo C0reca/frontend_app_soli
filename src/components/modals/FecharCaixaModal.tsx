@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { formatCurrency } from '@/lib/utils';
 
 interface FecharCaixaModalProps {
   isOpen: boolean;
@@ -49,12 +50,6 @@ export const FecharCaixaModal: React.FC<FecharCaixaModalProps> = ({
     }
     await onConfirm(valor);
   };
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value || 0);
 
   const confirmDisabled = isSubmitting || !confirmado || saldoMoedas.trim() === '' || Number.isNaN(Number(saldoMoedas));
 

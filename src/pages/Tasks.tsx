@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, CalendarClock, Repeat } from 'lucide-react';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit, Trash2, Eye, Filter, X, Share2, CalendarClock, Repeat, MoreHorizontal, CheckCircle } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useEmployeeList } from '@/hooks/useEmployees';
 import { useProcesses } from '@/hooks/useProcesses';
@@ -17,7 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { usePermissions } from '@/hooks/usePermissions';
-import { normalizeString } from '@/lib/utils';
+import { normalizeString, cn } from '@/lib/utils';
+import { CardListSkeleton } from '@/components/ui/card-skeleton';
 import type { Process } from '@/hooks/useProcesses';
 
 export const Tasks: React.FC = () => {
@@ -197,7 +199,8 @@ export const Tasks: React.FC = () => {
   const topLevel = (childrenByParent['root'] || []).sort((a, b) => (a.data_fim || '').localeCompare(b.data_fim || ''));
 
   const renderTaskRow = (task: Task, level: number = 0) => {
-    const indentClass = level > 0 ? `pl-${Math.min(level * 4, 12)}` : '';
+    const indentClasses = ['', 'pl-4', 'pl-8', 'pl-12'] as const;
+    const indentClass = indentClasses[Math.min(level, 3)] || 'pl-12';
     const subtasks = childrenByParent[String(task.id)] || [];
     
     // Determinar a cor de fundo baseada no estado da tarefa
@@ -214,166 +217,91 @@ export const Tasks: React.FC = () => {
     return (
       <div key={`${task.id}-${level}`}>
         <Card className={`hover:shadow-md transition-shadow cursor-pointer ${getBackgroundColor()}`} onClick={() => handleView(task)}>
-          <CardContent className={`p-4 ${indentClass}`}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
+          <CardContent className={`p-3 ${indentClass}`}>
+            <div className="flex items-start gap-3">
+              {/* Conteúdo */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center flex-wrap gap-1.5">
                   {getStatusIcon(task.concluida)}
-                  <h3 className="font-semibold">{task.titulo}</h3>
+                  <h3 className="font-semibold text-sm">{task.titulo}</h3>
                   {task.processo_id && (() => {
                     const processo = processes.find(p => p.id === task.processo_id);
                     if (!processo) return null;
-
-                    // Tentar obter nome do cliente de diferentes formas
                     let clienteNome: string | null = null;
                     if (processo.cliente) {
                       clienteNome = (processo.cliente as any).nome || (processo.cliente as any).nome_empresa || null;
                     } else if (processo.cliente_id) {
                       clienteNome = `Cliente #${processo.cliente_id}`;
                     }
-
                     return clienteNome ? (
                       <span className="text-sm text-muted-foreground font-normal">- {clienteNome}</span>
                     ) : null;
                   })()}
-                  {level > 0 && <Badge variant="secondary">Sub-compromisso</Badge>}
-                  {task.recorrencia_tipo && (
-                    <Badge variant="outline" className="border-blue-500 text-blue-700 gap-1">
-                      <Repeat className="h-3 w-3" />
-                      Recorrente
-                    </Badge>
-                  )}
-                  {isOverdue(task.data_fim, task.concluida) && (
-                    <Badge variant="destructive">Atrasada</Badge>
-                  )}
+                  {level > 0 && <Badge variant="secondary" className="text-xs">Sub-tarefa</Badge>}
                 </div>
-                <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{task.descricao}</p>
-                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                {task.descricao && (
+                  <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{task.descricao}</p>
+                )}
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-1">
                   <span><strong>Processo:</strong> {task.processo_id ? (() => {
                     const processo = processes.find(p => p.id === task.processo_id);
                     if (!processo) return task.processo_id;
-                    return processo.referencia
-                      ? `${processo.referencia} - ${processo.titulo}`
-                      : processo.titulo;
+                    return processo.referencia ? `${processo.referencia} - ${processo.titulo}` : processo.titulo;
                   })() : 'N/A'}</span>
                   <span><strong>Localização:</strong> {task.onde_estao === 'Tarefas' ? 'Pendentes' : (task.onde_estao || 'Sem Localização')}</span>
-                  <span>
-                    <strong>Responsável:</strong>{' '}
-                    {task.responsavel_id
-                      ? (employees.find(e => e.id === task.responsavel_id)?.nome || `ID: ${task.responsavel_id}`)
-                      : 'Não atribuído'}
-                  </span>
-                  {task.autor_id && (
-                    <span>
-                      <strong>Autor:</strong>{' '}
-                      {employees.find(e => e.id === task.autor_id)?.nome || `ID: ${task.autor_id}`}
-                    </span>
-                  )}
-                  {typeof task.subtarefas_count === 'number' && level === 0 && (
-                    <span><strong>Sub-compromissos:</strong> {task.subtarefas_count}</span>
+                  <span><strong>Responsável:</strong> {task.responsavel_id ? (employees.find(e => e.id === task.responsavel_id)?.nome || `ID: ${task.responsavel_id}`) : 'Não atribuído'}</span>
+                  {typeof task.subtarefas_count === 'number' && task.subtarefas_count > 0 && level === 0 && (
+                    <span><strong>Sub-tarefas:</strong> {task.subtarefas_count}</span>
                   )}
                   {task.data_fim && (
-                    <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
+                    <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-PT')}</span>
                   )}
                 </div>
               </div>
-              <div className="flex flex-col space-y-2">
-                <Badge className={getStatusColor(task.concluida)}>
-                  {getStatusLabel(task.concluida)}
-                </Badge>
-                {isOverdue(task.data_fim, task.concluida) && (
-                  <Badge variant="destructive" className="text-xs">
-                    Atrasada
-                  </Badge>
-                )}
-                {isLastDay(task.data_fim, task.concluida) && (
-                  <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
-                    Último dia
-                  </Badge>
-                )}
-                <Badge className={getPriorityColor(task.prioridade)}>
-                  {getPriorityLabel(task.prioridade)}
-                </Badge>
-                {task.servico_externo && (
-                  <Badge variant="outline" className="text-xs border-purple-500 text-purple-700">
-                    Diligência Externa
-                  </Badge>
-                )}
-              </div>
-              <div className="flex space-x-2 mt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); handleView(task); }}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); handleEdit(task); }}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                {!task.servico_externo ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); setExternal.mutate({ id: task.id, servico_externo: true }); }}
-                    title="Mover para Diligência Externa"
+
+              {/* Estado + Ações (alinhados à direita) */}
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={task.concluida ? 'concluida' : 'pendente'}
+                    onValueChange={(val) => handleStatusChange(task, val === 'concluida')}
                   >
-                    <Share2 className="h-4 w-4" />
+                    <SelectTrigger className={cn(
+                      'h-6 w-[110px] rounded-full border-2 text-xs font-medium',
+                      task.concluida
+                        ? 'bg-green-100 text-green-800 border-green-300'
+                        : isOverdue(task.data_fim, task.concluida)
+                          ? 'bg-red-100 text-red-800 border-red-300'
+                          : 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                    )}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="concluida">Concluída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleView(task)} title="Ver detalhes">
+                    <Eye className="h-3.5 w-3.5" />
                   </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); setExternal.mutate({ id: task.id, servico_externo: false }); }}
-                    title="Remover de Diligência Externa"
-                  >
-                    <Share2 className="h-4 w-4 rotate-180" />
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleEdit(task)} title="Editar">
+                    <Edit className="h-3.5 w-3.5" />
                   </Button>
-                )}
-                {!task.concluida ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); handleStatusChange(task, true); }}
-                      className="text-green-600 hover:text-green-700"
-                      title="Concluir"
-                    >
-                      <CheckSquare className="h-4 w-4" />
+                  {!task.concluida && (
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-amber-600" onClick={() => handlePostponeClick(task)} title="Adiar">
+                      <CalendarClock className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); handlePostponeClick(task); }}
-                      className="text-amber-600 hover:text-amber-700"
-                      title="Adiar tarefa"
-                    >
-                      <CalendarClock className="h-4 w-4" />
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleStatusChange(task, false); }}
-                    className="text-yellow-600 hover:text-yellow-700"
-                  >
-                    <Clock className="h-4 w-4" />
+                  )}
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setExternal.mutate({ id: task.id, servico_externo: !task.servico_externo })} title={task.servico_externo ? 'Remover de diligência' : 'Diligência externa'}>
+                    <Share2 className={cn('h-3.5 w-3.5', task.servico_externo && 'text-purple-600')} />
                   </Button>
-                )}
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-500" onClick={() => handleDelete(task.id)} title="Eliminar">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
               </div>
+            </div>
             </div>
           </CardContent>
         </Card>
@@ -511,16 +439,7 @@ export const Tasks: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-        <Card className="animate-pulse">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <CardListSkeleton count={5} />
       </div>
     );
   }
@@ -529,8 +448,8 @@ export const Tasks: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Compromissos</h1>
-          <p className="text-gray-600">Gerencie os compromissos dos processos</p>
+          <h1 className="text-3xl font-bold text-gray-900">Tarefas</h1>
+          <p className="text-gray-600">Gestão de tarefas e prazos dos processos</p>
         </div>
         {canCreate("tarefas") && (
           <Button onClick={() => setIsModalOpen(true)}>
@@ -595,10 +514,10 @@ export const Tasks: React.FC = () => {
             </Button>
           </div>
 
-          {/* Linha de filtros: dropdowns */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Estado</label>
+          {/* Filtros principais */}
+          <div className="flex flex-wrap gap-2 mt-3 items-end">
+            <div className="w-[130px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Estado</label>
               <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
@@ -610,8 +529,8 @@ export const Tasks: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Responsável</label>
+            <div className="w-[150px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável</label>
               <Select value={filters.responsavel} onValueChange={(value) => setFilters(prev => ({ ...prev, responsavel: value }))}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Todos" />
@@ -624,8 +543,8 @@ export const Tasks: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Prioridade</label>
+            <div className="w-[130px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Prioridade</label>
               <Select value={filters.prioridade} onValueChange={(value) => setFilters(prev => ({ ...prev, prioridade: value }))}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
@@ -638,66 +557,13 @@ export const Tasks: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Tipo</label>
-              <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="reuniao">Reunião</SelectItem>
-                  <SelectItem value="telefonema">Telefonema</SelectItem>
-                  <SelectItem value="tarefa">Compromisso</SelectItem>
-                  <SelectItem value="correspondencia_ctt">Correspondência CTT</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Linha de filtros: datas + checkboxes */}
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-2 mt-3 text-sm">
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Prazo de</label>
-              <Input
-                type="date"
-                value={filters.dataInicio}
-                onChange={(e) => setFilters(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="w-[140px] h-8 text-xs"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Prazo até</label>
-              <Input
-                type="date"
-                value={filters.dataFim}
-                onChange={(e) => setFilters(prev => ({ ...prev, dataFim: e.target.value }))}
-                className="w-[140px] h-8 text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-2 h-8">
-              <Checkbox
-                id="searchInFullContent"
-                checked={searchInFullContent}
-                onCheckedChange={(checked) => setSearchInFullContent(!!checked)}
-              />
-              <label htmlFor="searchInFullContent" className="cursor-pointer whitespace-nowrap text-xs">Pesquisar na descrição</label>
-            </div>
-            <div className="flex items-center gap-2 h-8">
-              <Checkbox
-                id="atrasadas"
-                checked={filters.atrasadas}
-                onCheckedChange={(checked) => setFilters(prev => ({ ...prev, atrasadas: !!checked }))}
-              />
-              <label htmlFor="atrasadas" className="cursor-pointer whitespace-nowrap text-xs">Só atrasadas</label>
-            </div>
             <div className="flex items-center gap-2 h-8">
               <Checkbox
                 id="showConcluidas"
                 checked={filters.showConcluidas}
                 onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showConcluidas: !!checked }))}
               />
-              <label htmlFor="showConcluidas" className="cursor-pointer whitespace-nowrap text-xs">Mostrar concluídos</label>
+              <label htmlFor="showConcluidas" className="cursor-pointer whitespace-nowrap text-xs">Incluir concluídas</label>
             </div>
           </div>
         </CardContent>

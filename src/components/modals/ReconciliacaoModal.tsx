@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Check, X, Link2 } from 'lucide-react';
 import { useSugestoesReconciliacao } from '@/hooks/useReconciliacao';
 import type { MovimentoBancario, TransacaoFinanceira } from '@/types/financeiro';
+import { formatCurrency } from '@/lib/utils';
 
 interface ReconciliacaoModalProps {
   isOpen: boolean;
@@ -13,11 +14,6 @@ interface ReconciliacaoModalProps {
   movimento: MovimentoBancario | null;
   onReconciliar: (movimentoBancarioId: number, transacaoId: number) => void;
 }
-
-const formatCurrency = (value: any) => {
-  const n = typeof value === 'number' ? value : Number(value) || 0;
-  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-};
 
 const formatDate = (value?: string) => {
   if (!value) return '-';

@@ -470,7 +470,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <ResizableDialogContent storageKey="process-details" defaultWidth={1152} defaultHeight={Math.round(window.innerHeight * 0.9)} minWidth={600} minHeight={400} className={`max-h-[95vh] !grid-rows-[1fr] overflow-hidden [&>button]:hidden transition-all p-0`}>
+      <ResizableDialogContent storageKey="process-details" defaultWidth={960} defaultHeight={Math.round(window.innerHeight * 0.82)} minWidth={600} minHeight={400} className={`max-h-[90vh] !grid-rows-[1fr] overflow-hidden [&>button]:hidden transition-all p-0`}>
         <div className="flex h-full min-h-0 overflow-hidden">
         <div className={`flex-1 min-w-0 p-6 flex flex-col min-h-0 overflow-hidden`}>
         <DialogHeader className="flex-shrink-0">
@@ -596,15 +596,13 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
               <TabsTrigger value="general">Geral</TabsTrigger>
-              <TabsTrigger value="workflow">Workflow</TabsTrigger>
-              <TabsTrigger value="tasks">Compromissos</TabsTrigger>
+              <TabsTrigger value="tasks">Tarefas</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
+              <TabsTrigger value="timeline">Histórico</TabsTrigger>
               <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
               <TabsTrigger value="correio">Correio</TabsTrigger>
-              <TabsTrigger value="calendar">Calendário</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6 mt-6">
@@ -682,7 +680,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       <Calendar className="h-4 w-4" />
                       <span>Data de Criação</span>
                     </label>
-                    <p className="text-sm">{new Date(process.criado_em).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-sm">{new Date(process.criado_em).toLocaleDateString('pt-PT')}</p>
                   </div>
                 </div>
 
@@ -888,16 +886,18 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               <div className="border-t pt-4">
                 <ProcessChecklistTab processoId={process.id} />
               </div>
-            </TabsContent>
 
-            <TabsContent value="workflow" className="mt-6">
-              <ProcessWorkflowTab processoId={process.id} />
+              {/* Etapas do Processo (antes era tab "Workflow" separado) */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3">Etapas do Processo</h3>
+                <ProcessWorkflowTab processoId={process.id} />
+              </div>
             </TabsContent>
 
             <TabsContent value="tasks" className="space-y-6 mt-6">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Compromissos Relacionados</h3>
+                  <h3 className="text-lg font-semibold">Tarefas do Processo</h3>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1121,7 +1121,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                         <span><strong>Prioridade:</strong> {getTaskPriorityLabel(task.prioridade)}</span>
                                       )}
                                       {task.data_fim && (
-                                        <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-BR')}</span>
+                                        <span><strong>Prazo:</strong> {new Date(task.data_fim).toLocaleDateString('pt-PT')}</span>
                                       )}
                                     </div>
                                   </div>
@@ -1185,7 +1185,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                               <span><strong>Prioridade:</strong> {getTaskPriorityLabel(subtask.prioridade)}</span>
                                             )}
                                             {subtask.data_fim && (
-                                              <span><strong>Prazo:</strong> {new Date(subtask.data_fim).toLocaleDateString('pt-BR')}</span>
+                                              <span><strong>Prazo:</strong> {new Date(subtask.data_fim).toLocaleDateString('pt-PT')}</span>
                                             )}
                                           </div>
                                         </div>
@@ -1232,44 +1232,11 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               {process && <ProcessCorreioTab processoId={process.id} clienteId={process.cliente_id} />}
             </TabsContent>
 
-            <TabsContent value="calendar" className="space-y-6 mt-6">
-              <h3 className="text-lg font-semibold">Calendário do processo</h3>
-              <p className="text-sm text-muted-foreground">Compromissos e prazos deste processo.</p>
-              <Card>
-                <CardContent className="p-4 min-h-[360px]">
-                  <FullCalendar
-                    plugins={[dayGridPlugin, listPlugin]}
-                    initialView="dayGridMonth"
-                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' }}
-                    locale={ptLocale}
-                    height="auto"
-                    events={processTasks
-                      .filter((t: any) => t.data_fim)
-                      .map((t: any) => ({
-                        id: String(t.id),
-                        title: t.titulo || '(sem título)',
-                        start: t.data_fim,
-                        allDay: true,
-                        extendedProps: { task: t },
-                        backgroundColor: t.concluida ? '#22c55e' : '#eab308',
-                        borderColor: t.concluida ? '#16a34a' : '#ca8a04',
-                        textColor: '#fff',
-                      }))}
-                    eventClick={(info) => {
-                      const task = info.event.extendedProps?.task;
-                      if (task) {
-                        setSelectedTask(task as Task);
-                        setIsTaskDetailsOpen(true);
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            {/* Tab Calendário removido — disponível na página Calendário principal */}
 
             <TabsContent value="timeline" className="space-y-6 mt-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Timeline do Processo</h3>
+                <h3 className="text-lg font-semibold">Histórico do Processo</h3>
                 <div className="flex gap-2">
                   {!meetingActive && (
                     <Button onClick={() => setIsStartMeetingOpen(true)} size="sm" variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
@@ -1316,7 +1283,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                                    </h4>
                                    <div className="flex items-center space-x-2">
                                      <span className="text-xs text-gray-500">
-                                       {new Date(log.data_hora).toLocaleString('pt-BR')}
+                                       {new Date(log.data_hora).toLocaleString('pt-PT')}
                                      </span>
                                      <Button
                                        variant="ghost"
@@ -1569,7 +1536,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                             {doc.criado_em && (
                               <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <Calendar className="h-3 w-3" />
-                                <span>Adicionado em {new Date(doc.criado_em).toLocaleDateString('pt-BR', {
+                                <span>Adicionado em {new Date(doc.criado_em).toLocaleDateString('pt-PT', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',

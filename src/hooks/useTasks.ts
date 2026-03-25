@@ -91,14 +91,14 @@ export const useTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (data?.id) trackItem('tarefa', data.id, 'criado', data.titulo);
       toast({
-        title: "Sucesso",
-        description: "Tarefa criada com sucesso.",
+        title: "Tarefa criada",
+        description: data?.titulo ? `"${data.titulo}" foi registada com sucesso.` : "A nova tarefa foi registada com sucesso.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro",
-        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao criar tarefa."),
+        title: "Erro ao criar tarefa",
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Não foi possível criar a tarefa. Verifique os campos obrigatórios."),
         variant: "destructive",
       });
     },
@@ -113,14 +113,14 @@ export const useTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (data?.id) trackItem('tarefa', data.id, 'atualizado', data.titulo);
       toast({
-        title: "Sucesso",
-        description: "Tarefa atualizada com sucesso.",
+        title: "Tarefa atualizada",
+        description: "As alterações foram guardadas.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro",
-        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao atualizar tarefa."),
+        title: "Erro ao atualizar tarefa",
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Não foi possível guardar as alterações."),
         variant: "destructive",
       });
     },
@@ -135,14 +135,14 @@ export const useTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       trackItem('tarefa', Number(id), 'eliminado');
       toast({
-        title: "Sucesso",
-        description: "Tarefa excluída com sucesso.",
+        title: "Tarefa eliminada",
+        description: "A tarefa foi removida com sucesso.",
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Erro ao excluir tarefa.",
+        title: "Erro ao eliminar tarefa",
+        description: "Não foi possível eliminar a tarefa. Poderá ter subtarefas associadas.",
         variant: "destructive",
       });
     },
@@ -160,15 +160,16 @@ export const useTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       const acao = variables.concluida ? 'concluida' : 'reaberta';
       trackItem('tarefa', Number(variables.id), acao, data?.titulo);
+      const msg = variables.concluida ? 'Tarefa concluída' : 'Tarefa reaberta';
       toast({
-        title: "Sucesso",
-        description: "Status da tarefa atualizado.",
+        title: msg,
+        description: variables.concluida ? 'A tarefa foi marcada como concluída.' : 'A tarefa foi reaberta e está pendente.',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Não foi possível concluir",
-        description: formatApiErrorDetail(error?.response?.data?.detail, "Erro ao atualizar status da tarefa."),
+        title: "Não foi possível atualizar a tarefa",
+        description: formatApiErrorDetail(error?.response?.data?.detail, "Verifique se existem subtarefas pendentes ou requisitos em falta."),
         variant: "destructive",
       });
     },

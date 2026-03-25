@@ -127,7 +127,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nome_empresa">Nome da empresa *</Label>
+                <Label htmlFor="nome_empresa">Nome da empresa <span className="text-red-500">*</span></Label>
                 <Input
                   id="nome_empresa"
                   {...register('nome_empresa')}
@@ -141,7 +141,7 @@ export const CorporateClientForm: React.FC<CorporateClientFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nif_empresa">NIF *</Label>
+                <Label htmlFor="nif_empresa">NIF <span className="text-red-500">*</span></Label>
                 <Input
                   id="nif_empresa"
                   {...register('nif_empresa')}

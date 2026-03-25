@@ -96,7 +96,7 @@ export const EmailInbox: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Mail className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Email</h1>
+          <h1 className="text-3xl font-bold">Email</h1>
           {naoLidos && naoLidos.nao_lidos > 0 && (
             <Badge variant="destructive">{naoLidos.nao_lidos} não lidos</Badge>
           )}

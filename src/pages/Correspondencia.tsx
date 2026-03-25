@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCorrespondencias, type Correspondencia } from '@/hooks/useCorrespondencia';
 import { CorrespondenciaModal } from '@/components/modals/CorrespondenciaModal';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const formatDate = (value?: string) => {
   if (!value) return '-';
@@ -36,6 +37,7 @@ export const CorrespondenciaPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Correspondencia | null>(null);
 
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const { correspondencias, isLoading, createCorrespondencia, updateCorrespondencia, deleteCorrespondencia } =
     useCorrespondencias({
       tipo: filtroTipo && filtroTipo !== 'all' ? filtroTipo : undefined,
@@ -50,17 +52,21 @@ export const CorrespondenciaPage: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Tem a certeza que pretende eliminar esta correspondência?')) {
-      deleteCorrespondencia.mutate(id);
-    }
+  const handleDelete = async (id: number) => {
+    const ok = await confirm({
+      title: 'Eliminar correspondência?',
+      description: 'Esta ação não pode ser revertida.',
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteCorrespondencia.mutate(id);
   };
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Correspondência</h1>
+          <h1 className="text-3xl font-bold">Correspondência</h1>
           <p className="text-sm text-muted-foreground">Controlo de envio e receção de cartas</p>
         </div>
         <Button onClick={() => { setEditItem(null); setModalOpen(true); }} className="gap-2">
@@ -149,6 +155,7 @@ export const CorrespondenciaPage: React.FC = () => {
         correspondencia={editItem}
         isLoading={createCorrespondencia.isPending || updateCorrespondencia.isPending}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 };

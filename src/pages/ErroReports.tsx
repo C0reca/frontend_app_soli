@@ -89,7 +89,7 @@ export const ErroReports: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Bug className="h-6 w-6" />
           Reportes de Erros
         </h1>

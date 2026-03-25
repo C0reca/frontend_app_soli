@@ -87,7 +87,7 @@ export const Profile: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">O Meu Perfil</h1>
+      <h1 className="text-3xl font-bold text-gray-900">O Meu Perfil</h1>
 
       {/* Informação da conta (read-only) */}
       <Card>

@@ -17,6 +17,7 @@ import { useClients } from '@/hooks/useClients';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/card-skeleton';
 
 export const IRS: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -287,8 +288,8 @@ export const IRS: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <TableSkeleton rows={8} cols={6} />
       </div>
     );
   }
@@ -514,7 +515,12 @@ export const IRS: React.FC = () => {
                   filteredIRS.map((irs: IRS) => (
                     <TableRow
                       key={irs.id}
-                      className={`cursor-pointer hover:bg-gray-50 ${selectedIds.has(irs.id) ? 'bg-blue-50' : ''}`}
+                      className={`cursor-pointer ${
+                        selectedIds.has(irs.id) ? 'bg-blue-50' :
+                        irs.estado === 'Pago' ? 'bg-green-50 hover:bg-green-100' :
+                        irs.estado === 'Isento' ? 'bg-gray-50 hover:bg-gray-100' :
+                        'bg-yellow-50 hover:bg-yellow-100'
+                      }`}
                       onClick={() => handleViewDetails(irs)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -766,38 +772,37 @@ export const IRS: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {isDetailsModalOpen && selectedIRSDetails && (
-        <IRSDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => {
-            setIsDetailsModalOpen(false);
-            setSelectedIRSDetails(null);
-            setOpenDetailsInReciboTab(false);
-          }}
-          irs={selectedIRSDetails}
-          onEdit={() => {
-            setIsDetailsModalOpen(false);
-            setSelectedIRSDetails(null);
-            setOpenDetailsInReciboTab(false);
-            handleEdit(selectedIRSDetails);
-          }}
-          onGenerateRecibo={() => {
-            handleGenerateRecibo(selectedIRSDetails);
-          }}
-          onOpenReciboWizard={(irs) => {
-            setIsDetailsModalOpen(false);
-            setSelectedIRSDetails(null);
-            setOpenDetailsInReciboTab(false);
-            const irsWithPagoState: IRS = {
-              ...irs,
-              estado: 'Pago' as const
-            };
-            setSelectedIRS(irsWithPagoState);
-            setIsModalOpen(true);
-          }}
-          initialTab={openDetailsInReciboTab && selectedIRSDetails.estado === 'Pago' ? 'recibo' : undefined}
-        />
-      )}
+      <IRSDetailsModal
+        isOpen={isDetailsModalOpen && !!selectedIRSDetails}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedIRSDetails(null);
+          setOpenDetailsInReciboTab(false);
+        }}
+        irs={selectedIRSDetails}
+        onEdit={() => {
+          setIsDetailsModalOpen(false);
+          const irs = selectedIRSDetails;
+          setSelectedIRSDetails(null);
+          setOpenDetailsInReciboTab(false);
+          if (irs) handleEdit(irs);
+        }}
+        onGenerateRecibo={() => {
+          if (selectedIRSDetails) handleGenerateRecibo(selectedIRSDetails);
+        }}
+        onOpenReciboWizard={(irs) => {
+          setIsDetailsModalOpen(false);
+          setSelectedIRSDetails(null);
+          setOpenDetailsInReciboTab(false);
+          const irsWithPagoState: IRS = {
+            ...irs,
+            estado: 'Pago' as const
+          };
+          setSelectedIRS(irsWithPagoState);
+          setIsModalOpen(true);
+        }}
+        initialTab={openDetailsInReciboTab && selectedIRSDetails?.estado === 'Pago' ? 'recibo' : undefined}
+      />
     </div>
   );
 };

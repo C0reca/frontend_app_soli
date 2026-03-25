@@ -15,6 +15,7 @@ import { Car, User, FileText, Calendar, CreditCard, CheckCircle, Download, Paper
 import { RegistoAutomovel, useRegistosAutomoveis } from '@/hooks/useRegistosAutomoveis';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import api from '@/services/api';
+import { formatCurrency } from '@/lib/utils';
 
 interface Props {
   isOpen: boolean;
@@ -34,11 +35,6 @@ export const RegistoAutomovelDetailsModal: React.FC<Props> = ({ isOpen, onClose,
     } catch {
       return d;
     }
-  };
-
-  const formatCurrency = (v?: number) => {
-    if (v == null) return '-';
-    return `${Number(v).toFixed(2)} €`;
   };
 
   const Field = ({ label, value }: { label: string; value: any }) => (
@@ -311,6 +307,19 @@ export const RegistoAutomovelDetailsModal: React.FC<Props> = ({ isOpen, onClose,
                     </div>
                   ))}
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* Transação Financeira */}
+          {registo.estado_pagamento === 'pago' && (
+            <>
+              <Separator />
+              <div className="flex items-center gap-2 text-xs">
+                <Badge className="bg-green-50 text-green-700">Transação financeira gerada automaticamente</Badge>
+                <span className="text-muted-foreground">
+                  Ref: [RA#{registo.id}] — Visível no Financeiro {'>'} Movimentos
+                </span>
               </div>
             </>
           )}

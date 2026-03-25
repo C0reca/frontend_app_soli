@@ -203,7 +203,7 @@ export const RegistoPredialDetailsModal: React.FC<RegistoPredialDetailsModalProp
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-600">Data</label>
-                <p className="text-sm">{new Date(registo.data).toLocaleDateString('pt-BR')}</p>
+                <p className="text-sm">{new Date(registo.data).toLocaleDateString('pt-PT')}</p>
               </div>
               {/* Data de Criação ocultada conforme pedido */}
             </div>

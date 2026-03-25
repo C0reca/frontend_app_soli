@@ -64,7 +64,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
       data: new Date().toISOString().slice(0, 10),
       metodo_pagamento: 'dinheiro',
       referencia: '',
-      gerar_movimento_caixa: false,
+      gerar_movimento_caixa: true,
       transacao_original_id: null,
       dias_lembrete: null,
     },
@@ -94,7 +94,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
           data: new Date().toISOString().slice(0, 10),
           metodo_pagamento: (reembolsoDe.metodo_pagamento as any) || 'dinheiro',
           referencia: '',
-          gerar_movimento_caixa: false,
+          gerar_movimento_caixa: true,
           transacao_original_id: reembolsoDe.id,
           dias_lembrete: 7,
         });
@@ -106,7 +106,7 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
           data: new Date().toISOString().slice(0, 10),
           metodo_pagamento: 'dinheiro',
           referencia: '',
-          gerar_movimento_caixa: false,
+          gerar_movimento_caixa: true,
           transacao_original_id: null,
           dias_lembrete: null,
         });
@@ -322,22 +322,6 @@ export const TransacaoModal: React.FC<TransacaoModalProps> = ({
                   )}
                 />
               </div>
-            )}
-
-            {/* Gerar movimento caixa */}
-            {!isEdit && (
-              <FormField
-                control={form.control}
-                name="gerar_movimento_caixa"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="font-normal">Gerar movimento de caixa automaticamente</FormLabel>
-                  </FormItem>
-                )}
-              />
             )}
 
             <DialogFooter>

@@ -7,6 +7,7 @@ import {
   Play, Pause, Square, X, Clock, Briefcase,
   PanelRightClose, PanelRightOpen, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -18,6 +19,7 @@ function formatTime(seconds: number): string {
 
 function SessionCard({ sessionId }: { sessionId: number }) {
   const { sessions, getElapsed, isSessionPaused, togglePause, endSession, setNotas, removeSession } = useWorkMode();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const session = sessions.find((s) => s.id === sessionId);
   const [expanded, setExpanded] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -32,10 +34,14 @@ function SessionCard({ sessionId }: { sessionId: number }) {
     try { await endSession(sessionId); } finally { setEnding(false); }
   };
 
-  const handleCancel = () => {
-    if (window.confirm('Cancelar esta sessão de trabalho?')) {
-      removeSession(sessionId);
-    }
+  const handleCancel = async () => {
+    const ok = await confirm({
+      title: 'Cancelar sessão?',
+      description: 'A sessão de trabalho será cancelada.',
+      confirmLabel: 'Cancelar sessão',
+      variant: 'destructive',
+    });
+    if (ok) removeSession(sessionId);
   };
 
   return (
@@ -77,6 +83,7 @@ function SessionCard({ sessionId }: { sessionId: number }) {
           </div>
         </div>
       )}
+      {ConfirmDialogComponent}
     </div>
   );
 }

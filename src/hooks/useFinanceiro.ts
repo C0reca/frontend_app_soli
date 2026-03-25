@@ -55,12 +55,14 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      queryClient.invalidateQueries({ queryKey: ['caixa'] });
+      queryClient.invalidateQueries({ queryKey: ['financeiro-dashboard'] });
       if (data?.id) trackItem('transacao', data.id, 'criado', data.descricao);
-      toast({ title: 'Sucesso', description: 'Transacao criada com sucesso.' });
+      toast({ title: 'Transação criada', description: 'A transação foi registada com sucesso.' });
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.detail || 'Erro ao criar transacao.';
-      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+      const msg = error?.response?.data?.detail || 'Não foi possível criar a transação. Verifique os dados e tente novamente.';
+      toast({ title: 'Erro ao criar transação', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
     },
   });
 
@@ -74,11 +76,11 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
       trackItem('transacao', variables.id, 'atualizado', data?.descricao);
-      toast({ title: 'Sucesso', description: 'Transacao atualizada com sucesso.' });
+      toast({ title: 'Transação atualizada', description: 'As alterações foram guardadas.' });
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.detail || 'Erro ao atualizar transacao.';
-      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+      const msg = error?.response?.data?.detail || 'Não foi possível atualizar a transação.';
+      toast({ title: 'Erro ao atualizar transação', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
     },
   });
 
@@ -91,12 +93,14 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
       queryClient.invalidateQueries({ queryKey: ['conta-corrente'] });
       queryClient.invalidateQueries({ queryKey: ['resumo-financeiro'] });
+      queryClient.invalidateQueries({ queryKey: ['caixa'] });
+      queryClient.invalidateQueries({ queryKey: ['financeiro-dashboard'] });
       trackItem('transacao', id, 'eliminado');
-      toast({ title: 'Sucesso', description: 'Transacao eliminada.' });
+      toast({ title: 'Transação eliminada', description: 'A transação foi removida com sucesso.' });
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.detail || 'Erro ao eliminar transacao.';
-      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+      const msg = error?.response?.data?.detail || 'Não foi possível eliminar a transação.';
+      toast({ title: 'Erro ao eliminar transação', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
     },
   });
 
@@ -111,10 +115,10 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
-      toast({ title: 'Sucesso', description: 'Anexo adicionado.' });
+      toast({ title: 'Anexo adicionado', description: 'O ficheiro foi anexado à transação.' });
     },
     onError: () => {
-      toast({ title: 'Erro', description: 'Erro ao carregar anexo.', variant: 'destructive' });
+      toast({ title: 'Erro ao anexar ficheiro', description: 'Não foi possível carregar o ficheiro. Verifique o tamanho e formato.', variant: 'destructive' });
     },
   });
 
@@ -124,10 +128,10 @@ export const useTransacoes = (params: ListTransacoesParams = {}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transacoes'] });
-      toast({ title: 'Sucesso', description: 'Anexo removido.' });
+      toast({ title: 'Anexo removido', description: 'O ficheiro foi eliminado.' });
     },
     onError: () => {
-      toast({ title: 'Erro', description: 'Erro ao remover anexo.', variant: 'destructive' });
+      toast({ title: 'Erro ao remover anexo', description: 'Não foi possível remover o ficheiro.', variant: 'destructive' });
     },
   });
 

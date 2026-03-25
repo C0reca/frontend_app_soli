@@ -4,6 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, Search, Building, CheckCircle, XCircle, AlertTriangle, Clock, Edit, Trash2, Eye, Archive, X, FileDown, Calendar, CalendarDays } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRegistosPrediais, RegistoPredial } from '@/hooks/useRegistosPrediais';
@@ -14,6 +21,7 @@ import { ClickableClientName } from '@/components/ClickableClientName';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
 import api from '@/services/api';
+import { CardListSkeleton } from '@/components/ui/card-skeleton';
 
 export const RegistosPrediais: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
@@ -119,6 +127,34 @@ export const RegistosPrediais: React.FC = () => {
     }
   };
 
+  const getSelectEstadoClasses = (estado: string) => {
+    switch (estado) {
+      case 'concluido':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'desistencia':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'recusado':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'em_registo':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const handleChangeEstado = async (registo: RegistoPredial, novoEstado: string) => {
+    const estadoLabel: Record<string, string> = {
+      concluido: 'Concluído',
+      desistencia: 'Desistência',
+      recusado: 'Recusado',
+      em_registo: 'Em Registo',
+    };
+    await updateRegisto.mutateAsync({
+      id: registo.id,
+      estado: estadoLabel[novoEstado] || novoEstado,
+    });
+  };
+
   const handleView = (registo: RegistoPredial) => {
     setSelectedRegistoDetails(registo);
     setIsDetailsModalOpen(true);
@@ -179,16 +215,7 @@ export const RegistosPrediais: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-        <Card className="animate-pulse">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <CardListSkeleton count={5} />
       </div>
     );
   }
@@ -359,11 +386,12 @@ export const RegistosPrediais: React.FC = () => {
                 onClick={() => handleView(registo)}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Left: content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex items-center gap-2 mb-1">
                         {getStatusIcon(registo.estado_key)}
-                        <h3 className="font-semibold">
+                        <h3 className="font-semibold text-sm">
                           {registo.numero_processo} -{' '}
                           <ClickableClientName
                             clientId={registo.cliente_id}
@@ -371,14 +399,11 @@ export const RegistosPrediais: React.FC = () => {
                             clientName={registo.cliente?.nome || clientNameById(registo.cliente_id) || 'N/A'}
                           />
                         </h3>
-                        <Badge className={getStatusColor(registo.estado_key)}>
-                          {getStatusLabel(registo.estado_key)}
-                        </Badge>
                       </div>
 
                       {/* Prédios */}
                       {registo.predios && registo.predios.length > 0 ? (
-                        <div className="mb-2 space-y-1">
+                        <div className="mb-1.5 space-y-0.5">
                           {registo.predios.map((p: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
                               <Building className="h-3.5 w-3.5 text-gray-400 shrink-0" />
@@ -390,63 +415,80 @@ export const RegistosPrediais: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-700 mb-2">
+                        <p className="text-sm text-gray-700 mb-1.5">
                           <Building className="h-3.5 w-3.5 text-gray-400 inline mr-1" />
                           {registo.predio}{registo.freguesia ? ` - ${registo.freguesia}` : ''}
                         </p>
                       )}
 
-                      {/* Detalhes */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs text-gray-500">
+                      {/* Metadata */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
                         <span><strong>Registo:</strong> {registo.registo}</span>
                         <span><strong>Conservatória:</strong> {registo.conservatoria}</span>
                         <span><strong>Facto de Registo:</strong> {registo.requisicao}</span>
                         <span><strong>Apresentação:</strong> {registo.apresentacao}</span>
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        <span><strong>Data:</strong> {new Date(registo.data).toLocaleDateString('pt-BR')}</span>
+                        <span><strong>Data:</strong> {new Date(registo.data).toLocaleDateString('pt-PT')}</span>
                         {registo.apresentacao_complementar && (
-                          <span className="ml-4"><strong>Apresentação Complementar:</strong> {registo.apresentacao_complementar}</span>
+                          <span><strong>Apresentação Complementar:</strong> {registo.apresentacao_complementar}</span>
                         )}
                         {registo.outras_observacoes && (
-                          <span className="ml-4"><strong>Observações:</strong> {registo.outras_observacoes}</span>
+                          <span><strong>Observações:</strong> {registo.outras_observacoes}</span>
                         )}
                       </div>
                     </div>
-                    <div className="flex space-x-2 ml-4 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {registo.estado_key !== 'concluido' && (
+
+                    {/* Right column */}
+                    <div className="shrink-0 flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      {/* Estado select */}
+                      <Select
+                        value={registo.estado_key || 'em_registo'}
+                        onValueChange={(val) => handleChangeEstado(registo, val)}
+                      >
+                        <SelectTrigger className={`h-7 w-[130px] rounded-full border-2 text-xs font-medium ${getSelectEstadoClasses(registo.estado_key)}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="em_registo">Em Registo</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
+                          <SelectItem value="recusado">Recusado</SelectItem>
+                          <SelectItem value="desistencia">Desistência</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleMarkAsConcluido(registo)}
-                          className="text-green-600 hover:text-green-700"
-                          title="Marcar como concluído"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => handleView(registo)}
+                          title="Ver detalhes"
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleView(registo)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(registo)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(registo.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        {canEdit("registos_prediais") && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => handleEdit(registo)}
+                              title="Editar"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                              onClick={() => handleDelete(registo.id)}
+                              title="Eliminar"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>

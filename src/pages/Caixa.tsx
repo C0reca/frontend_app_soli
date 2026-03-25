@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2, Download, Upload, Link2, Unlink, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,14 +19,19 @@ import api from '@/services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useClients, getEffectiveTipo } from '@/hooks/useClients';
 import { printTalao } from '@/utils/printTalao';
 import { TalaoPreviewModal } from '@/components/modals/TalaoPreviewModal';
 import { ToastAction } from '@/components/ui/toast';
 
-export const Caixa: React.FC = () => {
+interface CaixaProps {
+  embedded?: boolean;
+  defaultTab?: string;
+}
+
+export const Caixa: React.FC<CaixaProps> = ({ embedded = false, defaultTab = 'movimentos' }) => {
   const { canCreate, canEdit } = usePermissions();
   const [isMovimentoModalOpen, setIsMovimentoModalOpen] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<string>('');
@@ -54,6 +60,7 @@ export const Caixa: React.FC = () => {
     refetch
   } = useCaixa();
   const { clients } = useClients();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   const getClientName = (clienteId: number | null | undefined): string | null => {
     if (!clienteId || !clients) return null;
@@ -82,10 +89,14 @@ export const Caixa: React.FC = () => {
     reconciliar.mutate({ movimentoBancarioId, transacaoId });
   };
 
-  const handleDesreconciliar = (movimentoBancarioId: number) => {
-    if (window.confirm('Remover reconciliacao deste movimento?')) {
-      desreconciliar.mutate(movimentoBancarioId);
-    }
+  const handleDesreconciliar = async (movimentoBancarioId: number) => {
+    const ok = await confirm({
+      title: 'Remover reconciliação?',
+      description: 'O movimento bancário ficará novamente pendente de reconciliação.',
+      confirmLabel: 'Remover',
+      variant: 'destructive',
+    });
+    if (ok) desreconciliar.mutate(movimentoBancarioId);
   };
 
   const selectedFecho = useMemo(() => {
@@ -228,7 +239,12 @@ export const Caixa: React.FC = () => {
   };
 
   const handleApagarMovimento = async (movimento: MovimentoCaixa) => {
-    const confirmar = window.confirm("Tem a certeza que pretende apagar este movimento?");
+    const confirmar = await confirm({
+      title: 'Apagar movimento?',
+      description: `O movimento "${movimento.descricao || ''}" de ${formatCurrency(movimento.valor)} será eliminado permanentemente.`,
+      confirmLabel: 'Apagar',
+      variant: 'destructive',
+    });
     if (!confirmar) return;
 
     try {
@@ -268,13 +284,6 @@ export const Caixa: React.FC = () => {
     return matchTipo && matchDataInicio && matchDataFim;
   });
 
-  const formatCurrency = (value: any) => {
-    const n = typeof value === 'number' ? value : Number(value) || 0;
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(n);
-  };
 
   const formatDate = (value?: string, pattern = "dd/MM/yyyy") => {
     if (!value) return '-';
@@ -286,7 +295,7 @@ export const Caixa: React.FC = () => {
 const formatTransferType = (value?: string | null) => {
   switch (value) {
     case 'mb':
-      return 'Mb';
+      return 'Multibanco';
     case 'transferencia':
       return 'Transferência';
     default:
@@ -296,13 +305,47 @@ const formatTransferType = (value?: string | null) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestão de Caixa</h1>
-          <p className="text-muted-foreground">
-            Controle de movimentos e fechos de caixa
-          </p>
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Gestao de Caixa</h1>
+            <p className="text-muted-foreground">
+              Controle de movimentos e fechos de caixa
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {canCreate("caixa") && (
+              <Button
+                onClick={() => {
+                  setModalMode('create');
+                  setMovimentoSelecionado(null);
+                  setIsMovimentoModalOpen(true);
+                }}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Novo Movimento
+              </Button>
+            )}
+            <Button
+              onClick={handleFecharCaixaClick}
+              variant="outline"
+              className="gap-2"
+              disabled={
+                isLoading ||
+                isFecharLoading ||
+                !resumoDia ||
+                (resumoDia.total_entradas === 0 && resumoDia.total_saidas === 0)
+              }
+            >
+              <DollarSign className="h-4 w-4" />
+              Fechar Caixa do Dia
+            </Button>
+          </div>
         </div>
+      )}
+
+      {embedded && (
         <div className="flex items-center gap-2">
           {canCreate("caixa") && (
             <Button
@@ -312,6 +355,7 @@ const formatTransferType = (value?: string | null) => {
                 setIsMovimentoModalOpen(true);
               }}
               className="gap-2"
+              size="sm"
             >
               <Plus className="h-4 w-4" />
               Novo Movimento
@@ -321,6 +365,7 @@ const formatTransferType = (value?: string | null) => {
             onClick={handleFecharCaixaClick}
             variant="outline"
             className="gap-2"
+            size="sm"
             disabled={
               isLoading ||
               isFecharLoading ||
@@ -332,7 +377,7 @@ const formatTransferType = (value?: string | null) => {
             Fechar Caixa do Dia
           </Button>
         </div>
-      </div>
+      )}
 
       {/* Resumo do Dia */}
       {resumoDia && (
@@ -393,12 +438,19 @@ const formatTransferType = (value?: string | null) => {
         </div>
       )}
 
-      <Tabs defaultValue="movimentos" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="movimentos">Movimentos</TabsTrigger>
-          <TabsTrigger value="fechos">Fechos</TabsTrigger>
-          <TabsTrigger value="reconciliacao">Reconciliacao</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue={defaultTab} className="w-full">
+        {!embedded ? (
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="movimentos">Movimentos</TabsTrigger>
+            <TabsTrigger value="fechos">Fechos</TabsTrigger>
+            <TabsTrigger value="reconciliacao">Reconciliacao</TabsTrigger>
+          </TabsList>
+        ) : defaultTab !== 'reconciliacao' ? (
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="movimentos">Movimentos</TabsTrigger>
+            <TabsTrigger value="fechos">Fechos</TabsTrigger>
+          </TabsList>
+        ) : null}
 
         <TabsContent value="movimentos" className="space-y-4">
           {/* Filtros */}
@@ -553,6 +605,21 @@ const formatTransferType = (value?: string | null) => {
                       ))
                     )}
                   </TableBody>
+                  {movimentosFiltrados.length > 0 && (
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={3} className="font-medium">Total ({movimentosFiltrados.length})</TableCell>
+                        <TableCell className="font-bold">
+                          {formatCurrency(movimentosFiltrados.reduce((s, m) => s + Number(m.valor), 0))}
+                        </TableCell>
+                        <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                          Entradas: <span className="text-green-600 font-medium">{formatCurrency(movimentosFiltrados.filter(m => m.tipo === 'entrada').reduce((s, m) => s + Number(m.valor), 0))}</span>
+                          {' · '}
+                          Saídas: <span className="text-red-600 font-medium">{formatCurrency(movimentosFiltrados.filter(m => m.tipo === 'saida').reduce((s, m) => s + Number(m.valor), 0))}</span>
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  )}
                 </Table>
               </div>
             </CardContent>
@@ -659,7 +726,7 @@ const formatTransferType = (value?: string | null) => {
                       saidas: selectedFecho.total_saidas_dinheiro,
                     },
                     {
-                      label: 'MB',
+                      label: 'Multibanco',
                       entradas: selectedFecho.total_entradas_mb,
                       saidas: selectedFecho.total_saidas_mb,
                     },
@@ -878,6 +945,7 @@ const formatTransferType = (value?: string | null) => {
         onConfirm={handleConfirmFecharCaixa}
         isSubmitting={isFecharLoading}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 };

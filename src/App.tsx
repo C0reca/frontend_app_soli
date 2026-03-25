@@ -50,6 +50,7 @@ import { PortalStand } from "@/pages/PortalStand";
 import { FormularioPublicoPage } from "@/pages/FormularioPublicoPage";
 import { Conservatorias } from "@/pages/Conservatorias";
 import { AutoFinanceiro } from "@/pages/AutoFinanceiro";
+import { Financeiro } from "@/pages/Financeiro";
 import { EmailInbox } from "@/pages/EmailInbox";
 import { WhatsAppPage } from "@/pages/WhatsAppPage";
 
@@ -122,8 +123,9 @@ const AppRoutes = () => {
         <Route path="document-templates/lixeira" element={<ManagerRoute><TemplatesLixeira /></ManagerRoute>} />
         <Route path="documentos" element={<ManagerRoute><Documents /></ManagerRoute>} />
         <Route path="calendario" element={<Calendar />} />
-        <Route path="caixa" element={<ManagerRoute><Caixa /></ManagerRoute>} />
-        <Route path="conta-corrente" element={<ManagerRoute><ContaCorrente /></ManagerRoute>} />
+        <Route path="financeiro" element={<ManagerRoute><Financeiro /></ManagerRoute>} />
+        <Route path="caixa" element={<Navigate to="/financeiro?tab=caixa" replace />} />
+        <Route path="conta-corrente" element={<Navigate to="/financeiro?tab=contas" replace />} />
         <Route path="servicos-externos" element={<ServicosExternos />} />
         <Route path="perfil" element={<Profile />} />
         <Route path="notificacoes" element={<Notifications />} />
@@ -141,7 +143,7 @@ const AppRoutes = () => {
         <Route path="stand-users" element={<ManagerRoute><StandUsers /></ManagerRoute>} />
         <Route path="formularios-publicos" element={<FormulariosPublicos />} />
         <Route path="conservatorias" element={<Conservatorias />} />
-        <Route path="auto-financeiro" element={<ManagerRoute><AutoFinanceiro /></ManagerRoute>} />
+        <Route path="auto-financeiro" element={<Navigate to="/financeiro?tab=resumo" replace />} />
         <Route path="email-inbox" element={<EmailInbox />} />
         <Route path="whatsapp" element={<WhatsAppPage />} />
       </Route>

@@ -114,14 +114,14 @@ export const useDossies = (entidadeId?: number) => {
       }
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: "Sucesso",
-        description: "Arquivo criado com sucesso.",
+        title: "Arquivo criado",
+        description: "O arquivo foi criado com sucesso.",
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Erro ao criar arquivo.",
+        title: "Erro ao criar arquivo",
+        description: "Não foi possível criar o arquivo.",
         variant: "destructive",
       });
     },
@@ -138,14 +138,14 @@ export const useDossies = (entidadeId?: number) => {
         queryClient.invalidateQueries({ queryKey: ['dossie', 'entidade', data.entidade_id] });
       }
       toast({
-        title: "Sucesso",
-        description: "Arquivo atualizado com sucesso.",
+        title: "Arquivo atualizado",
+        description: "As alterações ao arquivo foram guardadas.",
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar arquivo.",
+        title: "Erro ao atualizar arquivo",
+        description: "Não foi possível guardar as alterações.",
         variant: "destructive",
       });
     },
@@ -162,15 +162,15 @@ export const useDossies = (entidadeId?: number) => {
         queryClient.invalidateQueries({ queryKey: ['dossie', 'entidade', data.entidade_id] });
       }
       toast({
-        title: "Sucesso",
-        description: "Entidade do arquivo alterada com sucesso.",
+        title: "Entidade alterada",
+        description: "A entidade do arquivo foi atualizada.",
       });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
       toast({
-        title: "Erro",
-        description: detail || "Erro ao alterar entidade do arquivo.",
+        title: "Erro ao alterar entidade",
+        description: detail || "Não foi possível alterar a entidade do arquivo.",
         variant: "destructive",
       });
     },
@@ -184,14 +184,14 @@ export const useDossies = (entidadeId?: number) => {
       queryClient.invalidateQueries({ queryKey: ['dossies'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: "Sucesso",
-        description: "Arquivo excluído com sucesso.",
+        title: "Arquivo eliminado",
+        description: "O arquivo foi removido com sucesso.",
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Erro ao excluir arquivo.",
+        title: "Erro ao eliminar arquivo",
+        description: "Não foi possível remover o arquivo.",
         variant: "destructive",
       });
     },

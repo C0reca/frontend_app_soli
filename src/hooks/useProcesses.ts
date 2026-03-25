@@ -90,11 +90,11 @@ export const useProcesses = () => {
       const response = await api.post('/processos', process);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
       toast({
-        title: "Sucesso",
-        description: "Processo criado com sucesso.",
+        title: "Processo criado",
+        description: data?.referencia ? `Ref: ${data.referencia} — ${data.titulo || ''}` : "O processo foi criado com sucesso.",
       });
     },
     onError: (error: any) => {
@@ -103,7 +103,7 @@ export const useProcesses = () => {
                           error?.message || 
                           "Erro ao criar processo.";
       toast({
-        title: "Erro",
+        title: "Erro ao criar processo",
         description: errorMessage,
         variant: "destructive",
       });
@@ -118,8 +118,8 @@ export const useProcesses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
       toast({
-        title: "Sucesso",
-        description: "Processo atualizado com sucesso.",
+        title: "Processo atualizado",
+        description: "As alterações foram guardadas.",
       });
     },
     onError: (error: any) => {
@@ -142,7 +142,7 @@ export const useProcesses = () => {
       }
       
       toast({
-        title: "Erro",
+        title: "Erro ao atualizar processo",
         description: errorMessage,
         variant: "destructive",
       });
@@ -156,14 +156,14 @@ export const useProcesses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
       toast({
-        title: "Sucesso",
-        description: "Processo arquivado com sucesso.",
+        title: "Processo arquivado",
+        description: "O processo foi movido para arquivo.",
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Erro ao arquivar processo.",
+        title: "Erro ao arquivar processo",
+        description: "Não foi possível arquivar o processo.",
         variant: "destructive",
       });
     },
@@ -181,10 +181,10 @@ export const useProcesses = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
-      toast({ title: 'Sucesso', description: 'Processo desarquivado.' });
+      toast({ title: 'Processo restaurado', description: 'O processo foi desarquivado com sucesso.' });
     },
     onError: () => {
-      toast({ title: 'Erro', description: 'Erro ao desarquivar processo.', variant: 'destructive' });
+      toast({ title: 'Erro ao desarquivar processo', description: 'Não foi possível restaurar o processo.', variant: 'destructive' });
     }
   });
 
@@ -195,11 +195,11 @@ export const useProcesses = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
-      toast({ title: 'Sucesso', description: 'Processo duplicado com sucesso.' });
+      toast({ title: 'Processo duplicado', description: 'A cópia do processo foi criada.' });
     },
     onError: (error: any) => {
       const msg = error?.response?.data?.detail ?? 'Erro ao duplicar processo.';
-      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+      toast({ title: 'Erro ao duplicar processo', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
     },
   });
 
@@ -211,11 +211,11 @@ export const useProcesses = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
       queryClient.invalidateQueries({ queryKey: ['processo', variables.processoId] });
-      toast({ title: 'Sucesso', description: 'Visibilidade do processo atualizada.' });
+      toast({ title: 'Visibilidade atualizada', description: 'As permissões de acesso ao processo foram alteradas.' });
     },
     onError: (error: any) => {
       const msg = error?.response?.data?.detail ?? 'Erro ao atualizar visibilidade.';
-      toast({ title: 'Erro', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
+      toast({ title: 'Erro ao alterar visibilidade', description: typeof msg === 'string' ? msg : JSON.stringify(msg), variant: 'destructive' });
     },
   });
 

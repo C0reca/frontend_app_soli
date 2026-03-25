@@ -9,6 +9,7 @@ import {
   MessageSquare, PanelRightClose, PanelRightOpen, RefreshCw, Edit, Trash2, ArrowRightLeft,
   ShieldCheck, TrendingUp,
 } from 'lucide-react';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -101,6 +102,7 @@ function MarketingAlert({ clienteId }: { clienteId: number | null }) {
 export const MeetingWidget: React.FC = () => {
   const { meeting, isActive, isPaused, elapsedSeconds, endMeeting, cancelMeeting, togglePause, setNotas } =
     useMeeting();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const [minimized, setMinimized] = useState(false);
   const [ending, setEnding] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -117,7 +119,13 @@ export const MeetingWidget: React.FC = () => {
   };
 
   const handleCancel = async () => {
-    if (!window.confirm('Tem a certeza que quer cancelar esta reunião? Os dados serão perdidos.')) return;
+    const ok = await confirm({
+      title: 'Cancelar reunião?',
+      description: 'Os dados da reunião serão perdidos.',
+      confirmLabel: 'Cancelar reunião',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     setCancelling(true);
     try {
       await cancelMeeting();
@@ -246,6 +254,7 @@ export const MeetingWidget: React.FC = () => {
           {cancelling ? 'A cancelar...' : 'Cancelar Reunião'}
         </Button>
       </div>
+      {ConfirmDialogComponent}
     </div>
   );
 };

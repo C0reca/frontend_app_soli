@@ -675,23 +675,23 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <DynamicSelect
-                    categoria="categoria_entidade"
-                    value={watch('categoria') || ''}
-                    onValueChange={(value) => setValue('categoria', value)}
-                    placeholder="Selecionar categoria..."
-                    fallbackOptions={[
-                      { value: 'particular', label: 'Particular' },
-                      { value: 'stand', label: 'Stand' },
-                      { value: 'banco', label: 'Banco' },
-                      { value: 'empresa', label: 'Empresa' },
-                      { value: 'seguradora', label: 'Seguradora' },
-                      { value: 'outro', label: 'Outro' },
-                    ]}
-                  />
-                </div>
+                {tipo === 'coletivo' && (
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <DynamicSelect
+                      categoria="categoria_entidade"
+                      value={watch('categoria') || ''}
+                      onValueChange={(value) => setValue('categoria', value)}
+                      placeholder="Selecionar categoria..."
+                      fallbackOptions={[
+                        { value: 'stand', label: 'Stand' },
+                        { value: 'banco', label: 'Banco' },
+                        { value: 'seguradora', label: 'Seguradora' },
+                        { value: 'outro', label: 'Outro' },
+                      ]}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -10,6 +10,7 @@ import { useEmailsEnviados } from '@/hooks/useEmailTemplates';
 import { useWhatsAppMensagens, useWhatsAppStatus, useWhatsAppMutations } from '@/hooks/useWhatsApp';
 import { CorrespondenciaModal } from '@/components/modals/CorrespondenciaModal';
 import { EnviarEmailModal } from '@/components/modals/EnviarEmailModal';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface ProcessCorreioTabProps {
   processoId: number;
@@ -31,6 +32,7 @@ const formatTime = (value?: string) => {
 };
 
 export const ProcessCorreioTab: React.FC<ProcessCorreioTabProps> = ({ processoId, clienteId }) => {
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const [corrModalOpen, setCorrModalOpen] = useState(false);
   const [editCorr, setEditCorr] = useState<Correspondencia | null>(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -58,8 +60,13 @@ export const ProcessCorreioTab: React.FC<ProcessCorreioTabProps> = ({ processoId
     }
   };
 
-  const handleDeleteCorr = (id: number) => {
-    if (window.confirm('Eliminar esta correspondência?')) deleteCorrespondencia.mutate(id);
+  const handleDeleteCorr = async (id: number) => {
+    const ok = await confirm({
+      title: 'Eliminar correspondência?',
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteCorrespondencia.mutate(id);
   };
 
   const handleSendWA = () => {
@@ -281,6 +288,7 @@ export const ProcessCorreioTab: React.FC<ProcessCorreioTabProps> = ({ processoId
         onClose={() => setEmailModalOpen(false)}
         processoId={processoId}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 };

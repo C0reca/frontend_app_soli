@@ -9,6 +9,7 @@ import { Send, AlertTriangle } from 'lucide-react';
 import { useCobrancaPreview, useCobrancaActions } from '@/hooks/useCobranca';
 import { useClients } from '@/hooks/useClients';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/lib/utils';
 
 interface CobrancaEmailModalProps {
   isOpen: boolean;
@@ -16,11 +17,6 @@ interface CobrancaEmailModalProps {
   clienteId: number | null;
   clienteNome?: string;
 }
-
-const formatCurrency = (value: any) => {
-  const n = typeof value === 'number' ? value : Number(value) || 0;
-  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-};
 
 export const CobrancaEmailModal: React.FC<CobrancaEmailModalProps> = ({
   isOpen,

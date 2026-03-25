@@ -23,12 +23,14 @@ import {
 import { useRegistosAutomoveis, RegistoAutomovel } from '@/hooks/useRegistosAutomoveis';
 import { useStandSemanas, StandSemana } from '@/hooks/useStandSemanas';
 import { useClients } from '@/hooks/useClients';
+import { CardListSkeleton } from '@/components/ui/card-skeleton';
 import { RegistoAutomovelModal } from '@/components/modals/RegistoAutomovelModal';
 import { RegistoAutomovelDetailsModal } from '@/components/modals/RegistoAutomovelDetailsModal';
 import { StandSemanaModal } from '@/components/modals/StandSemanaModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { usePermissions } from '@/hooks/usePermissions';
 import { normalizeString } from '@/lib/utils';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import api from '@/services/api';
 
 // Helper: get Monday of a given date's week
@@ -52,6 +54,7 @@ function formatDatePT(d?: string): string {
 
 export const RegistosAutomoveis: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('todos');
   const [filterPagamento, setFilterPagamento] = useState<string>('todos');
@@ -60,7 +63,7 @@ export const RegistosAutomoveis: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(getMonday(new Date()));
 
-  const { registos, isLoading, deleteRegisto, changeEstado } = useRegistosAutomoveis();
+  const { registos, isLoading, deleteRegisto, changeEstado, togglePagamento } = useRegistosAutomoveis();
   const { semanas, isLoading: isLoadingSemanas, fecharSemana, deleteSemana } = useStandSemanas();
   const { clients } = useClients();
 
@@ -205,17 +208,26 @@ export const RegistosAutomoveis: React.FC = () => {
   const isToday = formatDateISO(selectedDate) === formatDateISO(new Date());
   const isThisWeek = formatDateISO(selectedWeekStart) === formatDateISO(getMonday(new Date()));
 
+  const getCardColor = (r: RegistoAutomovel) => {
+    if (r.estado === 'concluido') return 'border-green-200 bg-green-50';
+    if (r.estado === 'recusado') return 'border-red-200 bg-red-50';
+    if (r.estado === 'em_curso') return 'border-blue-200 bg-blue-50';
+    if (r.estado_pagamento === 'pago') return 'border-green-200 bg-green-50';
+    return 'border-yellow-200 bg-yellow-50';
+  };
+
   // Shared registo card renderer
   const RegistoCard = ({ r }: { r: RegistoAutomovel }) => (
     <Card
       key={r.id}
-      className="hover:shadow-md transition-shadow cursor-pointer"
+      className={`hover:shadow-md transition-shadow cursor-pointer ${getCardColor(r)}`}
       onClick={() => handleView(r)}
     >
       <CardContent className="p-3">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
+          {/* Left: content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-1.5 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <Car className="h-3.5 w-3.5 text-gray-400" />
               <h3 className="font-semibold text-sm">
                 {r.matricula || 'Sem matrícula'}
@@ -229,27 +241,9 @@ export const RegistosAutomoveis: React.FC = () => {
                   {r.entidade.nome}
                 </span>
               )}
-              <div onClick={(e) => e.stopPropagation()}>
-                <Select
-                  value={r.estado || 'pendente'}
-                  onValueChange={(val) => changeEstado.mutate({ id: r.id, estado: val })}
-                >
-                  <SelectTrigger className={`h-6 w-[120px] rounded-full border-2 text-xs font-medium ${getEstadoClasses(r.estado)}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="em_curso">Em Curso</SelectItem>
-                    <SelectItem value="concluido">Concluído</SelectItem>
-                    <SelectItem value="recusado">Recusado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Badge className={`text-xs ${r.estado_pagamento === 'pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                {r.estado_pagamento === 'pago' ? 'Pago' : 'Pendente'}
-              </Badge>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-0.5 text-xs text-gray-500">
+            {/* Metadata */}
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
               {r.entidade ? (
                 <span>
                   <strong>Entidade:</strong>{' '}
@@ -265,25 +259,84 @@ export const RegistosAutomoveis: React.FC = () => {
               <span><strong>Criado:</strong> {formatDatePT(r.data_criacao)}</span>
             </div>
           </div>
-          <div className="flex space-x-1 ml-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleView(r)}>
-              <Eye className="h-3.5 w-3.5" />
-            </Button>
-            {canEdit("registos_automoveis") && (
-              <>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(r)}>
-                  <Edit className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                  onClick={() => handleDelete(r.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </>
-            )}
+
+          {/* Right column */}
+          <div className="shrink-0 flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
+            {/* Estado selects */}
+            <div className="flex items-center gap-1.5">
+              <Select
+                value={r.estado || 'pendente'}
+                onValueChange={(val) => changeEstado.mutate({ id: r.id, estado: val })}
+              >
+                <SelectTrigger className={`h-7 w-[120px] rounded-full border-2 text-xs font-medium ${getEstadoClasses(r.estado)}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="em_curso">Em Curso</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                  <SelectItem value="recusado">Recusado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={r.estado_pagamento || 'pendente'}
+                onValueChange={async (val) => {
+                  const novoPago = val === 'pago';
+                  if (novoPago) {
+                    const ok = await confirm({
+                      title: 'Marcar como pago?',
+                      description: 'Será criada uma transação financeira automaticamente.',
+                      confirmLabel: 'Marcar como pago',
+                    });
+                    if (!ok) return;
+                  }
+                  togglePagamento.mutate({ id: r.id, pago: novoPago });
+                }}
+              >
+                <SelectTrigger className={`h-7 w-[100px] rounded-full border-2 text-xs font-medium ${r.estado_pagamento === 'pago' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => handleView(r)}
+                title="Ver detalhes"
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </Button>
+              {canEdit("registos_automoveis") && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleEdit(r)}
+                    title="Editar"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                    onClick={() => handleDelete(r.id)}
+                    title="Eliminar"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
@@ -303,7 +356,7 @@ export const RegistosAutomoveis: React.FC = () => {
     loading: boolean;
   }) => {
     if (loading) {
-      return <div className="text-center py-8 text-gray-500">A carregar...</div>;
+      return <CardListSkeleton count={3} />;
     }
 
     const totalItems = standGroups.reduce((acc, g) => acc + g.registos.length, 0) + particulares.length;
@@ -393,16 +446,7 @@ export const RegistosAutomoveis: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-        <Card className="animate-pulse">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <CardListSkeleton count={5} />
       </div>
     );
   }
@@ -678,7 +722,7 @@ export const RegistosAutomoveis: React.FC = () => {
             </CardHeader>
             <CardContent>
               {isLoadingSemanas ? (
-                <div className="text-center py-8 text-gray-500">A carregar...</div>
+                <CardListSkeleton count={3} />
               ) : semanas.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Nenhuma semana registada. As semanas são criadas automaticamente ao adicionar registos do tipo "Stand".
@@ -771,6 +815,7 @@ export const RegistosAutomoveis: React.FC = () => {
         semana={selectedSemana}
         onFechar={(id) => fecharSemana.mutateAsync(id)}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 };

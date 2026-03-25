@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Users, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Users, Send, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useClientesComSaldo, useResumoGeral, useContaCorrenteCliente } from '@/hooks/useContaCorrente';
 import { CobrancaEmailModal } from '@/components/modals/CobrancaEmailModal';
 import type { ContaCorrenteProcesso } from '@/types/financeiro';
-import { formatCurrency } from '@/lib/utils';
+
 
 interface ClienteExpandidoProps {
   clienteId: number;
@@ -24,29 +26,25 @@ const ClienteExpandido: React.FC<ClienteExpandidoProps> = ({ clienteId }) => {
       <div className="grid grid-cols-4 gap-2 mb-3">
         <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
           <span className="text-xs font-medium text-red-600 flex items-center gap-1">
-            <TrendingDown className="h-3.5 w-3.5 shrink-0" />
-            Custos
+            <TrendingDown className="h-3.5 w-3.5 shrink-0" />Custos
           </span>
           <span className="text-sm font-bold text-red-600">{formatCurrency(data.total_custos)}</span>
         </div>
         <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
           <span className="text-xs font-medium text-green-600 flex items-center gap-1">
-            <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-            Pagamentos
+            <TrendingUp className="h-3.5 w-3.5 shrink-0" />Pagamentos
           </span>
           <span className="text-sm font-bold text-green-600">{formatCurrency(data.total_pagamentos)}</span>
         </div>
         <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
           <span className="text-xs font-medium text-blue-600 flex items-center gap-1">
-            <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-            Reembolsos
+            <TrendingUp className="h-3.5 w-3.5 shrink-0" />Reembolsos
           </span>
           <span className="text-sm font-bold text-blue-600">{formatCurrency(data.total_reembolsos)}</span>
         </div>
         <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <DollarSign className="h-3.5 w-3.5 shrink-0" />
-            Saldo
+            <DollarSign className="h-3.5 w-3.5 shrink-0" />Saldo
           </span>
           <span className="text-sm font-bold">{formatCurrency(data.saldo_total)}</span>
         </div>
@@ -85,73 +83,52 @@ const ClienteExpandido: React.FC<ClienteExpandidoProps> = ({ clienteId }) => {
   );
 };
 
-export const ContaCorrente: React.FC = () => {
-  const { data: resumo, isLoading: loadingResumo } = useResumoGeral();
+export const ContasCorrentesTab: React.FC = () => {
+  const { data: resumo } = useResumoGeral();
   const { data: clientes = [], isLoading: loadingClientes } = useClientesComSaldo();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [cobrancaClienteId, setCobrancaClienteId] = useState<number | null>(null);
-  const [cobrancaClienteNome, setCobrancaClienteNome] = useState<string>('');
-
-  const handleToggleExpand = (clienteId: number) => {
-    setExpandedId(expandedId === clienteId ? null : clienteId);
-  };
-
-  const handleEnviarCobranca = (clienteId: number, clienteNome: string) => {
-    setCobrancaClienteId(clienteId);
-    setCobrancaClienteNome(clienteNome);
-  };
+  const [cobrancaClienteNome, setCobrancaClienteNome] = useState('');
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Conta Corrente</h1>
-        <p className="text-muted-foreground">
-          Visao geral das contas correntes dos clientes
-        </p>
-      </div>
-
-      {/* Resumo Geral */}
+    <div className="space-y-4">
+      {/* Resumo */}
       {resumo && (
         <div className="grid grid-cols-5 gap-2">
           <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
             <span className="text-xs sm:text-sm font-medium text-red-600 flex items-center gap-1">
-              <TrendingDown className="h-4 w-4 shrink-0" />
-              Custos
+              <TrendingDown className="h-4 w-4 shrink-0" />Custos
             </span>
             <span className="text-lg font-bold text-red-600">{formatCurrency(resumo.total_custos)}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
             <span className="text-xs sm:text-sm font-medium text-green-600 flex items-center gap-1">
-              <TrendingUp className="h-4 w-4 shrink-0" />
-              Pagamentos
+              <TrendingUp className="h-4 w-4 shrink-0" />Pagamentos
             </span>
             <span className="text-lg font-bold text-green-600">{formatCurrency(resumo.total_pagamentos)}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
             <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center gap-1">
-              <TrendingUp className="h-4 w-4 shrink-0" />
-              Reembolsos
+              <TrendingUp className="h-4 w-4 shrink-0" />Reembolsos
             </span>
             <span className="text-lg font-bold text-blue-600">{formatCurrency(resumo.total_reembolsos)}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
             <span className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <DollarSign className="h-4 w-4 shrink-0" />
-              Saldo
+              <DollarSign className="h-4 w-4 shrink-0" />Saldo
             </span>
             <span className="text-lg font-bold">{formatCurrency(resumo.saldo_total)}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2">
             <span className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <Users className="h-4 w-4 shrink-0" />
-              C/ Saldo
+              <Users className="h-4 w-4 shrink-0" />C/ Saldo
             </span>
             <span className="text-lg font-bold">{resumo.total_clientes_com_saldo}</span>
           </div>
         </div>
       )}
 
-      {/* Clientes com saldo */}
+      {/* Clientes */}
       <Card>
         <CardHeader>
           <CardTitle>Clientes com Saldo Pendente</CardTitle>
@@ -161,7 +138,7 @@ export const ContaCorrente: React.FC = () => {
           {loadingClientes ? (
             <div className="text-center py-8 text-muted-foreground">A carregar...</div>
           ) : clientes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Nenhum cliente com saldo pendente.</div>
+            <EmptyState icon={CheckCircle} title="Tudo em dia!" description="Nenhum cliente com saldo pendente." />
           ) : (
             <div className="rounded-md border">
               <Table>
@@ -178,27 +155,17 @@ export const ContaCorrente: React.FC = () => {
                 <TableBody>
                   {clientes.map((c: any) => (
                     <React.Fragment key={c.cliente_id}>
-                      <TableRow className="cursor-pointer hover:bg-muted/60" onClick={() => handleToggleExpand(c.cliente_id)}>
+                      <TableRow className="cursor-pointer hover:bg-muted/60" onClick={() => setExpandedId(expandedId === c.cliente_id ? null : c.cliente_id)}>
                         <TableCell>
-                          {expandedId === c.cliente_id ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
+                          {expandedId === c.cliente_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </TableCell>
                         <TableCell className="font-medium">{c.cliente_nome}</TableCell>
                         <TableCell className="text-red-600">{formatCurrency(c.total_custos)}</TableCell>
                         <TableCell className="text-green-600">{formatCurrency(c.total_pagamentos)}</TableCell>
                         <TableCell className="font-bold">{formatCurrency(c.saldo)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1"
-                            onClick={(e) => { e.stopPropagation(); handleEnviarCobranca(c.cliente_id, c.cliente_nome); }}
-                          >
-                            <Send className="h-3 w-3" />
-                            Cobranca
+                          <Button variant="outline" size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); setCobrancaClienteId(c.cliente_id); setCobrancaClienteNome(c.cliente_nome); }}>
+                            <Send className="h-3 w-3" />Cobranca
                           </Button>
                         </TableCell>
                       </TableRow>

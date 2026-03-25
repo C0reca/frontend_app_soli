@@ -93,6 +93,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
+  const [pdfImported, setPdfImported] = useState(false);
 
   const toDateInputValue = (value: any): string => {
     if (!value) return '';
@@ -192,6 +193,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
     form.reset(getDefaultValues(registo));
     setPdfFile(null);
     setCurrentStep(0);
+    setPdfImported(false);
   }, [registo]);
 
   const tipo = form.watch('tipo');
@@ -422,6 +424,8 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
         }
       }
       form.reset(merged);
+      setPdfImported(true);
+      setCurrentStep(-1); // -1 = resumo mode
     } finally {
       setIsImporting(false);
     }
@@ -452,6 +456,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
       form.reset(getDefaultValues(null));
       setPdfFile(null);
       setCurrentStep(0);
+      setPdfImported(false);
       onClose();
     } catch (error) {
       console.error('Erro ao salvar registo:', error);
@@ -1023,8 +1028,110 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
     </div>
   );
 
+  // Resumo após importação PDF
+  const StepResumo = () => {
+    const v = form.getValues();
+    const formatVal = (val: any) => {
+      if (val === true) return 'Sim';
+      if (val === false || val === '' || val === null || val === undefined) return null;
+      return String(val);
+    };
+    const sections = [
+      {
+        title: 'Veículo & Pedido',
+        step: 1,
+        fields: [
+          { label: 'Matrícula', value: formatVal(v.matricula) },
+          { label: 'Marca', value: formatVal(v.marca) },
+          { label: 'Nº Pedido', value: formatVal(v.numero_pedido) },
+          { label: 'Tipo', value: v.tipo === 'stand' ? 'Stand' : v.tipo === 'particular' ? 'Particular' : formatVal(v.tipo) },
+          { label: 'Valor', value: v.valor ? `${Number(v.valor).toFixed(2)} €` : null },
+        ],
+      },
+      {
+        title: 'Comprador',
+        step: 4,
+        fields: [
+          { label: 'Nome', value: formatVal(v.sa_nome) },
+          { label: 'NIF', value: formatVal(v.sa_nif) },
+          { label: 'Morada', value: formatVal(v.sa_morada) },
+          { label: 'Localidade', value: formatVal(v.sa_localidade) },
+        ],
+      },
+      {
+        title: 'Vendedor',
+        step: 5,
+        fields: [
+          { label: 'Nome', value: formatVal(v.sp_nome) },
+          { label: 'NIF', value: formatVal(v.sp_nif) },
+          { label: 'Morada', value: formatVal(v.sp_morada) },
+          { label: 'Localidade', value: formatVal(v.sp_localidade) },
+        ],
+      },
+      {
+        title: 'Apresentação',
+        step: 2,
+        fields: [
+          { label: 'Nº Apresentação', value: formatVal(v.numero_apresentacao) },
+          { label: 'Nº Conta', value: formatVal(v.numero_conta) },
+          { label: 'Despacho', value: formatVal(v.despacho) },
+        ],
+      },
+      {
+        title: 'Pagamento',
+        step: 6,
+        fields: [
+          { label: 'Emolumento', value: v.emolumento_valor ? `${Number(v.emolumento_valor).toFixed(2)} €` : null },
+          { label: 'Montante IRN', value: v.montante ? `${Number(v.montante).toFixed(2)} €` : null },
+          { label: 'Referência', value: formatVal(v.referencia_pagamento) },
+          { label: 'Entidade', value: formatVal(v.entidade_pagamento) },
+        ],
+      },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          Dados extraídos do PDF. Verifique as informações abaixo e clique <strong>Criar</strong> para confirmar.
+          Se precisar corrigir algum campo, clique em <strong>Editar</strong> na secção correspondente.
+        </div>
+        {sections.map((section) => {
+          const filledFields = section.fields.filter(f => f.value);
+          if (filledFields.length === 0) return null;
+          return (
+            <Card key={section.title}>
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-gray-800">{section.title}</h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-blue-600 h-6"
+                    onClick={() => { setPdfImported(false); setCurrentStep(section.step); }}
+                  >
+                    Editar
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  {filledFields.map((f) => (
+                    <div key={f.label} className="flex justify-between text-sm py-0.5">
+                      <span className="text-muted-foreground">{f.label}</span>
+                      <span className="font-medium text-right">{f.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (currentStep) {
+      case -1: return <StepResumo />;
       case 0: return <StepGeral />;
       case 1: return <StepPedidoVeiculo />;
       case 2: return <StepAto />;
@@ -1050,34 +1157,41 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-1.5 pb-1">
-          {STEPS.map((step, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setCurrentStep(i)}
-              className={cn(
-                'flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-colors',
-                i === currentStep
-                  ? 'bg-blue-600 text-white'
-                  : i < currentStep
-                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-              )}
-              title={step.label}
-            >
-              {i < currentStep ? <Check className="h-3.5 w-3.5" /> : step.shortLabel}
-            </button>
-          ))}
-        </div>
-
-        {/* Step title */}
-        <div className="border-b pb-3">
-          <h3 className="text-lg font-bold text-gray-900">
-            {STEPS[currentStep].label}
-          </h3>
-          <p className="text-sm text-gray-500">Passo {currentStep + 1} de {STEPS.length}</p>
-        </div>
+        {currentStep === -1 ? (
+          <div className="border-b pb-3">
+            <h3 className="text-lg font-bold text-gray-900">Resumo dos dados extraídos</h3>
+            <p className="text-sm text-gray-500">Confirme os dados e clique Criar</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-center gap-1.5 pb-1">
+              {STEPS.map((step, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { setPdfImported(false); setCurrentStep(i); }}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-colors',
+                    i === currentStep
+                      ? 'bg-blue-600 text-white'
+                      : i < currentStep
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  )}
+                  title={step.label}
+                >
+                  {i < currentStep ? <Check className="h-3.5 w-3.5" /> : step.shortLabel}
+                </button>
+              ))}
+            </div>
+            <div className="border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900">
+                {STEPS[currentStep]?.label}
+              </h3>
+              <p className="text-sm text-gray-500">Passo {currentStep + 1} de {STEPS.length}</p>
+            </div>
+          </>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -1090,10 +1204,10 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={currentStep === 0 ? onClose : goPrev}
+                onClick={currentStep <= 0 ? onClose : goPrev}
                 className="gap-1"
               >
-                {currentStep === 0 ? (
+                {currentStep <= 0 ? (
                   'Cancelar'
                 ) : (
                   <>
@@ -1103,7 +1217,7 @@ export const RegistoAutomovelModal: React.FC<RegistoAutomovelModalProps> = ({
                 )}
               </Button>
 
-              {isLastStep ? (
+              {isLastStep || currentStep === -1 ? (
                 <Button type="submit" disabled={createRegisto.isPending || updateRegisto.isPending} className="gap-1">
                   <Check className="h-4 w-4" />
                   {isEditing ? 'Atualizar' : 'Criar'}

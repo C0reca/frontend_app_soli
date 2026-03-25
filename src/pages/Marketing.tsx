@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMarketingInteracoes, type MarketingInteracao } from '@/hooks/useMarketing';
 import { MarketingModal } from '@/components/modals/MarketingModal';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const formatDate = (value?: string) => {
   if (!value) return '-';
@@ -48,6 +49,7 @@ export const MarketingPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<MarketingInteracao | null>(null);
 
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const { interacoes, isLoading, createInteracao, updateInteracao, deleteInteracao } =
     useMarketingInteracoes({
       tipo_servico: filtroTipo && filtroTipo !== 'all' ? filtroTipo : undefined,
@@ -62,17 +64,20 @@ export const MarketingPage: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Tem a certeza que pretende eliminar esta interação?')) {
-      deleteInteracao.mutate(id);
-    }
+  const handleDelete = async (id: number) => {
+    const ok = await confirm({
+      title: 'Eliminar interação?',
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteInteracao.mutate(id);
   };
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Marketing</h1>
+          <h1 className="text-3xl font-bold">Marketing</h1>
           <p className="text-sm text-muted-foreground">Cross-selling de seguros e créditos</p>
         </div>
         <Button onClick={() => { setEditItem(null); setModalOpen(true); }} className="gap-2">
@@ -159,6 +164,7 @@ export const MarketingPage: React.FC = () => {
         interacao={editItem}
         isLoading={createInteracao.isPending || updateInteracao.isPending}
       />
+      {ConfirmDialogComponent}
     </div>
   );
 };

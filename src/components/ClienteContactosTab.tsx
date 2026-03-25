@@ -351,8 +351,8 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valor">{formData.tipo === 'telefone' ? 'Telefone' : 'Email'} *</Label>
-                <Input id="valor" type={formData.tipo === 'email' ? 'email' : 'tel'} value={formData.valor} onChange={(e) => setFormData({ ...formData, valor: e.target.value })} placeholder={formData.tipo === 'telefone' ? '+351 123 456 789' : 'email@exemplo.com'} />
+                <Label htmlFor="valor">{formData.tipo === 'email' ? 'E-mail' : formData.tipo === 'telemovel' ? 'Telemóvel' : 'Telefone'} *</Label>
+                <Input id="valor" type={formData.tipo === 'email' ? 'email' : 'tel'} value={formData.valor} onChange={(e) => setFormData({ ...formData, valor: e.target.value })} placeholder={formData.tipo === 'email' ? 'email@exemplo.com' : '+351 123 456 789'} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="descricao">Descrição (opcional)</Label>
@@ -419,14 +419,14 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="valor">
-                {formData.tipo === 'telefone' ? 'Telefone' : 'Email'} *
+                {formData.tipo === 'email' ? 'E-mail' : formData.tipo === 'telemovel' ? 'Telemóvel' : 'Telefone'} *
               </Label>
               <Input
                 id="valor"
                 type={formData.tipo === 'email' ? 'email' : 'tel'}
                 value={formData.valor}
                 onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                placeholder={formData.tipo === 'telefone' ? '+351 123 456 789' : 'email@exemplo.com'}
+                placeholder={formData.tipo === 'email' ? 'email@exemplo.com' : '+351 123 456 789'}
               />
             </div>
 

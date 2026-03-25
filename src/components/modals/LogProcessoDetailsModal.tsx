@@ -139,7 +139,7 @@ export const LogProcessoDetailsModal: React.FC<LogProcessoDetailsModalProps> = (
                 <Calendar className="h-4 w-4 text-gray-400" />
                 <div>
                   <label className="text-sm font-medium text-gray-500">Data e Hora</label>
-                  <p className="text-sm">{new Date(log.data_hora).toLocaleString('pt-BR')}</p>
+                  <p className="text-sm">{new Date(log.data_hora).toLocaleString('pt-PT')}</p>
                 </div>
               </div>
 

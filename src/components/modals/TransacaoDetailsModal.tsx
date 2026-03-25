@@ -4,18 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Trash2, Upload } from 'lucide-react';
 import { useTransacaoDetalhe, useTransacoes } from '@/hooks/useFinanceiro';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import api from '@/services/api';
+import { formatCurrency } from '@/lib/utils';
 
 interface TransacaoDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   transacaoId: number | null;
 }
-
-const formatCurrency = (value: any) => {
-  const n = typeof value === 'number' ? value : Number(value) || 0;
-  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-};
 
 const formatDate = (value?: string) => {
   if (!value) return '-';
@@ -38,6 +35,7 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
 }) => {
   const { data: transacao, isLoading } = useTransacaoDetalhe(transacaoId);
   const { uploadAnexo, deleteAnexo } = useTransacoes();
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadAnexo = async (anexoId: number, nomeOriginal: string) => {
@@ -67,10 +65,15 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
     e.target.value = '';
   };
 
-  const handleDeleteAnexo = (anexoId: number) => {
-    if (transacaoId && window.confirm('Remover este anexo?')) {
-      deleteAnexo.mutate({ transacaoId, anexoId });
-    }
+  const handleDeleteAnexo = async (anexoId: number) => {
+    if (!transacaoId) return;
+    const ok = await confirm({
+      title: 'Remover anexo?',
+      description: 'O ficheiro será eliminado permanentemente.',
+      confirmLabel: 'Remover',
+      variant: 'destructive',
+    });
+    if (ok) deleteAnexo.mutate({ transacaoId, anexoId });
   };
 
   const getTipoLabel = (tipo?: string) => {
@@ -194,6 +197,7 @@ export const TransacaoDetailsModal: React.FC<TransacaoDetailsModalProps> = ({
         ) : (
           <div className="py-8 text-center text-muted-foreground">Transacao nao encontrada.</div>
         )}
+        {ConfirmDialogComponent}
       </ResizableDialogContent>
     </Dialog>
   );
