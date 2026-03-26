@@ -1,7 +1,8 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { extractApiError } from '@/lib/utils';
+import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle, DialogDescription, DialogWindowControls, useResizableDialog } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +50,24 @@ interface ProcessDetailsModalProps {
   process: Process | null;
   onEdit?: (process: Process) => void;
 }
+
+// Toolbar window controls — uses resize context + custom minimize
+const ProcessWindowControls: React.FC<{ onMinimize: () => void }> = ({ onMinimize }) => {
+  const ctx = useResizableDialog();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onMinimize}
+        className="inline-flex items-center justify-center h-7 gap-1 px-2 rounded-md border border-input bg-background text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        <Minimize2 className="h-3.5 w-3.5" />
+        Minimizar
+      </button>
+      <DialogWindowControls onMaximize={ctx?.toggleMaximize} maximized={ctx?.maximized} />
+    </>
+  );
+};
 
 export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   isOpen,
@@ -476,25 +495,25 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="flex items-center space-x-2">
-                <FileText className="h-6 w-6" />
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <FileText className="h-5 w-5" />
                 <span>Detalhes do Processo</span>
               </DialogTitle>
               <DialogDescription>
                 Informações completas do processo e atividades relacionadas
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {process && (
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
                       disabled={gerandoCapa}
-                      className="flex items-center gap-2"
+                      className="h-7 gap-1 text-xs"
                     >
-                      <Printer className="h-4 w-4" />
+                      <Printer className="h-3.5 w-3.5" />
                       {gerandoCapa ? 'A gerar...' : 'Gerar Capa'}
                     </Button>
                   </DropdownMenuTrigger>
@@ -517,40 +536,23 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => onEdit(process)}
-                  className="flex items-center gap-2"
+                  className="h-7 gap-1 text-xs"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-3.5 w-3.5" />
                   Editar
                 </Button>
               )}
               <Button
                 variant={showIA ? "default" : "outline"}
-                size="icon"
+                size="sm"
                 onClick={() => setShowIA(!showIA)}
-                aria-label="Assistente IA"
                 title="Assistente IA"
+                className="h-7 gap-1 text-xs"
               >
-                <Bot className="h-4 w-4" />
+                <Bot className="h-3.5 w-3.5" />
+                IA
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  minimize({ type: 'process', title: `Processo: ${process?.titulo ?? ''}` , payload: { process } });
-                  onClose();
-                }}
-                aria-label="Minimizar"
-              >
-                <Minimize2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onClose}
-                aria-label="Fechar"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <ProcessWindowControls onMinimize={() => { minimize({ type: 'process', title: `Processo: ${process?.titulo ?? ''}`, payload: { process } }); onClose(); }} />
             </div>
           </div>
         </DialogHeader>
@@ -1399,7 +1401,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                       } catch (error: any) {
                         toast({
                           title: "Erro",
-                          description: error?.response?.data?.detail || "Erro ao enviar documento.",
+                          description: extractApiError(error, "Erro ao enviar documento."),
                           variant: "destructive",
                         });
                       } finally {
@@ -1564,7 +1566,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                             } catch (error: any) {
                               toast({
                                 title: "Erro",
-                                description: error?.response?.data?.detail || "Erro ao excluir documento.",
+                                description: extractApiError(error, "Erro ao excluir documento."),
                                 variant: "destructive",
                               });
                             }

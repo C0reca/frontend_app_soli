@@ -90,7 +90,8 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
 
   const defaultValues = useMemo<FormData>(() => {
     const agora = new Date();
-    const dataHoje = agora.toISOString().split('T')[0];
+    // Usar data local (não UTC) para evitar problemas de timezone
+    const dataHoje = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
     return {
       tipo: undefined,
       valor: undefined,
@@ -141,7 +142,7 @@ export const MovimentoCaixaModal: React.FC<MovimentoCaixaModalProps> = ({
 
     if (initialData) {
       const dataIso = initialData.data
-        ? new Date(initialData.data).toISOString().split('T')[0]
+        ? (() => { const d = new Date(initialData.data); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()
         : defaultValues.data;
       const hora = initialData.hora ?? (initialData.data ? new Date(initialData.data).toTimeString().slice(0, 5) : '');
       form.reset({

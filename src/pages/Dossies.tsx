@@ -367,53 +367,43 @@ export const Dossies: React.FC = () => {
               <p>Nenhum arquivo encontrado.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-2">
               {filteredDossies.map((dossie) => (
                 <Card
                   key={dossie.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => handleView(dossie)}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-semibold">{getDossieDisplayLabel(dossie)}</h3>
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <Folder className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm truncate">{getDossieDisplayLabel(dossie)}</h3>
+                          <Badge variant="outline" className="text-xs shrink-0">{getProcessosCount(dossie)} processos</Badge>
                         </div>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span><span className="font-medium">Entidade:</span> {getEntidadeNomeFromDossie(dossie)}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span><span className="font-medium">Processos:</span> {getProcessosCount(dossie)}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-muted-foreground">
-                              <span className="font-medium text-gray-600">Criado em:</span> {format(new Date(dossie.criado_em), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
-                            </span>
-                          </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-0.5">
+                          <span><strong>Entidade:</strong> {getEntidadeNomeFromDossie(dossie)}</span>
+                          <span><strong>Criado em:</strong> {format(new Date(dossie.criado_em), "dd/MM/yyyy", { locale: pt })}</span>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => handleEdit(dossie, e)}
-                        >
-                          <Edit className="h-4 w-4" />
+                      <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => handleView(dossie)} title="Ver">
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleView(dossie);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={(e) => handleEdit(dossie, e)} title="Editar">
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setSelectedDossie(dossie); setIsChangeEntidadeOpen(true); }} title="Alterar entidade">
+                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500" onClick={() => { setSelectedDossie(dossie); setIsDeleteOpen(true); }} title="Eliminar">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </CardContent>

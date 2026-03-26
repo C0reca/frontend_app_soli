@@ -71,6 +71,18 @@ api.interceptors.response.use(
         window.location.href = '/login?erro=ip';
       }
     }
+    // Normalizar detail do Pydantic (array de objectos) para string legível
+    // para que nenhum toast/handler receba um objecto como React child
+    if (error.response?.data?.detail && typeof error.response.data.detail !== 'string') {
+      const d = error.response.data.detail;
+      if (Array.isArray(d)) {
+        error.response.data.detail = d.map((item: any) =>
+          typeof item === 'string' ? item : item?.msg || JSON.stringify(item)
+        ).join('; ');
+      } else if (typeof d === 'object') {
+        error.response.data.detail = JSON.stringify(d);
+      }
+    }
     return Promise.reject(error);
   }
 );

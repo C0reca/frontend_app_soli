@@ -21,6 +21,17 @@ export function normalizeString(str: string): string {
 }
 
 /**
+ * Extrai mensagem de erro legível de uma resposta API (suporta string, array Pydantic, etc).
+ */
+export function extractApiError(error: any, fallback: string = 'Ocorreu um erro.'): string {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) return detail.map((d: any) => typeof d === 'string' ? d : d?.msg || JSON.stringify(d)).join('; ');
+  if (detail && typeof detail === 'object') return JSON.stringify(detail);
+  return fallback;
+}
+
+/**
  * Formata um valor monetário em EUR (pt-PT).
  */
 export function formatCurrency(value: any): string {

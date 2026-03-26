@@ -96,18 +96,31 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
       setIfEmpty('num_sns', data.healthNumber ?? '');
       setIfEmpty('num_ident_civil', data.civilianIdNumber ?? '');
 
-      // Morada — só atualiza se campos estiverem vazios (preserva morada editada manualmente)
-      const address = data.address ?? {};
-      setIfEmpty('morada', address.street ?? '');
-      setIfEmpty('codigo_postal', address.postalCode ?? '');
-      setIfEmpty('localidade', address.parish ?? address.municipality ?? '');
-      setIfEmpty('concelho', address.municipality ?? '');
-      setIfEmpty('distrito', address.district ?? '');
-      setIfEmpty('pais', address.countryCode ?? 'Portugal');
+      // Morada — o CC pode devolver nomes de campos variados dependendo do middleware
+      const address = data.address ?? data.morada ?? {};
+      const rua = address.street || address.streetName || address.streetType
+        ? `${address.streetType || ''} ${address.streetName || address.street || ''}`.trim()
+        : address.street || '';
+      const codigoPostal = address.postalCode || address.zip || address.cp4
+        ? `${address.cp4 || address.postalCode || ''}${address.cp3 ? `-${address.cp3}` : ''}`
+        : '';
+      const localidade = address.parish || address.freguesia || address.locality || address.municipality || '';
+      const concelho = address.municipality || address.concelho || address.city || '';
+      const distrito = address.district || address.distrito || '';
 
+      setIfEmpty('morada', rua);
+      setIfEmpty('codigo_postal', codigoPostal);
+      setIfEmpty('localidade', localidade);
+      setIfEmpty('concelho', concelho);
+      setIfEmpty('distrito', distrito);
+      setIfEmpty('pais', address.countryCode || address.country || 'Portugal');
+
+      const moradaLida = !!(rua || codigoPostal || localidade);
       toast({
-        title: "Dados preenchidos com sucesso",
-        description: "Os dados do Cartão de Cidadão foram carregados.",
+        title: "Dados do CC carregados",
+        description: moradaLida
+          ? "Todos os dados foram preenchidos, incluindo morada."
+          : "Dados pessoais preenchidos. A morada não foi lida — pode ser necessário introduzir o PIN da morada no leitor.",
       });
     } catch (err: any) {
       let errMsg: string;
@@ -158,7 +171,7 @@ export const IndividualClientForm: React.FC<IndividualClientFormProps> = ({
                 className="flex items-center space-x-2"
               >
                 <CreditCard className="h-4 w-4" />
-                <span>{isReadingCC ? 'A ler CC...' : 'Ler CC'}</span>
+                <span>{isReadingCC ? 'A ler... (introduza o PIN se pedido)' : 'Ler Cartão de Cidadão'}</span>
               </Button>
             </div>
           </CardHeader>

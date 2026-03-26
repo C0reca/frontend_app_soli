@@ -51,6 +51,12 @@ export interface ResumoDia {
   saldo_dinheiro_estimado: number;
 }
 
+// Data local (não UTC) para evitar problemas de timezone
+const getLocalDateISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export interface CreateMovimentoData {
   tipo: 'entrada' | 'saida';
   valor: number;
@@ -154,7 +160,7 @@ export const useCaixa = () => {
 
   const fetchResumoDia = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateISO();
       const response = await api.get(`/caixa/resumo/${today}`);
       const data = response.data ?? {};
       const entradas = Number((data.total_entradas ?? 0)) || 0;
@@ -186,7 +192,7 @@ export const useCaixa = () => {
       });
     } catch (error) {
       console.error('Erro ao carregar resumo do dia:', error);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateISO();
       setResumoDia({
         data: today,
         saldo_inicial: 0,
@@ -244,7 +250,7 @@ export const useCaixa = () => {
 
   const fecharCaixa = useCallback(async (saldoMoedas: number) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateISO();
       const response = await api.post('/caixa/fecho', { data: today, saldo_moedas: saldoMoedas });
       const extrato = normalizarExtrato(response.data);
       await Promise.all([fetchFechos(), fetchResumoDia()]);

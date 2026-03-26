@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, ResizableDialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, ResizableDialogContent, DialogDescription, DialogHeader, DialogTitle, DialogWindowControls, useResizableDialog } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -267,6 +267,22 @@ const MoradaSection = ({ morada, codigo_postal, localidade, concelho, distrito, 
       ) : (
         <p className="text-sm text-muted-foreground">Sem morada registada</p>
       )}
+    </div>
+  );
+};
+
+// Toolbar — must be inside ResizableDialogContent to access context
+const ClientDetailsToolbar: React.FC<{ onPrintRGPD: () => void; onEdit: () => void }> = ({ onPrintRGPD, onEdit }) => {
+  const ctx = useResizableDialog();
+  return (
+    <div className="flex items-center gap-1">
+      <Button variant="outline" size="sm" onClick={onPrintRGPD} className="h-7 gap-1 text-xs">
+        <Printer className="h-3.5 w-3.5" />RGPD
+      </Button>
+      <Button variant="outline" size="sm" onClick={onEdit} className="h-7 gap-1 text-xs">
+        <Edit className="h-3.5 w-3.5" />Editar
+      </Button>
+      <DialogWindowControls onMaximize={ctx?.toggleMaximize} maximized={ctx?.maximized} />
     </div>
   );
 };
@@ -1005,39 +1021,20 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             Detalhes do cliente {getEffectiveTipo(client) === 'singular' ? (client as any).nome : (client as any).nome_empresa}
           </DialogDescription>
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base">
               {getEffectiveTipo(client) === 'singular' ? (
                 <>
-                  <User className="h-6 w-6 text-blue-600" />
-                  <span>Detalhes do Cliente - Pessoa Singular</span>
+                  <User className="h-5 w-5 text-blue-600" />
+                  <span>Detalhes — Pessoa Singular</span>
                 </>
               ) : (
                 <>
-                  <Building className="h-6 w-6 text-green-600" />
-                  <span>Detalhes do Cliente - Pessoa Coletiva</span>
+                  <Building className="h-5 w-5 text-green-600" />
+                  <span>Detalhes — Pessoa Coletiva</span>
                 </>
               )}
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => printRGPD(client)}
-                className="flex items-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                RGPD
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditModalOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Editar
-              </Button>
-            </div>
+            <ClientDetailsToolbar onPrintRGPD={() => printRGPD(client)} onEdit={() => setIsEditModalOpen(true)} />
           </div>
         </DialogHeader>
 

@@ -373,7 +373,7 @@ export const AssistenteIA: React.FC<Props> = ({ processoId, clienteId }) => {
                 ) : (
                   <>
                     <span className="flex-1 truncate">{c.titulo}</span>
-                    <DropdownMenu>
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
                         <Button size="icon" variant="ghost" className="h-5 w-5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <MoreHorizontal className="h-3 w-3" />

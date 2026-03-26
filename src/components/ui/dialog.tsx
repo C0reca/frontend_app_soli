@@ -5,6 +5,14 @@ import { X, Maximize2, Minimize2 as RestoreIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Context for resizable dialog maximize state
+interface ResizableDialogContextType {
+  maximized: boolean;
+  toggleMaximize: (e?: React.MouseEvent) => void;
+}
+const ResizableDialogContext = React.createContext<ResizableDialogContextType | null>(null);
+export const useResizableDialog = () => React.useContext(ResizableDialogContext);
+
 const Dialog = DialogPrimitive.Root
 
 const DialogTrigger = DialogPrimitive.Trigger
@@ -43,9 +51,9 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
+      <DialogPrimitive.Close className="absolute right-3 top-3 inline-flex items-center justify-center h-7 gap-1 px-2 rounded-md border border-input bg-background text-xs font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:pointer-events-none">
+        <X className="h-3.5 w-3.5" />
+        Fechar
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
@@ -338,22 +346,9 @@ const ResizableDialogContent = React.forwardRef<
           style={{ ...sizeStyle, ...style }}
           {...props}
         >
+          <ResizableDialogContext.Provider value={{ maximized, toggleMaximize }}>
           {children}
-
-          {/* Maximize / Restore button */}
-          <button
-            onClick={toggleMaximize}
-            className="absolute right-10 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            title={maximized ? 'Restaurar' : 'Maximizar'}
-          >
-            {maximized ? <RestoreIcon className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
-
-          {/* Close button */}
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          </ResizableDialogContext.Provider>
 
           {/* Resize handles – edges */}
           <div
@@ -409,3 +404,32 @@ export {
   DialogTitle,
   DialogDescription,
 }
+
+// Reusable window control buttons for modal toolbars
+export const DialogWindowControls: React.FC<{
+  onMaximize?: () => void;
+  maximized?: boolean;
+  showMaximize?: boolean;
+}> = ({ onMaximize, maximized, showMaximize = true }) => (
+  <>
+    {showMaximize && onMaximize && (
+      <button
+        type="button"
+        onClick={onMaximize}
+        className="inline-flex items-center justify-center h-7 gap-1 px-2 rounded-md border border-input bg-background text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        {maximized ? <RestoreIcon className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+        {maximized ? 'Restaurar' : 'Maximizar'}
+      </button>
+    )}
+    <DialogPrimitive.Close asChild>
+      <button
+        type="button"
+        className="inline-flex items-center justify-center h-7 gap-1 px-2 rounded-md border border-input bg-background text-xs font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" />
+        Fechar
+      </button>
+    </DialogPrimitive.Close>
+  </>
+);

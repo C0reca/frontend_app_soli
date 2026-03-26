@@ -78,9 +78,13 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
       });
     },
     onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg || d).join('; ')
+        : "Erro ao adicionar contacto.";
       toast({
-        title: "Erro",
-        description: error?.response?.data?.detail || "Erro ao adicionar contacto.",
+        title: "Erro ao adicionar contacto",
+        description: msg,
         variant: "destructive",
       });
     },
@@ -101,11 +105,9 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error?.response?.data?.detail || "Erro ao atualizar contacto.",
-        variant: "destructive",
-      });
+      const detail = error?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map((d: any) => d.msg || d).join('; ') : "Erro ao atualizar contacto.";
+      toast({ title: "Erro ao atualizar contacto", description: msg, variant: "destructive" });
     },
   });
 
@@ -115,17 +117,12 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cliente-contactos', clienteId] });
-      toast({
-        title: "Sucesso",
-        description: "Contacto eliminado com sucesso.",
-      });
+      toast({ title: "Contacto eliminado", description: "O contacto foi removido com sucesso." });
     },
     onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error?.response?.data?.detail || "Erro ao eliminar contacto.",
-        variant: "destructive",
-      });
+      const detail = error?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map((d: any) => d.msg || d).join('; ') : "Erro ao eliminar contacto.";
+      toast({ title: "Erro ao eliminar contacto", description: msg, variant: "destructive" });
     },
   });
 
@@ -229,7 +226,7 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
     }
   };
 
-  const telefones = contactos.filter(c => c.tipo === 'telefone');
+  const telefones = contactos.filter(c => c.tipo === 'telefone' || c.tipo === 'telemovel' || c.tipo === 'outro');
   const emails = contactos.filter(c => c.tipo === 'email');
 
   const addButton = (
@@ -283,7 +280,7 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
             <Phone className="h-4 w-4" />
-            Telefones
+            Telefones / Telemóveis
           </h4>
           <div className="space-y-2">
             {telefones.map((c) => renderContactRow(c, contactos.indexOf(c)))}
@@ -330,7 +327,7 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
             }
           }}
         >
-          <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+          <DialogContent onInteractOutside={(e) => e.preventDefault()} className="z-[200]">
             <DialogHeader>
               <DialogTitle>{editingIndex !== null ? 'Editar Contacto' : 'Adicionar Contacto'}</DialogTitle>
             </DialogHeader>
@@ -396,7 +393,7 @@ export const ClienteContactosTab: React.FC<ClienteContactosTabProps> = ({
           }
         }}
       >
-        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="z-[200]">
           <DialogHeader>
             <DialogTitle>{editingIndex !== null ? 'Editar Contacto' : 'Adicionar Contacto'}</DialogTitle>
           </DialogHeader>

@@ -459,7 +459,7 @@ export const RegistosAutomoveis: React.FC = () => {
           <p className="text-gray-600">Gestão de transferências de propriedade de veículos</p>
         </div>
         <div className="flex gap-2">
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
                 <FileDown className="mr-2 h-4 w-4" />
@@ -637,7 +637,7 @@ export const RegistosAutomoveis: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-700">
                 {selectedDate.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </h2>
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
                     <FileDown className="mr-1.5 h-3.5 w-3.5" />
@@ -685,7 +685,7 @@ export const RegistosAutomoveis: React.FC = () => {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                   <FileDown className="mr-1.5 h-3.5 w-3.5" />

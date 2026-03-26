@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import { CardListSkeleton } from '@/components/ui/card-skeleton';
 
 export const RegistosPrediais: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
+  const { toast } = useToast();
   const { registos, isLoading, deleteRegisto, updateRegisto } = useRegistosPrediais();
   const { clients } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
@@ -192,7 +194,7 @@ export const RegistosPrediais: React.FC = () => {
 
   const handleExport = async (periodo: 'dia' | 'semana', formato: 'pdf' | 'csv') => {
     try {
-      const hoje = new Date().toISOString().split('T')[0];
+      const _d = new Date(); const hoje = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
       const endpoint = formato === 'pdf' ? '/registos/exportar-pdf' : '/registos/exportar-csv';
       const response = await api.get(endpoint, {
         params: { periodo, data_ref: hoje },
@@ -208,7 +210,7 @@ export const RegistosPrediais: React.FC = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      console.error('Erro ao exportar relatório');
+      toast({ title: 'Erro ao exportar', description: 'Não foi possível gerar o relatório.', variant: 'destructive' });
     }
   };
 
@@ -228,7 +230,7 @@ export const RegistosPrediais: React.FC = () => {
           <p className="text-gray-600">Gerencie os registos prediais</p>
         </div>
         <div className="flex gap-2">
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
                 <FileDown className="mr-2 h-4 w-4" />

@@ -140,8 +140,8 @@ export const AdminPanel: React.FC = () => {
   const actions = [
     {
       key: 'sync-subtarefas',
-      title: 'Sincronizar Sub-Compromissos',
-      description: 'Atualiza o processo e entidade de todos os sub-compromissos para herdar do compromisso mãe. Útil após migração ou correção de dados.',
+      title: 'Sincronizar Sub-Tarefas',
+      description: 'Atualiza o processo e entidade de todas as sub-tarefas para herdar da tarefa mãe. Útil após migração ou correção de dados.',
       icon: RefreshCw,
       endpoint: '/tarefas/admin/sync-subtarefas',
       method: 'post' as const,
@@ -170,8 +170,8 @@ export const AdminPanel: React.FC = () => {
     },
     {
       key: 'verificar-prazos',
-      title: 'Verificar Prazos de Compromissos',
-      description: 'Verifica compromissos com prazos próximos e cria notificações para os responsáveis. Pode ser executado periodicamente.',
+      title: 'Verificar Prazos de Tarefas',
+      description: 'Verifica tarefas com prazos próximos e cria notificações para os responsáveis. Pode ser executado periodicamente.',
       icon: Bell,
       endpoint: '/notificacoes/verificar-prazos',
       method: 'post' as const,

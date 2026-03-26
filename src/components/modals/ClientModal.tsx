@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import api from '@/services/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Minimize2 } from 'lucide-react';
 import { useMinimize } from '@/contexts/MinimizeContext';
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Building, Loader2, AlertTriangle, Printer } from 'lucide-react';
+import { User, Building, Loader2, AlertTriangle, Printer, X } from 'lucide-react';
 import { useClients, Client, IndividualClient, CorporateClient, Representante, getEffectiveTipo } from '@/hooks/useClients';
 import { printRGPD } from '@/utils/printRGPD';
 import { IndividualClientForm } from './IndividualClientForm';
@@ -481,7 +481,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent ref={dialogRef} className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent ref={dialogRef} className="max-w-5xl max-h-[90vh] overflow-y-auto [&>button.absolute]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -494,19 +494,27 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                   : 'Preencha os dados do novo cliente'}
               </DialogDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-12 top-4"
-              onClick={() => {
-                const data = form.getValues();
-                minimize({ type: 'client', title: isEditing ? `Editar: ${client?.nome || (client as any)?.nome_empresa || 'Cliente'}` : 'Novo Cliente', payload: { data, client } });
-                onClose();
-              }}
-              aria-label={'Minimizar'}
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={() => {
+                  const data = form.getValues();
+                  minimize({ type: 'client', title: isEditing ? `Editar: ${client?.nome || (client as any)?.nome_empresa || 'Cliente'}` : 'Novo Cliente', payload: { data, client } });
+                  onClose();
+                }}
+              >
+                <Minimize2 className="h-3.5 w-3.5" />
+                Minimizar
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
+                  <X className="h-3.5 w-3.5" />
+                  Fechar
+                </Button>
+              </DialogClose>
+            </div>
           </div>
         </DialogHeader>
 
@@ -644,54 +652,52 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <CardTitle>Dados Internos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {isEditing && (
-                  <div className="space-y-2">
-                    <Label htmlFor="internalNumber">Nº Cliente Interno</Label>
-                    <Input
-                      id="internalNumber"
-                      {...form.register('internalNumber')}
-                      placeholder="CLI-001"
-                    />
-                    {errors.internalNumber && (
-                      <p className="text-sm text-red-600">{errors.internalNumber.message?.toString()}</p>
-                    )}
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Estado</Label>
+                      <Select
+                        value={watch('status')}
+                        onValueChange={(value) => setValue('status', value as 'active' | 'inactive')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Ativo</SelectItem>
+                          <SelectItem value="inactive">Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="internalNumber">Nº Cliente Interno</Label>
+                      <Input
+                        id="internalNumber"
+                        {...form.register('internalNumber')}
+                        placeholder="CLI-001"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={watch('status')}
-                    onValueChange={(value) => setValue('status', value as 'active' | 'inactive')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Ativo</SelectItem>
-                      <SelectItem value="inactive">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Categoria</Label>
+                  <DynamicSelect
+                    categoria="categoria_entidade"
+                    value={watch('categoria') || ''}
+                    onValueChange={(value) => setValue('categoria', value)}
+                    placeholder="Selecionar categoria..."
+                    fallbackOptions={[
+                      { value: 'particular', label: 'Particular' },
+                      { value: 'stand', label: 'Stand' },
+                      { value: 'banco', label: 'Banco' },
+                      { value: 'empresa', label: 'Empresa' },
+                      { value: 'seguradora', label: 'Seguradora' },
+                      { value: 'outro', label: 'Outro' },
+                    ]}
+                  />
                 </div>
-
-                {tipo === 'coletivo' && (
-                  <div className="space-y-2">
-                    <Label>Categoria</Label>
-                    <DynamicSelect
-                      categoria="categoria_entidade"
-                      value={watch('categoria') || ''}
-                      onValueChange={(value) => setValue('categoria', value)}
-                      placeholder="Selecionar categoria..."
-                      fallbackOptions={[
-                        { value: 'stand', label: 'Stand' },
-                        { value: 'banco', label: 'Banco' },
-                        { value: 'seguradora', label: 'Seguradora' },
-                        { value: 'outro', label: 'Outro' },
-                      ]}
-                    />
-                  </div>
-                )}
               </div>
 
               <div className="space-y-2">
