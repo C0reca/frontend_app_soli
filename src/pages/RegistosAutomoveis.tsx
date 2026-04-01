@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Search, Car, Eye, Edit, Trash2, X, Calendar, Lock, CheckCircle, Clock,
-  ChevronLeft, ChevronRight, List, FileDown, CalendarDays, FileEdit,
+  ChevronLeft, ChevronRight, List, FileDown, CalendarDays, FileEdit, Loader2, Zap,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -29,6 +29,7 @@ import { RegistoAutomovelDetailsModal } from '@/components/modals/RegistoAutomov
 import { StandSemanaModal } from '@/components/modals/StandSemanaModal';
 import { ClickableClientName } from '@/components/ClickableClientName';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useToast } from '@/hooks/use-toast';
 import { normalizeString } from '@/lib/utils';
 import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import api from '@/services/api';
@@ -55,6 +56,8 @@ function formatDatePT(d?: string): string {
 export const RegistosAutomoveis: React.FC = () => {
   const { canCreate, canEdit } = usePermissions();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const { toast } = useToast();
+  const [isTriggering, setIsTriggering] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('todos');
   const [filterPagamento, setFilterPagamento] = useState<string>('todos');
@@ -171,6 +174,18 @@ export const RegistosAutomoveis: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch {
       console.error('Erro ao exportar relatório');
+    }
+  };
+
+  const handleTriggerAutomacao = async () => {
+    setIsTriggering(true);
+    try {
+      await api.post('/registos-automoveis/trigger-importacao');
+      toast({ title: 'Automação iniciada', description: 'Os PDFs estão a ser processados. Os rascunhos aparecerão em breve.' });
+    } catch {
+      toast({ title: 'Erro', description: 'Não foi possível iniciar a automação.', variant: 'destructive' });
+    } finally {
+      setIsTriggering(false);
     }
   };
 
@@ -501,10 +516,16 @@ export const RegistosAutomoveis: React.FC = () => {
             </DropdownMenuContent>
           </DropdownMenu>
           {canCreate("registos_automoveis") && (
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Registo
-            </Button>
+            <>
+              <Button variant="outline" onClick={handleTriggerAutomacao} disabled={isTriggering}>
+                {isTriggering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                {isTriggering ? 'A processar...' : 'Importar PDFs'}
+              </Button>
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Registo
+              </Button>
+            </>
           )}
         </div>
       </div>
