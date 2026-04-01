@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Search, Car, Eye, Edit, Trash2, X, Calendar, Lock, CheckCircle, Clock,
-  ChevronLeft, ChevronRight, List, FileDown, CalendarDays,
+  ChevronLeft, ChevronRight, List, FileDown, CalendarDays, FileEdit,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -58,6 +58,7 @@ export const RegistosAutomoveis: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('todos');
   const [filterPagamento, setFilterPagamento] = useState<string>('todos');
+  const [filterEstado, setFilterEstado] = useState<string>('todos');
 
   // Date navigation for daily/weekly tabs
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -102,7 +103,8 @@ export const RegistosAutomoveis: React.FC = () => {
       normalizeString(r.numero_pedido || '').includes(searchN);
     const matchesTipo = filterTipo === 'todos' || r.tipo === filterTipo;
     const matchesPagamento = filterPagamento === 'todos' || r.estado_pagamento === filterPagamento;
-    return matchesSearch && matchesTipo && matchesPagamento;
+    const matchesEstado = filterEstado === 'todos' || r.estado === filterEstado;
+    return matchesSearch && matchesTipo && matchesPagamento && matchesEstado;
   });
 
   // Group registos by stand
@@ -174,6 +176,8 @@ export const RegistosAutomoveis: React.FC = () => {
 
   const getEstadoClasses = (estado?: string) => {
     switch (estado) {
+      case 'rascunho':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
       case 'em_curso':
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'concluido':
@@ -191,6 +195,7 @@ export const RegistosAutomoveis: React.FC = () => {
   const totalStand = registos.filter((r: any) => r.tipo === 'stand').length;
   const totalPendente = registos.filter((r: any) => r.estado_pagamento === 'pendente').length;
   const totalPago = registos.filter((r: any) => r.estado_pagamento === 'pago').length;
+  const totalRascunhos = registos.filter((r: any) => r.estado === 'rascunho').length;
 
   // Navigation helpers
   const navigateDay = (offset: number) => {
@@ -209,6 +214,7 @@ export const RegistosAutomoveis: React.FC = () => {
   const isThisWeek = formatDateISO(selectedWeekStart) === formatDateISO(getMonday(new Date()));
 
   const getCardColor = (r: RegistoAutomovel) => {
+    if (r.estado === 'rascunho') return 'border-orange-200 bg-orange-50';
     if (r.estado === 'concluido') return 'border-green-200 bg-green-50';
     if (r.estado === 'recusado') return 'border-red-200 bg-red-50';
     if (r.estado === 'em_curso') return 'border-blue-200 bg-blue-50';
@@ -236,6 +242,11 @@ export const RegistosAutomoveis: React.FC = () => {
               <Badge variant="outline" className="text-xs">
                 {r.tipo === 'stand' ? 'Stand' : 'Particular'}
               </Badge>
+              {(r as any).origem === 'automacao' && (
+                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                  Automação
+                </Badge>
+              )}
               {r.tipo === 'stand' && r.entidade && (
                 <span className="text-xs font-medium text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
                   {r.entidade.nome}
@@ -272,6 +283,7 @@ export const RegistosAutomoveis: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="rascunho">Rascunho</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="em_curso">Em Curso</SelectItem>
                   <SelectItem value="concluido">Concluído</SelectItem>
@@ -565,6 +577,19 @@ export const RegistosAutomoveis: React.FC = () => {
               </span>
               <span className="text-lg font-bold text-green-600">{totalPago}</span>
             </button>
+            {totalRascunhos > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilterEstado(filterEstado === 'rascunho' ? 'todos' : 'rascunho')}
+                className={`flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-left hover:shadow transition-shadow ${filterEstado === 'rascunho' ? 'ring-2 ring-orange-500' : ''}`}
+              >
+                <span className="text-xs sm:text-sm font-medium text-orange-600 flex items-center gap-1">
+                  <FileEdit className="h-4 w-4 shrink-0" />
+                  Rascunhos
+                </span>
+                <span className="text-lg font-bold text-orange-600">{totalRascunhos}</span>
+              </button>
+            )}
           </div>
 
           {/* Search */}

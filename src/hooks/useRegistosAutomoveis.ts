@@ -15,6 +15,7 @@ export interface RegistoAutomovel {
   outras_observacoes?: string;
   data_criacao?: string;
   criado_por_id?: number;
+  origem?: string;
 
   // Pedido
   numero_pedido?: string;
