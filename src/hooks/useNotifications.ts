@@ -21,8 +21,6 @@ interface NotificationCount {
 // --- WebSocket singleton ---
 
 function getWsUrl(): string {
-  const token = localStorage.getItem('token');
-  if (!token) return '';
   const { protocol, host } = window.location;
   const isLocal =
     host === 'localhost' ||
@@ -31,13 +29,15 @@ function getWsUrl(): string {
     host.startsWith('127.0.0.1:');
   let wsBase: string;
   if (import.meta.env.DEV && isLocal) {
-    wsBase = 'ws://127.0.0.1:8000/api';
+    // Usar proxy Vite (same-origin) para que cookies httpOnly sejam enviados
+    wsBase = `ws://${host}/api`;
   } else if (protocol === 'https:') {
     wsBase = `wss://${host}/api`;
   } else {
     wsBase = `ws://${host}/api`;
   }
-  return `${wsBase}/ws/notificacoes?token=${encodeURIComponent(token)}`;
+  // Cookie httpOnly é enviado automaticamente na ligação WebSocket (same-origin)
+  return `${wsBase}/ws/notificacoes`;
 }
 
 type WsListener = (data: any) => void;

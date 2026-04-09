@@ -39,6 +39,8 @@ import { Loader2, Minimize2, ChevronRight, ChevronLeft, Plus, X, ScanSearch, Che
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { useExtracaoStatus, useExtrairDocumento } from '@/hooks/useExtracaoDocumento';
 import { ExtracaoUploadZone } from '@/components/extraction/ExtracaoUploadZone';
+import { ProcessoWizard } from '@/components/ProcessoWizard';
+import { useTemplate } from '@/hooks/useProcessoTemplates';
 
 const PROCESS_TYPES_STORAGE_KEY = "app-soli-process-types";
 const PROCESS_TYPES_HIDDEN_KEY = "app-soli-process-types-hidden";
@@ -145,6 +147,15 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     const isWizard = !process;
     const [selectedTipoProcessoId, setSelectedTipoProcessoId] = useState<number | null>(null);
     const { data: selectedTipoDetail } = useTipoProcesso(selectedTipoProcessoId);
+    const [showTemplateWizard, setShowTemplateWizard] = useState(false);
+
+    // Template de processo linkado ao tipo selecionado (consolidado no TipoProcesso)
+    const linkedTemplateId = useMemo(() => {
+        if (!selectedTipoProcessoId) return null;
+        const tipo = tiposProcesso.find(t => t.id === selectedTipoProcessoId);
+        return tipo?.processo_template_id || null;
+    }, [selectedTipoProcessoId, tiposProcesso]);
+    const { data: templateAtivo } = useTemplate(linkedTemplateId);
 
     const wizardSteps: WizardStepConfig[] = useMemo(() => {
         const wc = selectedTipoDetail?.wizard_config;
@@ -800,6 +811,7 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
     };
 
     return (
+        <>
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -1049,6 +1061,11 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                                                     }
                                                 }
                                             }
+                                            // Se estamos no step 0 e existe template ativo → abrir wizard
+                                            if (step === 0 && templateAtivo) {
+                                                setShowTemplateWizard(true);
+                                                return;
+                                            }
                                             setStep(step + 1);
                                         }}
                                     >
@@ -1073,5 +1090,40 @@ export const ProcessModal: React.FC<ProcessModalProps> = ({
                 )}
             </DialogContent>
         </Dialog>
+
+        {/* Template Wizard — abre quando o tipo tem template ativo */}
+        {templateAtivo && (
+            <ProcessoWizard
+                isOpen={showTemplateWizard}
+                template={templateAtivo}
+                onConcluir={async (dadosWizard) => {
+                    try {
+                        const data = form.getValues();
+                        await createProcess.mutateAsync({
+                            titulo: data.titulo || templateAtivo.nome,
+                            descricao: data.descricao,
+                            tipo: data.tipo,
+                            onde_estao: data.onde_estao,
+                            cliente_id: data.cliente_id,
+                            dossie_id: data.dossie_id,
+                            funcionario_id: data.funcionario_id,
+                            titular_id: data.titular_id,
+                            tipo_processo_id: data.tipo_processo_id,
+                            parent_processo_id: data.parent_processo_id,
+                            estado: data.estado ?? "pendente",
+                            campos_personalizados: dadosWizard,
+                            processo_template_id: templateAtivo.id,
+                            wizard_dados: dadosWizard,
+                        } as any);
+                        setShowTemplateWizard(false);
+                        onClose();
+                    } catch {
+                        // Error handled in hook
+                    }
+                }}
+                onCancelar={() => setShowTemplateWizard(false)}
+            />
+        )}
+        </>
     );
 };

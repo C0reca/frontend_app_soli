@@ -46,6 +46,7 @@ export interface Process {
   autorizados?: { id: number; nome: string }[];
   valor?: number | null;
   estado_workflow?: string | null;
+  azure_folder_path?: string | null;
   entidades_secundarias?: {
     id: number;
     cliente_id?: number;

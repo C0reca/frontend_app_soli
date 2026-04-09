@@ -26,12 +26,11 @@ Node.prototype.insertBefore = function (newNode: Node, refNode: Node | null) {
 // Captura global de erros não tratados — envia para o backend
 const reportError = (payload: Record<string, unknown>) => {
   try {
-    const token = localStorage.getItem('token');
     fetch('/api/admin/error-logs/report', {
       method: 'POST',
+      credentials: 'include', // Envia cookie httpOnly automaticamente
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
         source: 'frontend',

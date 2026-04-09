@@ -41,7 +41,7 @@ export const useReuniao = () => {
       return res.data as Reuniao | null;
     },
     staleTime: 5 * 60_000,
-    enabled: !!localStorage.getItem('token'),
+    enabled: !!localStorage.getItem('user'),
   });
 
   const iniciarReuniao = useMutation({

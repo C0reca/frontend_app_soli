@@ -17,6 +17,8 @@ import { formatCurrency } from '@/lib/utils';
 import { AgregadoFamiliarTab } from '@/components/AgregadoFamiliarTab';
 import { ClienteContactosTab } from '@/components/ClienteContactosTab';
 import { FiliacaoSection } from '@/components/FiliacaoSection';
+import { FicheirosBrowser } from '@/components/FicheirosBrowser';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Building,
   Mail,
@@ -616,15 +618,19 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     </TabsContent>
   );
 
+  const { user: authUser } = useAuth();
+  const isAdminOrManager = authUser?.role === 'admin' || authUser?.role === 'manager';
+
   const renderIndividualClient = (client: IndividualClient) => (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
+      <TabsList className="grid w-full grid-cols-7">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
         <TabsTrigger value="irs">Dados do IRS</TabsTrigger>
         <TabsTrigger value="conta-corrente">Conta Corrente</TabsTrigger>
         <TabsTrigger value="dossies">Arquivo</TabsTrigger>
+        <TabsTrigger value="ficheiros">Ficheiros</TabsTrigger>
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -805,18 +811,29 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="ficheiros" className="mt-6">
+          <FicheirosBrowser
+            tipo="clientes"
+            entityId={client.id}
+            azureFolderPath={client.azure_folder_path}
+            canEdit={true}
+            canConfigurePasta={isAdminOrManager}
+          />
+        </TabsContent>
     </Tabs>
   );
 
   const renderCorporateClient = (client: CorporateClient) => (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
+      <TabsList className="grid w-full grid-cols-7">
         <TabsTrigger value="identification">Identificação</TabsTrigger>
         <TabsTrigger value="documents">Documentos</TabsTrigger>
         <TabsTrigger value="informacao">Informação</TabsTrigger>
         <TabsTrigger value="irs">Dados do IRS</TabsTrigger>
         <TabsTrigger value="conta-corrente">Conta Corrente</TabsTrigger>
         <TabsTrigger value="dossies">Arquivo</TabsTrigger>
+        <TabsTrigger value="ficheiros">Ficheiros</TabsTrigger>
       </TabsList>
 
       <TabsContent value="identification" className="mt-6">
@@ -1009,6 +1026,16 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ficheiros" className="mt-6">
+          <FicheirosBrowser
+            tipo="clientes"
+            entityId={client.id}
+            azureFolderPath={client.azure_folder_path}
+            canEdit={true}
+            canConfigurePasta={isAdminOrManager}
+          />
         </TabsContent>
     </Tabs>
   );

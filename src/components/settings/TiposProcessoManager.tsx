@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, GripVertical, CheckSquare, DollarSign, FileText, ListTodo, Layers, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, CheckSquare, DollarSign, FileText, ListTodo, Layers, ShieldCheck, HelpCircle, Wand2 } from 'lucide-react';
+import { processoTemplates } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useTiposProcesso,
@@ -35,9 +38,32 @@ interface DocTemplate {
 }
 
 export const TiposProcessoManager: React.FC = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { data: tipos = [], isLoading } = useTiposProcesso();
   const { createTipo, updateTipo, deleteTipo } = useTiposProcessoMutations();
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  const handleWizardEditor = async (tipo: { id: number; nome: string; processo_template_id?: number | null }) => {
+    if (tipo.processo_template_id) {
+      navigate(`/admin/processo-templates/${tipo.processo_template_id}`);
+    } else {
+      try {
+        const res = await processoTemplates.create({
+          nome: `Wizard — ${tipo.nome}`,
+          tipo_processo: tipo.nome,
+          passos: [],
+          tarefas_automaticas: [],
+          documentos_automaticos: [],
+        });
+        const newTemplateId = res.data.id;
+        await updateTipo.mutateAsync({ id: tipo.id, processo_template_id: newTemplateId } as any);
+        navigate(`/admin/processo-templates/${newTemplateId}`);
+      } catch {
+        toast({ title: 'Erro ao criar wizard template', variant: 'destructive' });
+      }
+    }
+  };
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   return (
@@ -106,6 +132,7 @@ export const TiposProcessoManager: React.FC = () => {
           onClose={() => { setIsFormOpen(false); setEditingId(null); }}
           onCreate={(data) => createTipo.mutateAsync(data as any).then(() => { setIsFormOpen(false); setEditingId(null); })}
           onUpdate={(id, data) => updateTipo.mutateAsync({ id, ...data } as any).then(() => { setIsFormOpen(false); setEditingId(null); })}
+          onNavigateWizardEditor={handleWizardEditor}
         />
       )}
     </div>
@@ -126,9 +153,10 @@ interface TipoProcessoFormModalProps {
   onClose: () => void;
   onCreate: (data: any) => Promise<void>;
   onUpdate: (id: number, data: any) => Promise<void>;
+  onNavigateWizardEditor: (tipo: { id: number; nome: string; processo_template_id?: number | null }) => void;
 }
 
-const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, onClose, onCreate, onUpdate }) => {
+const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, onClose, onCreate, onUpdate, onNavigateWizardEditor }) => {
   const { data: existing } = useTipoProcesso(tipoId);
   const { data: docTemplates = [] } = useQuery<DocTemplate[]>({
     queryKey: ['documento-templates-list'],
@@ -243,8 +271,28 @@ const TipoProcessoFormModal: React.FC<TipoProcessoFormModalProps> = ({ tipoId, o
           </TabsList>
 
           {/* ── Tab: Wizard ─────────────────────────────────────────── */}
-          <TabsContent value="wizard" className="mt-4">
-            <HelpTip text="Arraste blocos da paleta para os passos do formulário. Cada passo aparece como um ecrã no wizard de criação. Pode criar campos personalizados (texto, número, data, lista) para recolher informação específica deste tipo de processo." />
+          <TabsContent value="wizard" className="mt-4 space-y-4">
+            <HelpTip text="Configure os passos do wizard de criação. O editor básico abaixo define os campos do formulário. Para passos avançados com variáveis, tarefas automáticas e geração de documentos, use o Editor Avançado." />
+            {tipoId && (
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                <div className="text-sm">
+                  <p className="font-medium">Editor Avançado de Wizard</p>
+                  <p className="text-muted-foreground text-xs">Passos estruturados, tarefas com variáveis, documentos automáticos</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (existing) {
+                      onNavigateWizardEditor({ id: existing.id, nome: existing.nome, processo_template_id: (existing as any).processo_template_id });
+                    }
+                  }}
+                >
+                  <Wand2 className="h-4 w-4 mr-1" />
+                  Abrir Editor
+                </Button>
+              </div>
+            )}
             <WizardBlockEditor value={wizardConfig} onChange={setWizardConfig} />
           </TabsContent>
 

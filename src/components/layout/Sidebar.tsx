@@ -34,6 +34,7 @@ import {
   Inbox,
   MessageSquare,
   HelpCircle,
+  ListChecks,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';

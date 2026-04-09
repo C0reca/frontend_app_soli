@@ -95,6 +95,7 @@ export interface TipoProcesso {
   orcamento_items: OrcamentoItem[];
   documento_templates: DocTemplateItem[];
   tarefas: TarefaItem[];
+  processo_template_id?: number | null;
 }
 
 export interface TipoProcessoSimple {
@@ -104,6 +105,7 @@ export interface TipoProcessoSimple {
   ativo: boolean;
   wizard_config?: WizardConfig | null;
   estados_workflow?: string[] | null;
+  processo_template_id?: number | null;
 }
 
 export const useTiposProcesso = (ativo?: boolean) => {

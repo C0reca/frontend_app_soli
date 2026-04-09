@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Tentar restaurar user data do localStorage (dados de UI apenas, não o token)
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -57,21 +57,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('user');
       }
     }
-    if (!token) {
-      if (storedUser) {
-        localStorage.removeItem('user');
-        setUser(null);
-      }
-      setLoading(false);
-      return;
-    }
 
+    // Validar sessão: o cookie httpOnly é enviado automaticamente
     const fetchCurrentUser = async () => {
       try {
         const response = await api.get('/auth/me');
-        setUser(response.data);
-      } catch (error) {
-        localStorage.removeItem('token');
+        const userData = response.data;
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch {
+        // Cookie inválido ou expirado — limpar estado
         localStorage.removeItem('user');
         setUser(null);
       } finally {
@@ -85,9 +80,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { access_token, user: userData } = response.data;
+      // O token é setado como cookie httpOnly pelo backend — não está no body
+      const { user: userData } = response.data;
 
-      localStorage.setItem('token', access_token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return true;
@@ -97,8 +92,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignorar erro — limpar estado local de qualquer forma
+    }
     localStorage.removeItem('user');
     setUser(null);
   };

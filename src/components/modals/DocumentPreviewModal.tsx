@@ -32,20 +32,19 @@ function buildPreviewFileUrl(documentId: number): string {
     window.location.host.startsWith('localhost') ||
     window.location.host.startsWith('127.0.0.1');
   const isDev = import.meta.env.DEV;
-  const token = localStorage.getItem('token');
 
   let base: string;
   if (isDev && isLocal) {
-    base = 'http://127.0.0.1:8000/api';
+    // Usar proxy Vite (same-origin) para que cookies httpOnly sejam enviados
+    base = '/api';
   } else if (isLocal) {
     base = `http://${window.location.host}/api`;
   } else {
     base = `${window.location.protocol}//${window.location.host}/api`;
   }
 
-  // Adicionar token como query param para autenticação no iframe/img
-  const url = `${base}/documentos/preview-file/${documentId}`;
-  return token ? `${url}?token=${encodeURIComponent(token)}` : url;
+  // Cookie httpOnly é enviado automaticamente pelo browser (same-origin)
+  return `${base}/documentos/preview-file/${documentId}`;
 }
 
 export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({

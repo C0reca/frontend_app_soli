@@ -21,13 +21,13 @@ export function usePermissions() {
     return map;
   }, [data]);
 
-  // Get user role from localStorage JWT
+  // Get user role from localStorage user data (token is now in httpOnly cookie)
   const role = useMemo(() => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return 'funcionario';
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.role || 'funcionario';
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) return 'funcionario';
+      const userData = JSON.parse(storedUser);
+      return userData.role || 'funcionario';
     } catch {
       return 'funcionario';
     }

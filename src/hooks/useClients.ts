@@ -28,6 +28,7 @@ export interface BaseClient {
   status?: 'active' | 'inactive';
   createdAt: string;
   internalNotes: string;
+  azure_folder_path?: string | null;
 }
 
 // Individual client (Pessoa Singular)

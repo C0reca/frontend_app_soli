@@ -51,6 +51,8 @@ import { FormularioPublicoPage } from "@/pages/FormularioPublicoPage";
 import { Conservatorias } from "@/pages/Conservatorias";
 import { AutoFinanceiro } from "@/pages/AutoFinanceiro";
 import { Financeiro } from "@/pages/Financeiro";
+import { ProcessoTemplateEditorPage } from "@/pages/ProcessoTemplateEditor";
+// ProcessoWorkspace é agora um modal, não uma página standalone
 import { EmailInbox } from "@/pages/EmailInbox";
 import { WhatsAppPage } from "@/pages/WhatsAppPage";
 
@@ -146,6 +148,8 @@ const AppRoutes = () => {
         <Route path="auto-financeiro" element={<Navigate to="/financeiro?tab=resumo" replace />} />
         <Route path="email-inbox" element={<EmailInbox />} />
         <Route path="whatsapp" element={<WhatsAppPage />} />
+        {/* Lista de templates removida — editor mantido para acesso via TiposProcessoManager */}
+        <Route path="admin/processo-templates/:id" element={<ManagerRoute><ProcessoTemplateEditorPage /></ManagerRoute>} />
       </Route>
       {/* Public routes (no auth required) */}
       <Route path="/portal-stand" element={<PortalStand />} />

@@ -1,6 +1,9 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
+import { FicheirosBrowser } from '@/components/FicheirosBrowser';
+import { ProcessoWorkspaceModal } from '@/components/modals/ProcessoWorkspaceModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { extractApiError } from '@/lib/utils';
 import { Dialog, DialogContent, ResizableDialogContent, DialogHeader, DialogTitle, DialogDescription, DialogWindowControls, useResizableDialog } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -18,12 +21,11 @@ import { TaskModal } from '@/components/modals/TaskModal';
 import { LogProcessoModal } from '@/components/modals/LogProcessoModal';
 import { LogProcessoDetailsModal } from '@/components/modals/LogProcessoDetailsModal';
 import { ClientDetailsModal } from '@/components/modals/ClientDetailsModal';
-import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock, Printer, DollarSign, FolderPlus, Folder, Bot } from 'lucide-react';
+import { FileText, User, Building, Calendar, Clock, AlertCircle, CheckCircle2, Play, Pause, Upload, FileIcon, Minimize2, Plus, History, Phone, Mail, Users, File, MessageSquare, Edit, CheckSquare, MapPin, Paperclip, Eye, Trash2, Filter, Search, X, Lock, Printer, DollarSign, FolderPlus, Folder, Bot, Layout } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useMinimize } from '@/contexts/MinimizeContext';
 import { ProcessLocationModal } from './ProcessLocationModal';
 import { useProcesses } from '@/hooks/useProcesses';
-import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeList } from '@/hooks/useEmployees';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
@@ -104,6 +106,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = React.useState(false);
   const [showIA, setShowIA] = React.useState(false);
+  const [showWorkspace, setShowWorkspace] = React.useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
   const [taskFilters, setTaskFilters] = React.useState({
     searchTerm: '',
@@ -488,6 +491,7 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
   const isOverdue = false; // Temporariamente false até ser definido no backend
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <ResizableDialogContent storageKey="process-details" defaultWidth={960} defaultHeight={Math.round(window.innerHeight * 0.82)} minWidth={600} minHeight={400} className={`max-h-[90vh] !grid-rows-[1fr] overflow-hidden [&>button]:hidden transition-all p-0`}>
         <div className="flex h-full min-h-0 overflow-hidden">
@@ -542,6 +546,16 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
                   Editar
                 </Button>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowWorkspace(true)}
+                title="Abrir Workspace"
+                className="h-7 gap-1 text-xs"
+              >
+                <Layout className="h-3.5 w-3.5" />
+                Workspace
+              </Button>
               <Button
                 variant={showIA ? "default" : "outline"}
                 size="sm"
@@ -598,13 +612,14 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7">
               <TabsTrigger value="general">Geral</TabsTrigger>
               <TabsTrigger value="tasks">Tarefas</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
               <TabsTrigger value="timeline">Histórico</TabsTrigger>
               <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
               <TabsTrigger value="correio">Correio</TabsTrigger>
+              <TabsTrigger value="ficheiros">Ficheiros</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6 mt-6">
@@ -1582,6 +1597,16 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
               )}
             </TabsContent>
 
+            <TabsContent value="ficheiros" className="space-y-6 mt-6">
+              <FicheirosBrowser
+                tipo="processos"
+                entityId={process?.id || 0}
+                azureFolderPath={(process as any)?.azure_folder_path}
+                canEdit={true}
+                canConfigurePasta={canManageVisibility}
+              />
+            </TabsContent>
+
           </Tabs>
         </div>
 
@@ -1703,5 +1728,12 @@ export const ProcessDetailsModal: React.FC<ProcessDetailsModalProps> = ({
         />
       )}
     </Dialog>
+
+    <ProcessoWorkspaceModal
+      isOpen={showWorkspace}
+      onClose={() => setShowWorkspace(false)}
+      processoId={process?.id || null}
+    />
+    </>
   );
 };

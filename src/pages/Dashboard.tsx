@@ -1,256 +1,377 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDashboard } from '@/hooks/useDashboard';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FolderOpen, CheckSquare, Clock, TrendingUp, Users, CheckCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Calendar,
+  CheckCircle,
+  Clock,
+  FileText,
+  FolderOpen,
+  ListChecks,
+  Plus,
+  TrendingUp,
+  Users,
+  Wallet,
+} from 'lucide-react';
+import { useDashboard } from '@/hooks/useDashboard';
 import { useTasks, Task } from '@/hooks/useTasks';
+import { useAuth } from '@/contexts/AuthContext';
 import { TaskDetailsModal } from '@/components/modals/TaskDetailsModal';
+
+function formatDate(d: string | null | undefined): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+}
+
+function daysUntil(d: string): number {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const target = new Date(d);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function prazoLabel(d: string): { text: string; className: string } {
+  const days = daysUntil(d);
+  if (days < 0) return { text: `${Math.abs(days)}d atraso`, className: 'bg-red-100 text-red-700' };
+  if (days === 0) return { text: 'Hoje', className: 'bg-amber-100 text-amber-700' };
+  if (days === 1) return { text: 'Amanhã', className: 'bg-yellow-100 text-yellow-700' };
+  if (days <= 3) return { text: `${days} dias`, className: 'bg-orange-100 text-orange-700' };
+  if (days <= 7) return { text: `${days} dias`, className: 'bg-blue-100 text-blue-700' };
+  return { text: formatDate(d), className: 'bg-muted text-muted-foreground' };
+}
 
 export const Dashboard: React.FC = () => {
   const { kpis, isLoading } = useDashboard();
   const { tasks } = useTasks();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
-  const handleViewTask = (task: Task) => {
-    setSelectedTask(task);
-    setIsTaskModalOpen(true);
-  };
+  const today = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }, []);
 
-  const handleCloseTaskModal = () => {
-    setIsTaskModalOpen(false);
-    setSelectedTask(null);
-  };
+  // Tarefas categorizadas
+  const { atrasadas, paraHoje, proximos7Dias, minhasTarefas } = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const semana = new Date(now);
+    semana.setDate(semana.getDate() + 7);
+
+    const pendentes = (tasks || []).filter((t: Task) => !t.concluida && t.data_fim);
+    const atrasadas = pendentes
+      .filter(t => new Date(t.data_fim!) < now)
+      .sort((a, b) => new Date(a.data_fim!).getTime() - new Date(b.data_fim!).getTime());
+
+    const paraHoje = pendentes.filter(t => {
+      const d = new Date(t.data_fim!);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === now.getTime();
+    });
+
+    const proximos7Dias = pendentes
+      .filter(t => {
+        const d = new Date(t.data_fim!);
+        d.setHours(0, 0, 0, 0);
+        return d > now && d <= semana;
+      })
+      .sort((a, b) => new Date(a.data_fim!).getTime() - new Date(b.data_fim!).getTime());
+
+    const userId = user?.id;
+    const minhasTarefas = pendentes
+      .filter(t => t.responsavel_id === userId)
+      .sort((a, b) => new Date(a.data_fim!).getTime() - new Date(b.data_fim!).getTime())
+      .slice(0, 10);
+
+    return { atrasadas, paraHoje, proximos7Dias, minhasTarefas };
+  }, [tasks, user?.id]);
+
+  const completionRate = kpis && kpis.total_processos > 0
+    ? Math.round((kpis.concluidos / kpis.total_processos) * 100) : 0;
+  const taskCompletionRate = kpis && (kpis.tarefas_concluidas + kpis.tarefas_pendentes) > 0
+    ? Math.round((kpis.tarefas_concluidas / (kpis.tarefas_concluidas + kpis.tarefas_pendentes)) * 100) : 0;
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="space-y-6 p-1">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
         </div>
       </div>
     );
   }
 
-  const completionRate = kpis && kpis.total_processos > 0
-    ? Math.round((kpis.concluidos / kpis.total_processos) * 100)
-    : 0;
-
-  const kpiCards = [
-    {
-      title: 'Total de Clientes',
-      value: kpis?.total_clientes ?? 0,
-      icon: Users,
-      description: 'Clientes registados no sistema',
-      trend: '',
-      path: '/clientes'
-    },
-    {
-      title: 'Total de Processos',
-      value: kpis?.total_processos ?? 0,
-      icon: FolderOpen,
-      description: 'Processos registados no sistema',
-      trend: '',
-      path: '/processos'
-    },
-    {
-      title: 'Processos Ativos',
-      value: kpis?.ativos ?? 0,
-      icon: Clock,
-      description: 'Pendente ou Em curso',
-      trend: '',
-      path: '/processos'
-    },
-    {
-      title: 'Processos Concluídos',
-      value: kpis?.concluidos ?? 0,
-      icon: CheckSquare,
-      description: 'Estado concluído',
-      trend: '',
-      path: '/processos'
-    },
-    {
-      title: 'Tarefas Concluídas',
-      value: kpis?.tarefas_concluidas ?? 0,
-      icon: CheckSquare,
-      description: 'Tarefas finalizadas',
-      trend: '',
-      path: '/tarefas'
-    },
-    {
-      title: 'Tarefas Pendentes',
-      value: kpis?.tarefas_pendentes ?? 0,
-      icon: Clock,
-      description: 'Tarefas por completar',
-      trend: '',
-      path: '/tarefas'
-    },
-    {
-      title: 'Taxa de Conclusão',
-      value: `${completionRate}%`,
-      icon: TrendingUp,
-      description: 'Concluídos / Total',
-      trend: '',
-      path: '/processos'
-    }
-  ];
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-1">
+      {/* Header com saudação */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Visão geral do sistema de gestão de processos</p>
+        <h1 className="text-2xl font-bold">
+          Bom dia{user?.nome ? `, ${user.nome.split(' ')[0]}` : ''}
+        </h1>
+        <p className="text-sm text-muted-foreground capitalize">{today}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {kpiCards.map((kpi, index) => {
-          const Icon = kpi.icon;
-          return (
-            <Card 
-              key={index} 
-              className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(kpi.path)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  {kpi.title}
-                </CardTitle>
-                <Icon className="h-4 w-4 text-gray-600" />
+      {/* Alertas urgentes */}
+      {atrasadas.length > 0 && (
+        <Card className="border-red-200 bg-red-50/50">
+          <CardContent className="py-3 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+            <span className="text-sm font-medium text-red-700">
+              {atrasadas.length} tarefa{atrasadas.length > 1 ? 's' : ''} em atraso
+            </span>
+            <Button size="sm" variant="outline" className="ml-auto border-red-300 text-red-700 hover:bg-red-100" onClick={() => navigate('/tarefas')}>
+              Ver todas
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* KPI compactos — 4 colunas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/tarefas')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground font-medium">Para Hoje</span>
+              <ListChecks className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold">{paraHoje.length}</div>
+            <p className="text-xs text-muted-foreground">{atrasadas.length > 0 ? `+${atrasadas.length} em atraso` : 'tarefas'}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/tarefas')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground font-medium">Esta Semana</span>
+              <Calendar className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold">{proximos7Dias.length}</div>
+            <p className="text-xs text-muted-foreground">nos próximos 7 dias</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/processos')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground font-medium">Processos Ativos</span>
+              <FolderOpen className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold">{kpis?.ativos ?? 0}</div>
+            <div className="mt-1">
+              <Progress value={completionRate} className="h-1.5" />
+              <p className="text-xs text-muted-foreground mt-0.5">{completionRate}% concluídos</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/tarefas')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground font-medium">Tarefas</span>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </div>
+            <div className="text-2xl font-bold">{kpis?.tarefas_pendentes ?? 0}</div>
+            <div className="mt-1">
+              <Progress value={taskCompletionRate} className="h-1.5" />
+              <p className="text-xs text-muted-foreground mt-0.5">{taskCompletionRate}% concluídas</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Secção principal — 2 colunas */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        {/* Coluna esquerda — Tarefas do dia (3/5) */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* As minhas tarefas */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">As Minhas Tarefas</CardTitle>
+                  <CardDescription>Atribuídas a mim, por prazo</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tarefas')}>
+                  Ver todas <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {minhasTarefas.length === 0 ? (
+                <div className="text-center py-6">
+                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Sem tarefas pendentes!</p>
+                </div>
+              ) : (
+                minhasTarefas.map(t => {
+                  const prazo = prazoLabel(t.data_fim!);
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{t.titulo}</p>
+                        {t.processo_id && (
+                          <p className="text-xs text-muted-foreground truncate">Processo #{t.processo_id}</p>
+                        )}
+                      </div>
+                      <Badge variant="outline" className={`shrink-0 text-xs ${prazo.className}`}>
+                        {prazo.text}
+                      </Badge>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tarefas em atraso (se houver) */}
+          {atrasadas.length > 0 && (
+            <Card className="border-red-200">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base text-red-700 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Em Atraso ({atrasadas.length})
+                  </CardTitle>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{kpi.value}</div>
-                <p className="text-xs text-gray-600 mt-1">{kpi.description}</p>
-                {kpi.trend && (
-                  <div className="flex items-center mt-2">
-                    <span className={`text-xs font-medium ${
-                      kpi.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {kpi.trend}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1">vs mês anterior</span>
-                  </div>
+              <CardContent className="space-y-1">
+                {atrasadas.slice(0, 5).map(t => {
+                  const days = Math.abs(daysUntil(t.data_fim!));
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-md hover:bg-red-50 cursor-pointer"
+                      onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{t.titulo}</p>
+                      </div>
+                      <span className="text-xs text-red-600 font-medium shrink-0">{days}d atraso</span>
+                    </div>
+                  );
+                })}
+                {atrasadas.length > 5 && (
+                  <Button variant="ghost" size="sm" className="w-full text-red-600" onClick={() => navigate('/tarefas')}>
+                    +{atrasadas.length - 5} mais
+                  </Button>
                 )}
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card 
-          className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => navigate('/processos')}
-        >
-          <CardHeader>
-            <CardTitle>Processos Recentes</CardTitle>
-            <CardDescription>Últimos processos criados no sistema</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm text-gray-700">
+        {/* Coluna direita — Resumo e ações (2/5) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Próximos 7 dias */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Próximos 7 Dias</CardTitle>
+              <CardDescription>{proximos7Dias.length} tarefas a vencer</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {proximos7Dias.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Semana tranquila!</p>
+              ) : (
+                proximos7Dias.slice(0, 6).map(t => {
+                  const prazo = prazoLabel(t.data_fim!);
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1"
+                      onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }}
+                    >
+                      <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate flex-1">{t.titulo}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${prazo.className}`}>{prazo.text}</span>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Resumo processos por estado */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Processos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
               {kpis?.por_estado && Object.entries(kpis.por_estado).map(([estado, count]) => (
-                <div key={estado} className="flex items-center justify-between">
-                  <span className="capitalize">{estado.replace('_',' ')}</span>
+                <div key={estado} className="flex items-center justify-between text-sm">
+                  <span className="capitalize text-muted-foreground">{estado.replace('_', ' ')}</span>
                   <span className="font-semibold">{count}</span>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Tarefas Urgentes</CardTitle>
-                <CardDescription>A vencer hoje ou em atraso</CardDescription>
+              <Separator />
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Total</span>
+                <span className="font-bold">{kpis?.total_processos ?? 0}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/tarefas')}>Ver todas</Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {(() => {
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                const urgent = (tasks || []).filter((t: any) => {
-                  if (!t?.data_fim || t?.concluida) return false;
-                  const due = new Date(t.data_fim);
-                  due.setHours(0,0,0,0);
-                  return due <= today;
-                }).sort((a: any, b: any) => new Date(a.data_fim).getTime() - new Date(b.data_fim).getTime()).slice(0, 8);
-                if (urgent.length === 0) {
-                  return (
-                    <div className="text-center py-6">
-                      <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Tudo em dia! Sem tarefas urgentes.</p>
-                    </div>
-                  );
-                }
-                return urgent.map((t: any) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors rounded px-2 -mx-2"
-                    onClick={() => handleViewTask(t)}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{t.titulo}</p>
-                      <p className="text-xs text-gray-500">Prazo: {new Date(t.data_fim).toLocaleDateString('pt-PT')}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${new Date(t.data_fim) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {new Date(t.data_fim) < new Date() ? 'Atrasada' : 'Hoje'}
-                    </span>
-                  </div>
-                ));
-              })()}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Ações rápidas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Ações Rápidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/processos')}>
-                <FolderOpen className="h-5 w-5" />
-                <span className="text-xs">Processos</span>
-              </Button>
-              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/tarefas')}>
-                <CheckSquare className="h-5 w-5" />
-                <span className="text-xs">Tarefas</span>
-              </Button>
-              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/clientes')}>
-                <Users className="h-5 w-5" />
-                <span className="text-xs">Entidades</span>
-              </Button>
-              <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/calendario')}>
-                <Clock className="h-5 w-5" />
-                <span className="text-xs">Calendário</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Ações rápidas */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Ações Rápidas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="h-auto py-2.5 justify-start gap-2" onClick={() => navigate('/processos')}>
+                  <Plus className="h-4 w-4" />
+                  <span className="text-xs">Novo Processo</span>
+                </Button>
+                <Button variant="outline" size="sm" className="h-auto py-2.5 justify-start gap-2" onClick={() => navigate('/tarefas')}>
+                  <ListChecks className="h-4 w-4" />
+                  <span className="text-xs">Tarefas</span>
+                </Button>
+                <Button variant="outline" size="sm" className="h-auto py-2.5 justify-start gap-2" onClick={() => navigate('/clientes')}>
+                  <Users className="h-4 w-4" />
+                  <span className="text-xs">Entidades</span>
+                </Button>
+                <Button variant="outline" size="sm" className="h-auto py-2.5 justify-start gap-2" onClick={() => navigate('/calendario')}>
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-xs">Calendário</span>
+                </Button>
+                <Button variant="outline" size="sm" className="h-auto py-2.5 justify-start gap-2" onClick={() => navigate('/financeiro')}>
+                  <Wallet className="h-4 w-4" />
+                  <span className="text-xs">Financeiro</span>
+                </Button>
+                <Button variant="outline" size="sm" className="h-auto py-2.5 justify-start gap-2" onClick={() => navigate('/documentos')}>
+                  <FileText className="h-4 w-4" />
+                  <span className="text-xs">Documentos</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <TaskDetailsModal
         task={selectedTask}
         isOpen={isTaskModalOpen && !!selectedTask}
-        onClose={handleCloseTaskModal}
+        onClose={() => { setIsTaskModalOpen(false); setSelectedTask(null); }}
       />
     </div>
   );

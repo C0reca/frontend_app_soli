@@ -4,6 +4,12 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: [],
+    css: false,
+  },
   server: {
     host: "::",
     port: 8080,
@@ -12,6 +18,7 @@ export default defineConfig(() => ({
         target: "http://127.0.0.1:8000",
         changeOrigin: true,
         secure: false,
+        ws: true, // Proxy WebSocket para cookies httpOnly
         // Em dev: reescrever /api -> vazio; paths só com um segmento (ex. /clientes, /processos) ganham / no fim para bater nas rotas do backend
         rewrite: (path) => {
           const p = path.replace(/^\/api/, "");
